@@ -558,7 +558,7 @@ The histogram and vectorscope continue to analyse the bounded proxy; readouts an
 warnings use the full-resolution pixels once refinement is visible.
 
 `params.ui.scope` changes presentation only: `shadows` / `highlights` (clipping warnings, U / O),
-`lab`, `samplerTool` (S), `vectorscope`, `selectedRegion` (requires a document selection),
+`lab`, `samplerTool` (S), `newSampler` (arm one new point, even near an existing probe), `vectorscope`, `selectedRegion` (requires a document selection),
 `redRight`, `hideSkinLine`, `floating`, `floatingRect: [left, top, right, bottom]` (200×150 to
 4096×4096 points), `sample: [u,v] | null`, and the probe list: `samplers: [[u,v], …]` replaces it,
 or `clearSamplers: true`, `removeSampler: index` and `addSampler: [u,v]` edit it, applied in that

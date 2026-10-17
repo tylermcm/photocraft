@@ -199,6 +199,11 @@ pub struct CameraRawDialog {
 }
 
 impl CameraRawDialog {
+    fn header_label(&self) -> String {
+        let name = self.raw_open.as_ref().map_or(self.document_name.as_str(), |raw| raw.name.as_str());
+        photo_header_label(name, self.camera_info.model.as_deref())
+    }
+
     /// Whether the photo was left for the next one, which has not taken over yet.
     pub(crate) fn busy(&self) -> bool {
         self.busy_since.is_some()
@@ -314,6 +319,21 @@ impl CameraRawDialog {
         self.preview_revision = self.preview_revision.saturating_add(1);
         self.dirty = false;
     }
+}
+
+fn photo_header_label(name: &str, model: Option<&str>) -> String {
+    let name = name.rsplit(['/', '\\']).next().unwrap_or(name).chars().take(256).collect::<String>();
+    let Some(model) = model.map(str::trim).filter(|value| !value.is_empty()) else { return name };
+    let model = model.chars().take(128).collect::<String>();
+    let (brand, rest) = model.split_once(' ').unwrap_or((&model, ""));
+    let camera = if brand.len() > 1 && brand.chars().all(|c| c.is_ascii_uppercase()) {
+        let mut letters = brand.chars();
+        let first = letters.next().unwrap_or_default();
+        format!("{first}{}{}{}", letters.as_str().to_ascii_lowercase(), if rest.is_empty() { "" } else { " " }, rest)
+    } else {
+        model
+    };
+    format!("{name}  -  {camera}")
 }
 
 /// Opens the dialog on the active layer.
@@ -1408,6 +1428,7 @@ pub(crate) struct Layout {
     pub title: ERect,
     pub body: ERect,
     pub preview_body: ERect,
+    pub tool_bar: ERect,
     /// Where the photo is shown.
     pub view: ERect,
     /// The settings panel.
@@ -1434,13 +1455,15 @@ pub(crate) fn layout(ctx: &egui::Context, screen: ERect, _own_window: bool) -> L
     );
     let strip_height = super::camera_raw_filmstrip_ui::height(ctx).min((nav.top() - preview_body.top()) * 0.4);
     let filmstrip = ERect::from_min_max(pos2(preview_body.left(), nav.top() - strip_height), nav.right_top());
+    let tool_height = super::camera_raw_tool_bar_ui::height(ctx).min((filmstrip.top() - preview_body.top()).max(0.0) * 0.4);
+    let tool_bar = ERect::from_min_size(preview_body.min, vec2(preview_body.width(), tool_height));
     let margin = design.preview_margin.min(preview_body.width() * 0.25).min((filmstrip.top() - preview_body.top()) * 0.25);
     let view = ERect::from_min_max(
-        preview_body.min + vec2(margin, margin),
+        tool_bar.left_bottom() + vec2(margin, margin),
         pos2((preview_body.right() - margin).max(preview_body.left() + margin + 1.0), (filmstrip.top() - margin).max(preview_body.top() + margin + 1.0)),
     );
     let foot = ERect::from_min_max(pos2(screen.left(), screen.bottom() - footer_h), screen.max);
-    Layout { title, body, preview_body, view, right, rail, nav, filmstrip, foot }
+    Layout { title, body, preview_body, tool_bar, view, right, rail, nav, filmstrip, foot }
 }
 
 /// Leaves the open-time dialog's photo without closing the dialog: the next photo is on its way and takes the dialog
@@ -1480,17 +1503,18 @@ pub(crate) fn draw_shell(ctx: &egui::Context, name: &str) {
         let (full, _) = ui.allocate_exact_size(screen.size(), Sense::click_and_drag());
         let painter = ui.painter().clone();
         painter.rect_filled(full, 0.0, t.chrome);
+        painter.rect_filled(lay.preview_body, 0.0, t.canvas);
         painter.rect_filled(lay.title, 0.0, t.dock);
-        painter.line_segment([lay.title.left_bottom(), lay.title.right_bottom()], Stroke::new(1.0, t.separator));
+        painter.rect_filled(ERect::from_min_max(pos2(lay.title.left(), lay.title.bottom() - 1.0), lay.title.max), 0.0, t.separator);
         painter.rect_filled(lay.view, 0.0, t.canvas);
         super::camera_raw_filmstrip_ui::draw(ui, lay.filmstrip);
         // The photo's name is not known in the moment between leaving one photo and being asked for the next: no title
         // rather than the wrong one.
         if !name.is_empty() {
             painter.text(
-                lay.title.center(),
+                pos2(lay.preview_body.center().x, lay.title.center().y),
                 Align2::CENTER_CENTER,
-                crate::i18n::fmt(tl!("Camera Raw ({name})"), &[("name", name)]),
+                photo_header_label(name, None),
                 FontId::proportional(13.0),
                 t.text,
             );
@@ -1539,6 +1563,7 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
     let screen = ctx.content_rect();
     let design = super::camera_raw_design::get(ctx);
     super::camera_raw_design::apply_preview(ctx, &design, &mut app.ui.camera_raw_workspace);
+    super::camera_raw_tool_bar_ui::sync(ctx, &app.ui.camera_raw_workspace, &app.ui.camera_raw_scope);
     let current_display = app.session.active().and_then(|st| app.session.color.canvas_display(&st.doc).ok());
     let mut action: Option<&str> = None;
     // The photo was left for the next one, which has not taken the dialog over yet: nothing in the dialog may act
@@ -1568,16 +1593,23 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
         if d.dirty {
             d.render(ctx);
         }
-        super::camera_raw_filmstrip_ui::seed(ctx, &d.layer_name, d.tex.as_ref());
+        super::camera_raw_filmstrip_ui::seed(ctx, &d.document_name, d.tex.as_ref());
         let (full, _) = ui.allocate_exact_size(screen.size(), Sense::click());
         let painter = ui.painter().clone();
         painter.rect_filled(full, 0.0, t.chrome);
         let lay = layout(ctx, screen, own_window);
+        painter.rect_filled(lay.preview_body, 0.0, t.canvas);
         let title = lay.title;
         {
             painter.rect_filled(title, 0.0, t.dock);
-            painter.line_segment([title.left_bottom(), title.right_bottom()], Stroke::new(1.0, t.separator));
-            painter.text(title.center(), Align2::CENTER_CENTER, d.window_title(), FontId::proportional(13.0), t.text);
+            painter.rect_filled(ERect::from_min_max(pos2(title.left(), title.bottom() - 1.0), title.max), 0.0, t.separator);
+            painter.with_clip_rect(ERect::from_min_max(title.min, pos2(lay.preview_body.right(), title.bottom()))).text(
+                pos2(lay.preview_body.center().x, title.center().y),
+                Align2::CENTER_CENTER,
+                d.header_label(),
+                FontId::proportional(13.0),
+                t.text,
+            );
         }
         let ok_label = if d.target == Target::OpenRaw { tl!("Open") } else { tl!("OK") };
         let scope = &mut app.ui.camera_raw_scope;
@@ -1624,6 +1656,7 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
             bars::pick_white_balance(&preview, d, r, &response, &mut workspace.white_balance_tool, panning);
         }
         super::camera_raw_workspace_ui::grid(&preview, r, view, workspace);
+        ui.add_enabled_ui(!busy_visible, |ui| super::camera_raw_tool_bar_ui::draw(ui, lay.tool_bar, workspace, scope));
         if let Some(region) = zoom_box {
             preview.painter().rect_stroke(region, 0.0, egui::Stroke::new(1.0, t.accent), egui::StrokeKind::Inside);
         }
@@ -1899,21 +1932,29 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
         let foot = lay.foot;
         painter.rect_filled(foot, 0.0, t.dock);
         painter.line_segment([foot.left_top(), foot.right_top()], Stroke::new(1.0, t.separator));
-        let mut fu = ui.new_child(egui::UiBuilder::new().max_rect(foot.shrink2(vec2(16.0, 9.0))).layout(egui::Layout::right_to_left(egui::Align::Center)));
-        if busy_visible {
-            fu.disable();
-        }
-        if let Some(role) = widgets::dialog_buttons(
-            &mut fu,
-            &[
-                widgets::DialogButton::new(widgets::ButtonRole::Default, ok_label, 90.0),
-                widgets::DialogButton::new(widgets::ButtonRole::Cancel, tl!("Cancel"), 90.0),
-            ],
-        ) {
-            action = Some(if role == widgets::ButtonRole::Default { "ok" } else { "cancel" });
-        }
-        if d.target == Target::OpenRaw && widgets::secondary_button(&mut fu, tl!("Done"), 70.0).clicked() {
-            action = Some("done");
+        if app.raw_workspace.enabled || d.target == Target::OpenRaw {
+            ui.add_enabled_ui(!busy_visible, |ui| {
+                if let Some(selected) = super::camera_raw_footer_ui::draw(ui, foot) {
+                    action = Some(selected);
+                }
+            });
+        } else {
+            let mut fu = ui.new_child(egui::UiBuilder::new().max_rect(foot.shrink2(vec2(16.0, 9.0))).layout(egui::Layout::right_to_left(egui::Align::Center)));
+            if busy_visible {
+                fu.disable();
+            }
+            if let Some(role) = widgets::dialog_buttons(
+                &mut fu,
+                &[
+                    widgets::DialogButton::new(widgets::ButtonRole::Default, ok_label, 90.0),
+                    widgets::DialogButton::new(widgets::ButtonRole::Cancel, tl!("Cancel"), 90.0),
+                ],
+            ) {
+                action = Some(if role == widgets::ButtonRole::Default { "ok" } else { "cancel" });
+            }
+            if d.target == Target::OpenRaw && widgets::secondary_button(&mut fu, tl!("Done"), 70.0).clicked() {
+                action = Some("done");
+            }
         }
         if !ctx.input(|i| i.pointer.primary_down()) {
             let origin = d.edit_origin.take().unwrap_or(frame_origin);

@@ -1,0 +1,666 @@
+{
+  "scope": "Current reference 17: fixed full-client registration, all shared chrome and matching dock regions. No complete parity pass; data-dependent image/metadata values differ.",
+  "sourceSha256": "ec56463ea082d39f3d11ed7aa71a65f7ac53c9dbeaf5d5ee5bc7551ba1732c26",
+  "sourceImage": 17,
+  "sourceRect": [
+    2,
+    60,
+    4350,
+    2662
+  ],
+  "normalizedWidth": 2174,
+  "elements": [
+    {
+      "id": "header-background",
+      "rect": [
+        0,
+        0,
+        2174,
+        39
+      ]
+    },
+    {
+      "id": "filename-camera-heading",
+      "rect": [
+        650,
+        6,
+        1214,
+        35
+      ]
+    },
+    {
+      "id": "header-save",
+      "rect": [
+        2035,
+        5,
+        2063,
+        34
+      ]
+    },
+    {
+      "id": "header-preferences",
+      "rect": [
+        2069,
+        5,
+        2097,
+        34
+      ]
+    },
+    {
+      "id": "header-tutorial",
+      "rect": [
+        2109,
+        5,
+        2137,
+        34
+      ]
+    },
+    {
+      "id": "header-fullscreen",
+      "rect": [
+        2141,
+        5,
+        2169,
+        34
+      ]
+    },
+    {
+      "id": "preview-canvas",
+      "rect": [
+        0,
+        39,
+        1864,
+        1201
+      ]
+    },
+    {
+      "id": "fit-button",
+      "rect": [
+        0,
+        1201,
+        90,
+        1241
+      ]
+    },
+    {
+      "id": "zoom-value",
+      "rect": [
+        90,
+        1201,
+        150,
+        1241
+      ]
+    },
+    {
+      "id": "zoom-menu",
+      "rect": [
+        150,
+        1201,
+        168,
+        1241
+      ]
+    },
+    {
+      "id": "filmstrip-toggle",
+      "rect": [
+        176,
+        1201,
+        216,
+        1241
+      ]
+    },
+    {
+      "id": "sort-menu",
+      "rect": [
+        245,
+        1201,
+        281,
+        1241
+      ]
+    },
+    {
+      "id": "filter-menu",
+      "rect": [
+        281,
+        1201,
+        317,
+        1241
+      ]
+    },
+    {
+      "id": "review-container",
+      "rect": [
+        857,
+        1201,
+        1007,
+        1241
+      ]
+    },
+    {
+      "id": "reject-control",
+      "rect": [
+        977,
+        1201,
+        1007,
+        1241
+      ]
+    },
+    {
+      "id": "before-control",
+      "rect": [
+        1780,
+        1201,
+        1819,
+        1241
+      ]
+    },
+    {
+      "id": "comparison-control",
+      "rect": [
+        1821,
+        1201,
+        1864,
+        1241
+      ]
+    },
+    {
+      "id": "footer-background",
+      "rect": [
+        0,
+        1241,
+        2174,
+        1301
+      ]
+    },
+    {
+      "id": "workflow-link",
+      "rect": [
+        630,
+        1250,
+        1234,
+        1294
+      ]
+    },
+    {
+      "id": "footer-cancel",
+      "rect": [
+        1890,
+        1250,
+        1968,
+        1294
+      ]
+    },
+    {
+      "id": "footer-done",
+      "rect": [
+        1970,
+        1250,
+        2050,
+        1294
+      ]
+    },
+    {
+      "id": "footer-open",
+      "rect": [
+        2050,
+        1250,
+        2155,
+        1294
+      ]
+    },
+    {
+      "id": "footer-open-menu",
+      "rect": [
+        2155,
+        1250,
+        2174,
+        1294
+      ]
+    },
+    {
+      "id": "rating-star-1",
+      "rect": [
+        864,
+        1209,
+        886,
+        1233
+      ]
+    },
+    {
+      "id": "rating-star-2",
+      "rect": [
+        886,
+        1209,
+        908,
+        1233
+      ]
+    },
+    {
+      "id": "rating-star-3",
+      "rect": [
+        908,
+        1209,
+        930,
+        1233
+      ]
+    },
+    {
+      "id": "rating-star-4",
+      "rect": [
+        930,
+        1209,
+        952,
+        1233
+      ]
+    },
+    {
+      "id": "rating-star-5",
+      "rect": [
+        952,
+        1209,
+        974,
+        1233
+      ]
+    },
+    {
+      "id": "rail-edit",
+      "rect": [
+        2134,
+        39,
+        2174,
+        76
+      ]
+    },
+    {
+      "id": "rail-crop",
+      "rect": [
+        2134,
+        76,
+        2174,
+        110
+      ]
+    },
+    {
+      "id": "rail-remove",
+      "rect": [
+        2134,
+        110,
+        2174,
+        144
+      ]
+    },
+    {
+      "id": "rail-masking",
+      "rect": [
+        2134,
+        144,
+        2174,
+        178
+      ]
+    },
+    {
+      "id": "rail-red-eye",
+      "rect": [
+        2134,
+        178,
+        2174,
+        212
+      ]
+    },
+    {
+      "id": "rail-snapshots",
+      "rect": [
+        2134,
+        212,
+        2174,
+        246
+      ]
+    },
+    {
+      "id": "rail-presets",
+      "rect": [
+        2134,
+        246,
+        2174,
+        280
+      ]
+    },
+    {
+      "id": "rail-previous-settings",
+      "rect": [
+        2134,
+        280,
+        2174,
+        314
+      ]
+    },
+    {
+      "id": "rail-settings-menu",
+      "rect": [
+        2134,
+        314,
+        2174,
+        344
+      ]
+    },
+    {
+      "id": "rail-info",
+      "rect": [
+        2134,
+        1050,
+        2174,
+        1088
+      ]
+    },
+    {
+      "id": "rail-zoom",
+      "rect": [
+        2134,
+        1092,
+        2174,
+        1128
+      ]
+    },
+    {
+      "id": "rail-hand",
+      "rect": [
+        2134,
+        1126,
+        2174,
+        1164
+      ]
+    },
+    {
+      "id": "rail-sampler",
+      "rect": [
+        2134,
+        1166,
+        2174,
+        1204
+      ]
+    },
+    {
+      "id": "rail-grid",
+      "rect": [
+        2134,
+        1200,
+        2174,
+        1238
+      ]
+    },
+    {
+      "id": "grid-bar",
+      "rect": [
+        0,
+        39,
+        1864,
+        79
+      ]
+    },
+    {
+      "id": "grid-size-label",
+      "rect": [
+        760,
+        48,
+        820,
+        70
+      ]
+    },
+    {
+      "id": "grid-size-slider",
+      "rect": [
+        815,
+        48,
+        920,
+        70
+      ]
+    },
+    {
+      "id": "grid-opacity-label",
+      "rect": [
+        946,
+        48,
+        1005,
+        70
+      ]
+    },
+    {
+      "id": "grid-opacity-slider",
+      "rect": [
+        1001,
+        48,
+        1106,
+        70
+      ]
+    },
+    {
+      "id": "grid-close",
+      "rect": [
+        1834,
+        48,
+        1858,
+        70
+      ]
+    },
+    {
+      "id": "image-grid-overlay",
+      "rect": [
+        300,
+        135,
+        1560,
+        1145
+      ],
+      "notes": "Photo dependent; inspect spacing/opacity/clipping separately from RGB content."
+    },
+    {
+      "id": "dock-histogram",
+      "rect": [
+        1864,
+        39,
+        2134,
+        161
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-shadow-clipping-indicator",
+      "rect": [
+        1864,
+        39,
+        1884,
+        58
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-highlight-clipping-indicator",
+      "rect": [
+        2114,
+        39,
+        2134,
+        58
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-metadata-divider",
+      "rect": [
+        1864,
+        160,
+        2134,
+        165
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-metadata-iso",
+      "rect": [
+        1880,
+        167,
+        1934,
+        185
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-metadata-lens",
+      "rect": [
+        1939,
+        167,
+        2024,
+        185
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-metadata-aperture",
+      "rect": [
+        2039,
+        167,
+        2064,
+        185
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-metadata-shutter",
+      "rect": [
+        2074,
+        167,
+        2124,
+        185
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-info-top-divider",
+      "rect": [
+        1864,
+        186,
+        2134,
+        190
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-camera-card",
+      "rect": [
+        1878,
+        202,
+        2107,
+        256
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-camera-model",
+      "rect": [
+        1889,
+        211,
+        2029,
+        226
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-dimensions-and-size",
+      "rect": [
+        1889,
+        229,
+        2054,
+        249
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-file-kind-badge",
+      "rect": [
+        2060,
+        230,
+        2099,
+        251
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-capture-date-heading",
+      "rect": [
+        1883,
+        272,
+        1992,
+        288
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-capture-date-value",
+      "rect": [
+        1883,
+        291,
+        2044,
+        308
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-file-name-heading",
+      "rect": [
+        1883,
+        324,
+        1987,
+        341
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-file-name-value",
+      "rect": [
+        1883,
+        344,
+        2064,
+        361
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-credentials-divider",
+      "rect": [
+        1864,
+        381,
+        2119,
+        386
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-credentials-heading",
+      "rect": [
+        1883,
+        398,
+        2022,
+        418
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-credentials-glyph",
+      "rect": [
+        2021,
+        397,
+        2040,
+        418
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    },
+    {
+      "id": "dock-credentials-status",
+      "rect": [
+        1883,
+        422,
+        2014,
+        439
+      ],
+      "notes": "Seeded from the same-size measured dock; verify against this screenshot independently. Metadata/photo values differ."
+    }
+  ]
+}

@@ -942,8 +942,8 @@
         4368,
         2670
       ],
-      "scope": "Full window: alternate Info/preview state",
-      "status": "full-window native capture and overlay generated; shared chrome/image bounds/filmstrip remain incomplete",
+      "scope": "Full window: Color Sampler toolbar and Info",
+      "status": "matching full-client native state captured; element differences remain; not a parity pass",
       "elements": [
         {
           "name": "Full window reference 17 preview scale and margins",
@@ -967,10 +967,11 @@
         }
       ],
       "legacyImage": 17,
-      "nativeCaptureState": "info",
+      "nativeCaptureState": "sampler-info full-client",
       "coverageAudit": "Alternate Info full-window scale/margins capture and shared chrome audit pending.",
       "previousImage": 18,
-      "currentValidation": "Pending matching native capture and individual audit; no parity pass."
+      "currentValidation": "69 regions measured at one fixed client registration; repeated/nested regions and content differences are not unique-feature completion.",
+      "fullWindowRegionsFile": "full-window-16-element-regions.json"
     },
     {
       "image": 17,
@@ -981,7 +982,7 @@
         2666
       ],
       "scope": "Full window: grid overlay and Info",
-      "status": "full-window native capture and overlay generated; shared chrome/image bounds/filmstrip remain incomplete",
+      "status": "matching full-client native state captured; element differences remain; not a parity pass",
       "elements": [
         {
           "name": "Full window grid spacing/opacity/clipping",
@@ -1004,7 +1005,8 @@
       "nativeCaptureState": "grid-info",
       "coverageAudit": "Grid/Info view state supported; matching full-window capture and element audit pending.",
       "previousImage": 17,
-      "currentValidation": "Pending matching native capture and individual audit; no parity pass."
+      "currentValidation": "70 regions measured at one fixed client registration; repeated/nested regions and content differences are not unique-feature completion.",
+      "fullWindowRegionsFile": "full-window-17-element-regions.json"
     },
     {
       "image": 18,
@@ -1015,7 +1017,7 @@
         2666
       ],
       "scope": "Full window: Info, preview, header, navigation and footer",
-      "status": "full-window native capture and overlay generated; shared chrome/image bounds/filmstrip remain incomplete",
+      "status": "matching full-client native state captured; element differences remain; not a parity pass",
       "elements": [
         {
           "name": "Full window title/header/actions",
@@ -1054,7 +1056,8 @@
       "nativeCaptureState": "info",
       "coverageAudit": "Info dock exists; matching full-window dimensions and shared chrome audit pending.",
       "previousImage": 16,
-      "currentValidation": "Pending matching native capture and individual audit; no parity pass."
+      "currentValidation": "63 regions measured at one fixed client registration; repeated/nested regions and content differences are not unique-feature completion.",
+      "fullWindowRegionsFile": "full-window-18-element-regions.json"
     },
     {
       "image": 19,
@@ -1065,7 +1068,7 @@
         2662
       ],
       "scope": "Full window: Edit panels, filmstrip and navigation",
-      "status": "full-window native capture and overlay generated; shared chrome/image bounds/filmstrip remain incomplete",
+      "status": "matching full-client native state captured; element differences remain; not a parity pass",
       "elements": [
         {
           "name": "Full window Light/Color/Effects/Curve scroll state",
@@ -1088,7 +1091,7 @@
       "nativeCaptureState": "edit",
       "coverageAudit": "Edit view supported; reference filmstrip and full-window navigation/footer remain incomplete.",
       "previousImage": 19,
-      "currentValidation": "24 individual regions measured against the current native build; remaining differences and shared elements pending.",
+      "currentValidation": "180 regions measured at one fixed client registration; repeated/nested regions and content differences are not unique-feature completion.",
       "elementRegionsFile": "filmstrip-element-regions.json",
       "filmstripMeasurement": {
         "clientOrigin": [
@@ -1122,7 +1125,8 @@
           2174,
           1301
         ]
-      }
+      },
+      "fullWindowRegionsFile": "full-window-19-element-regions.json"
     }
   ],
   "nativeSupportAuthorized": true,
@@ -1179,7 +1183,7 @@
     "scope": "Native offscreen validation; no desktop/hosted promotion."
   },
   "filmstripSourceValidation": {
-    "status": "validated development candidate; both PS1 launchers select it by default; ordinary editor preserved",
+    "status": "Previous validated development candidate preserved; latest launcher selection is recorded in sharedUiSourceValidation.",
     "hostRegressionTests": "137 passed",
     "nativeLibraryTests": "3113 passed, 13 ignored",
     "desktopTests": "146 passed",
@@ -1226,5 +1230,42 @@
     "nativeIntegrationTests": "15 passed",
     "fullEditorHandoff": "passed: native Save, 4 grid notifications, closed-tab reopen, hidden start, five themes, no navigation hides",
     "twoCameraRawRecipeFlow": "passed: Nikon D3 and Z6; recipe export equals live; saved document continuation and native Save"
+  },
+  "sharedUiSourceValidation": {
+    "status": "validated isolated development candidate; no release build or push",
+    "editorBuild": "acr-glyphs",
+    "executableSha256": "7b32c91a72a25865e513bd7807114aa1a42326712490b2c3c59cc5ef934eb841",
+    "snapshotSha256": "8d7fd3d8f8553a047ee622712ed81034fbd4cc2ac8e641074900e3182d66d215",
+    "layoutSha256": "02c06e447bd7c721767fa45c1971e3b19c402c5ff3669264ef5b85514602d697",
+    "tokensSha256": "e5b25751aaf2766b9b9ce196b62689b0a507d8042c708f40912fa0b903d0d7e9",
+    "nativeLibraryTests": "3116 passed, 13 ignored",
+    "nativeIntegrationTests": "41 passed",
+    "desktopTests": "146 passed",
+    "hostRegressionTests": "137 passed",
+    "overlayAuditorTests": "6 passed",
+    "clippyAllTargets": "passed",
+    "layers": "30 crates passed",
+    "wasm": "24 checks passed",
+    "bodyCaptureStates": 14,
+    "fullClientCaptureStates": 4,
+    "bodyRegionsMeasured": 447,
+    "fullClientRegionsMeasured": 358,
+    "filmstripRegionsMeasured": 24,
+    "regionsMeasuredIncludingOverlap": 829,
+    "referencesWithoutIndividualAudits": [
+      6,
+      7,
+      10,
+      11,
+      13,
+      14,
+      15
+    ],
+    "fullEveryElementParityVerified": false,
+    "hostedSynthetic": "Final candidate passed native navigation, reviews, collapse, split pixels, fullscreen, theme and clean close/save/shutdown",
+    "hostedRaw": "Passed Nikon RAW recipe restore and lifecycle before reverting only the unsuccessful star stroke trial",
+    "fullEditorHandoff": "Passed Save, four grid notifications, closed-tab reopen, hidden start, five themes and cleanup",
+    "twoCameraRecipeFlow": "Passed Nikon D3/Z6 recipe/export equality, edit persistence, document continuation and native Save; timing ceiling not certified",
+    "remaining": "All 19 remain open for every-element parity. Missing screens 6,7,10,11,13,14,15; shared rail, workflow output settings, unsupported Open Object, grid rendering, typography and glyphs remain incomplete."
   }
 }

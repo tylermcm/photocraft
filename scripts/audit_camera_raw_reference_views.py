@@ -15,15 +15,15 @@ from pathlib import Path
 # Legacy numbering is descriptive only; resolve references by their source hash.
 # Multiple sections from a single image share the same dock scale/translation.
 REGISTRATIONS = [
-    (1, "info", "info", [2260, 64, 2800, 948]),
-    (4, "edit", "edit", [2260, 64, 2800, 2470]),
-    (5, "curve-mixer", "curve-mixer", [2260, 520, 2800, 2578]),
-    (6, "grading", "grading-detail", [2260, 520, 2800, 1506]),
-    (6, "detail", "grading-detail", [2260, 1506, 2800, 1996]),
-    (7, "lower-panels", "lens-calibration", [2260, 520, 2800, 2612]),
-    (8, "collapsed", "collapsed", [2260, 64, 2800, 1324]),
-    (12, "red-eye", "red-eye", [2260, 360, 2800, 740]),
-    (13, "snapshots", "snapshots", [2260, 64, 2800, 548]),
+    (1, "info", "info", [2260, 78, 2800, 962]),
+    (4, "edit", "edit", [2260, 78, 2800, 2484]),
+    (5, "curve-mixer", "curve-mixer", [2260, 534, 2800, 2592]),
+    (6, "grading", "grading-detail", [2260, 534, 2800, 1520]),
+    (6, "detail", "grading-detail", [2260, 1520, 2800, 2010]),
+    (7, "lower-panels", "lens-calibration", [2260, 534, 2800, 2626]),
+    (8, "collapsed", "collapsed", [2260, 78, 2800, 1338]),
+    (12, "red-eye", "red-eye", [2260, 374, 2800, 754]),
+    (13, "snapshots", "snapshots", [2260, 78, 2800, 562]),
 ]
 
 

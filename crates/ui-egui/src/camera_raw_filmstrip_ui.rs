@@ -9,6 +9,8 @@ use serde_json::{Value, json};
 
 use crate::theme::Tokens;
 
+mod icons;
+
 const MAX_ITEMS: usize = 32;
 const MAX_TOTAL: usize = 1_000_000;
 const MAX_EDGE: usize = 384;
@@ -370,19 +372,12 @@ pub(crate) fn navigation(ui: &mut Ui, navigation: Rect, before: &mut bool) {
     ui.add_space(31.0);
     for (kind, label) in [("sort", tl!("Sort")), ("filter", tl!("Filter"))] {
         let (rect, response) = ui.allocate_exact_size(vec2(36.0, 38.0), Sense::click());
-        let c = rect.center() - if kind == "filter" { vec2(2.5, 0.0) } else { vec2(0.0, 0.0) };
+        let c = rect.center() + if kind == "filter" { vec2(-3.0, 0.0) } else { vec2(0.5, 0.0) };
         if kind == "sort" {
-            for (y, width) in [(-6.0, 16.0), (0.0, 12.0), (6.0, 8.0)] {
-                ui.painter().line_segment([c + vec2(-8.0, y), c + vec2(-8.0 + width, y)], Stroke::new(2.0, t.icon));
-            }
+            icons::sort(ui.painter(), c, t.icon);
         } else {
-            ui.painter().add(egui::Shape::convex_polygon(
-                vec![c + vec2(-8.0, -8.0), c + vec2(8.0, -8.0), c + vec2(2.0, 0.0), c + vec2(2.0, 6.0), c + vec2(-2.0, 9.0), c + vec2(-2.0, 0.0)],
-                t.icon,
-                Stroke::NONE,
-            ));
+            icons::filter(ui.painter(), c, t.icon);
         }
-        ui.painter().add(egui::Shape::convex_polygon(vec![c + vec2(7.0, 9.0), c + vec2(9.0, 9.0), c + vec2(9.0, 7.0)], t.icon, Stroke::NONE));
         let response = response.on_hover_text(label);
         egui::Popup::menu(&response).show(|ui| {
             let options: &[&str] =
@@ -417,21 +412,16 @@ pub(crate) fn navigation(ui: &mut Ui, navigation: Rect, before: &mut bool) {
     }
     let x = review.right() - 30.0;
     ui.painter().line_segment([pos2(x, review.top()), pos2(x, review.bottom())], Stroke::new(0.5, t.separator));
-    let c = pos2(review.right() - 15.0, review.center().y);
-    let icon = Rect::from_center_size(c + vec2(0.0, 1.0), vec2(7.0, 9.0));
-    ui.painter().rect_stroke(icon, 0.0, Stroke::new(1.0, t.filmstrip_review_icon), StrokeKind::Inside);
-    ui.painter().line_segment([c + vec2(-5.0, -5.0), c + vec2(5.0, -5.0)], Stroke::new(1.0, t.filmstrip_review_icon));
-    for dx in [-1.5, 1.5] {
-        ui.painter().line_segment([c + vec2(dx, -2.0), c + vec2(dx, 4.0)], Stroke::new(0.7, t.filmstrip_review_icon));
-    }
+    let c = pos2(review.right() - 15.5, review.center().y);
+    icons::reject(ui.painter(), c, t.filmstrip_review_icon);
     if ui.interact(Rect::from_center_size(c, vec2(30.0, 24.0)), ui.id().with("acr-reject"), Sense::click()).on_hover_text(tl!("Toggle rejected")).clicked() {
         let current = s.current;
         request(&mut s, current, "reject", Value::Null);
     }
-    let rect = Rect::from_center_size(pos2(navigation.right() - 69.5, navigation.center().y), vec2(36.0, 38.0));
+    let rect = Rect::from_center_size(pos2(navigation.right() - 69.0, navigation.center().y), vec2(36.0, 38.0));
     let c = rect.center();
     ui.painter().rect_filled(Rect::from_center_size(c, vec2(12.0, 12.0)), 0.0, t.icon);
-    ui.painter().add(egui::Shape::convex_polygon(vec![c + vec2(7.0, 9.0), c + vec2(10.0, 9.0), c + vec2(10.0, 6.0)], t.icon, Stroke::NONE));
+    icons::corner(ui.painter(), c, t.icon);
     if ui.interact(rect, ui.id().with("acr-before"), Sense::click()).on_hover_text(tl!("Before (Y)")).clicked() {
         *before = !*before;
         s.comparison_split = false;
@@ -440,10 +430,7 @@ pub(crate) fn navigation(ui: &mut Ui, navigation: Rect, before: &mut bool) {
     ui.painter().line_segment([pos2(x, navigation.top() + 6.0), pos2(x, navigation.bottom() - 6.0)], Stroke::new(1.0, t.separator));
     let rect = Rect::from_center_size(pos2(navigation.right() - 29.5, navigation.center().y), vec2(36.0, 38.0));
     let ink = if s.comparison_split { t.icon } else { t.filmstrip_review_icon };
-    for offset in [-4.0, 4.0] {
-        ui.painter().rect_stroke(Rect::from_center_size(rect.center() + vec2(offset, 0.0), vec2(6.0, 14.0)), 0.0, Stroke::new(1.5, ink), StrokeKind::Inside);
-    }
-    ui.painter().line_segment([rect.center() + vec2(0.0, -9.0), rect.center() + vec2(0.0, 9.0)], Stroke::new(1.0, ink));
+    icons::comparison(ui.painter(), rect.center(), ink);
     if ui.interact(rect, ui.id().with("acr-before-after-layout"), Sense::click()).on_hover_text(tl!("Before / After")).clicked() {
         s.comparison_split = !s.comparison_split;
         *before = false;
@@ -480,15 +467,7 @@ fn toggle(ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
     let (rect, response) = ui.allocate_exact_size(vec2(38.0, ui.available_height().clamp(20.0, 40.0)), Sense::click());
     let center = rect.center();
-    let icon = Rect::from_center_size(center - vec2(0.0, 2.5), vec2(17.5, 9.0));
-    ui.painter().rect_filled(icon, 0.0, t.icon);
-    let direction = if s.collapsed { -1.0 } else { 1.0 };
-    ui.painter().line_segment([center + vec2(-3.0, -2.0 * direction), center + vec2(0.0, 1.0 * direction)], Stroke::new(1.5, t.dock));
-    ui.painter().line_segment([center + vec2(0.0, 1.0 * direction), center + vec2(3.0, -2.0 * direction)], Stroke::new(1.5, t.dock));
-    for offset in [-6.0, -2.0, 2.0, 6.0] {
-        ui.painter().rect_filled(Rect::from_center_size(center + vec2(offset, 7.0), vec2(2.0, 2.0)), 0.0, t.icon);
-    }
-    ui.painter().add(egui::Shape::convex_polygon(vec![center + vec2(10.0, 9.0), center + vec2(13.0, 9.0), center + vec2(13.0, 6.0)], t.icon, Stroke::NONE));
+    icons::toggle(ui.painter(), center, s.collapsed, t.icon, t.dock);
     if response.clicked() {
         s.collapsed = !s.collapsed;
         store(ui.ctx(), s);

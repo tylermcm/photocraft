@@ -5,7 +5,7 @@ use photocraft_ui_egui::{PhotocraftApp, camera_raw_ui, control, i18n, theme::The
 use serde_json::json;
 
 #[test]
-fn all_seven_languages_render_camera_raw_and_switch_without_resetting_view_or_filter() {
+fn all_languages_render_camera_raw_and_switch_without_resetting_view_or_filter() {
     let _gpu = photocraft_testkit::gpu_lock();
     for lang in i18n::Lang::all() {
         let gpu = std::env::var_os("PHOTOCRAFT_LOCALE_SNAPSHOTS").is_some();
@@ -41,9 +41,10 @@ fn all_seven_languages_render_camera_raw_and_switch_without_resetting_view_or_fi
         h.run_steps(12);
         h.get_by_role_and_label(Role::Button, tr("Color")).click();
         h.run_steps(12);
-        for label in ["White Balance: As Shot", "Temperature", "Tint", "Vibrance", "Saturation"] {
+        for label in ["White balance", "Temperature", "Tint", "Vibrance", "Saturation"] {
             assert!(h.query_by_label(tr(label)).is_some(), "{}: {label}", lang.code());
         }
+        assert!(h.query_by_value(tr("As Shot")).is_some(), "{}: white balance selected value", lang.code());
         h.get_by_role_and_label(Role::Button, tr("Color")).click();
         h.run_steps(12);
         h.get_by_role_and_label(Role::Button, tr("Color Mixer")).click();
@@ -59,13 +60,19 @@ fn all_seven_languages_render_camera_raw_and_switch_without_resetting_view_or_fi
         for (section, labels) in [
             ("Effects", vec!["Texture", "Clarity", "Dehaze", "Vignette", "Grain", "Roughness"]),
             ("Curve", vec!["Highlights", "Lights", "Darks", "Shadows"]),
-            ("Color Grading", vec!["Midtones", "Global", "Luminance", "Blending", "Balance"]),
+            ("Color Grading", vec!["Midtones", "Global", "Blending", "Balance"]),
             ("Detail", vec!["Sharpening", "Masking", "Manual Noise Reduction", "Luminance Detail", "Color Detail"]),
         ] {
             h.get_by_role_and_label(Role::Button, tr(section)).click();
             h.run_steps(12);
             for label in labels {
                 assert!(h.query_all_by_label(tr(label)).next().is_some(), "{}: {section}/{label}", lang.code());
+            }
+            if section == "Color Grading" {
+                for wheel in ["Shadows", "Midtones", "Highlights"] {
+                    let label = format!("{} {}", tr(wheel), tr("Luminance"));
+                    assert!(h.query_by_label(&label).is_some(), "{}: {label}", lang.code());
+                }
             }
             // Detail is also the sharpening slider label; target the section button.
             h.get_by_role_and_label(Role::Button, tr(section)).click();

@@ -582,8 +582,9 @@ pub(crate) fn preview(ui: &mut egui::Ui, d: &mut CameraRawDialog, view: &mut Cam
                 if let Some(i) = near {
                     view.samplers.remove(i);
                 }
-            } else if near.is_none() && view.samplers.len() < MAX_SAMPLERS {
+            } else if (view.new_sampler || near.is_none()) && view.samplers.len() < MAX_SAMPLERS {
                 view.samplers.push(p);
+                view.new_sampler = false;
             }
         }
         if resp.drag_started() {

@@ -1,8 +1,8 @@
 param(
     [string]$Image,
     [switch]$Build,
-    [ValidateSet('acr18', 'acr-filmstrip')]
-    [string]$EditorBuild = 'acr-filmstrip'
+    [ValidateSet('acr18', 'acr-filmstrip', 'acr-glyphs')]
+    [string]$EditorBuild = 'acr-glyphs'
 )
 $ErrorActionPreference = 'Stop'
 $previewRoot = Split-Path -Parent $PSScriptRoot

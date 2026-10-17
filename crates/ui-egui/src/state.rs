@@ -35,6 +35,8 @@ pub struct CameraRawScopeState {
     pub highlights: bool,
     pub lab: bool,
     pub sampler_tool: bool,
+    /// Arm one new point even when the next click is near an existing sampler.
+    pub new_sampler: bool,
     pub samplers: Vec<[f32; 2]>,
     pub vectorscope: bool,
     pub selected_region: bool,

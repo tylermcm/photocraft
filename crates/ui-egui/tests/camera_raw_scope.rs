@@ -746,6 +746,9 @@ fn alt_drag_diagnostics_follow_light_tone_sliders_not_same_named_ones() {
     assert_eq!(during["overlayRevision"], during["previewRevision"], "Light tone sliders drive Alt diagnostics");
 
     let mut h = fixture(ThemeKind::Pro);
+    // Keep the graph, region ramp and parametric sliders inside the viewport.
+    // This test checks diagnostic ownership rather than scrolling behavior.
+    h.set_size(vec2(1200.0, 1200.0));
     h.state_mut().ui.camera_raw_workspace.curve_channel = photocraft_ui_egui::camera_raw_workspace_ui::CurveChannel::Parametric;
     h.get_by_label(tr("Light")).click();
     h.run_steps(12);

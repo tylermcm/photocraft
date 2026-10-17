@@ -1,7 +1,7 @@
 {
   "panelWidth": 270,
   "railWidth": 40,
-  "headerHeight": 32,
+  "headerHeight": 39,
   "navigationHeight": 40,
   "footerHeight": 60,
   "previewMargin": 8,
@@ -110,5 +110,23 @@
     "showFilenames": false,
     "showRatings": false
   },
-  "navigationFontSize": 13
+  "navigationFontSize": 13,
+  "navigationZoomTextOffsetX": 0.75,
+  "navigationTextOffsetY": 0.5,
+  "gridBarHeight": 40,
+  "samplerBarHeight": 55,
+  "toolBarFontSize": 11,
+  "footer": {
+    "buttonHeight": 28,
+    "rightPadding": 18,
+    "gap": 14,
+    "openWidth": 82,
+    "doneWidth": 70,
+    "cancelWidth": 76,
+    "splitWidth": 23,
+    "offsetY": -1,
+    "fontSize": 13,
+    "openTextOffsetX": 2,
+    "cancelTextOffsetX": 1.5
+  }
 }

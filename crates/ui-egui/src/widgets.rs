@@ -949,6 +949,11 @@ pub fn slider(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive<f32>
     slider_with(ui, value, range, gradient, RowGestures::default(), None)
 }
 
+/// A track without a numeric row, reusing the same gestures and measured handle.
+pub(crate) fn slider_styled(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive<f32>, style: SliderRowStyle) -> Response {
+    slider_with(ui, value, range, None, RowGestures::default(), Some(style))
+}
+
 /// Photoshop's gestures on a slider row beyond click and drag, as measured on Color Balance in
 /// Photoshop 25.4 (Image › Adjustments dialog and the adjustment layer's Properties). Shift, Ctrl
 /// and Alt change nothing about clicks, double-clicks or drags; the wheel takes ten steps with

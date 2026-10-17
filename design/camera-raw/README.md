@@ -477,3 +477,49 @@ pipeline95549: snapshot,14-state capture,447-region audit and focused tests plus
 clippy/layers/wasm;80389 is its queued check,53266 is the preceding padding gate
 pipeline. Active handles and exact source hashes are in active-work.json. Full
 19-reference/every-element parity remains incomplete. No hosted promotion or push.
+
+
+### Full-client registration and shared chrome (2026-10-17)
+
+The current attachment inventory resolves all references by SHA256. New
+`full-window-reference-views.json` records fixed client crops for current images
+16–19, excluding the macOS caption/shadow. Each is 4348×2602 physical pixels,
+rendered natively at 2174×1301 points, scale 2. The auditor applies only a common
+translation and uniform scale; it never realigns individual controls. Matching
+view states and unchanged image parameters/document identity are checked.
+
+Run `scripts/audit_camera_raw_full_windows.py --references PRIVATE_DIR --output
+NEW_PRIVATE_DIR` after building the snapshot example. It renders a synthetic
+6880×5504 image and delivers a bounded synthetic thumbnail through ui.filmstrip.
+Reference photos, fonts and application assets are never copied into the product.
+The 358 regions include repeated/nested controls; inherited dock boxes are seeds
+requiring independent scrutiny. Measurement is not a parity pass.
+
+The header now uses the observed 39-point height and centers the actual filename
+and available camera model over the preview column. Grid and Color Sampler bars
+are 40 and 55 points respectively. Grid controls edit existing density/opacity
+view state. Sampler Reset, New Sample and Close modify only probe/view state.
+The workspace footer returns Cancel, Done and Open to existing transaction paths;
+the generic filter footer remains separate. Open Object is explicitly disabled
+until RAW-backed object continuation exists. Workflow output settings remain open.
+
+Refined filmstrip paths improve toggle, sort/filter, reject, Before and split
+comparison differences in fixed overlays. A thicker star trial increased error
+and was discarded. Font/glyph differences, grid rendering/slider values, full rail,
+Save Options, Preferences, Presets, settings menu, Masking, Crop/Expand, Remove,
+workflow settings and all unsupported behavior remain in the all-19 goal.
+
+
+Shared-chrome validation: 3116 library tests (13 ignored), 41 native Camera Raw
+integration tests including all supported languages, 146 desktop tests, 137 host
+regressions and six Python auditor checks pass. All-target clippy, layers (30
+crates) and wasm (24 checks) pass. Live hosted synthetic/RAW, full-editor handoff
+and two-camera recipe checks pass. Final synthetic lifecycle and all 18 native
+captures were repeated after discarding the unsuccessful star trial. The RAW
+recipe timing run is diagnostic and does not certify the timing ceiling.
+
+Both PS1 test launchers select the isolated `acr-glyphs` development build.
+`-EditorBuild acr-filmstrip` selects the preserved previous checkpoint; `acr18`
+remains available. The ordinary debug bytes/timestamp and release are preserved.
+Latest exact hashes and incomplete coverage are in `sharedUiSourceValidation` in
+reference-inventory.json. No release packaging or push.

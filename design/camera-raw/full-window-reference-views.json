@@ -1,0 +1,114 @@
+{
+  "registration": "Client only: macOS title bar and window shadow excluded. No per-element realignment.",
+  "references": [
+    {
+      "image": 16,
+      "sha256": "7e1eaf2905791c2ed2162c1bc4e9fa417e93fdd4945c426697473f0a589eb5c6",
+      "sourceRect": [
+        12,
+        66,
+        4360,
+        2668
+      ],
+      "regions": "full-window-16-element-regions.json",
+      "workspace": {
+        "info": true,
+        "grid": false,
+        "panels": {
+          "open": [],
+          "single": false
+        }
+      },
+      "scope": {
+        "samplerTool": true
+      },
+      "navigation": {
+        "zoom": 0.36555232558139533
+      },
+      "collapsed": true
+    },
+    {
+      "image": 17,
+      "sha256": "ec56463ea082d39f3d11ed7aa71a65f7ac53c9dbeaf5d5ee5bc7551ba1732c26",
+      "sourceRect": [
+        2,
+        60,
+        4350,
+        2662
+      ],
+      "regions": "full-window-17-element-regions.json",
+      "workspace": {
+        "info": true,
+        "grid": true,
+        "panels": {
+          "open": [],
+          "single": false
+        }
+      },
+      "scope": {
+        "samplerTool": false
+      },
+      "navigation": {
+        "zoom": 0.36555232558139533
+      },
+      "collapsed": true
+    },
+    {
+      "image": 18,
+      "sha256": "f94e07acb792772e3bffc9e99cc4ee4360ab1f3f8dd930b8b098dcdd0a9e8647",
+      "sourceRect": [
+        12,
+        58,
+        4360,
+        2660
+      ],
+      "regions": "full-window-18-element-regions.json",
+      "workspace": {
+        "info": true,
+        "grid": false,
+        "panels": {
+          "open": [],
+          "single": false
+        }
+      },
+      "scope": {
+        "samplerTool": false
+      },
+      "navigation": {
+        "zoom": 0.36555232558139533
+      },
+      "collapsed": true
+    },
+    {
+      "image": 19,
+      "sha256": "b00a3fe24ede39382f5827adf014592d5b19eed0925b6ecfc7ad55024cb67340",
+      "sourceRect": [
+        6,
+        58,
+        4354,
+        2660
+      ],
+      "regions": "full-window-19-element-regions.json",
+      "workspace": {
+        "info": false,
+        "grid": false,
+        "panels": {
+          "open": [
+            "Light",
+            "Color",
+            "Effects",
+            "Curve"
+          ],
+          "single": false
+        }
+      },
+      "scope": {
+        "samplerTool": false
+      },
+      "navigation": {
+        "zoom": "fit"
+      },
+      "collapsed": false
+    }
+  ]
+}
