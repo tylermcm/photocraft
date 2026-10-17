@@ -43,6 +43,7 @@ pub enum WorkspaceTab {
     #[default]
     Edit,
     Snapshots,
+    Presets,
     RedEye,
 }
 
@@ -74,6 +75,7 @@ pub struct WorkspaceState {
     pub noise_details: bool,
     pub info: bool,
     pub settings_menu: bool,
+    pub preset_groups: Vec<String>,
     pub grid: bool,
     pub grid_size: f32,
     pub grid_opacity: f32,
@@ -97,6 +99,7 @@ impl Default for WorkspaceState {
             noise_details: false,
             info: false,
             settings_menu: false,
+            preset_groups: Vec::new(),
             grid: false,
             grid_size: 40.0,
             grid_opacity: 0.35,
@@ -278,6 +281,13 @@ pub(crate) fn prepare(current: &WorkspaceState, value: &Value) -> Result<Workspa
         || next.panels.single && next.panels.open.len() > 1
     {
         return Err("Camera Raw panels must be unique supported names (at most one in single-panel mode)".into());
+    }
+    let groups = &crate::camera_raw_ui::presets::GROUPS;
+    if next.preset_groups.len() > groups.len()
+        || next.preset_groups.iter().any(|v| !groups.contains(&v.as_str()))
+        || next.preset_groups.iter().enumerate().any(|(i, v)| next.preset_groups.iter().take(i).any(|old| old == v))
+    {
+        return Err("Camera Raw presetGroups must contain unique observed category names".into());
     }
     if next.bypass_section.as_deref().is_some_and(|name| !supports_bypass(name)) {
         return Err("Camera Raw bypassSection must name an implemented processing section".into());
@@ -709,6 +719,30 @@ pub(crate) fn rail(ui: &mut Ui, rect: Rect, state: &mut WorkspaceState, navigati
     if icons::button(&mut snapshots_ui, "layers", 28.0, !state.info && state.tab == WorkspaceTab::Snapshots, tl!("Snapshots")).clicked() {
         state.info = false;
         state.tab = WorkspaceTab::Snapshots;
+    }
+    let presets_rect = Rect::from_center_size(pos2(rect.center().x, rect.top() + design.snapshots_rail_offset + 36.0), vec2(28.0, 28.0));
+    let r = ui.interact(presets_rect, ui.id().with("camera-raw-presets-tab"), Sense::click());
+    r.widget_info(|| {
+        egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, ui.is_enabled(), !state.info && state.tab == WorkspaceTab::Presets, tl!("Presets"))
+    });
+    if !state.info && state.tab == WorkspaceTab::Presets {
+        ui.painter().rect_filled(presets_rect.shrink(1.0), t.radius_sm, t.field);
+        ui.painter().rect_stroke(presets_rect.shrink(1.0), t.radius_sm, Stroke::new(1.0, t.field_border), egui::StrokeKind::Inside);
+    }
+    let c = presets_rect.center();
+    ui.painter().circle_filled(c + vec2(-3.5, 3.0), 6.0, t.icon);
+    ui.painter().circle_stroke(c + vec2(3.0, -3.0), 6.0, Stroke::new(1.0, t.icon));
+    for y in -3..=3 {
+        for x in -3..=3 {
+            let delta = vec2(x as f32 * 1.5, y as f32 * 1.5);
+            if delta.length_sq() < 28.0 {
+                ui.painter().circle_filled(c + vec2(3.0, -3.0) + delta, 0.35, t.icon);
+            }
+        }
+    }
+    if r.clicked() {
+        state.info = false;
+        state.tab = WorkspaceTab::Presets;
     }
     let menu_rect = Rect::from_center_size(pos2(rect.center().x, rect.top() + 308.0), vec2(28.0, 28.0));
     let menu_response = ui.interact(menu_rect, ui.id().with("acr-more"), Sense::click());

@@ -27,6 +27,7 @@ STATES = {
     "info": (None, {"info": True}),
     "grid-info": (None, {"info": True, "grid": True}),
     "snapshots": (None, {"tab": "snapshots"}),
+    "presets": (None, {"tab": "presets", "presetGroups": []}),
 }
 
 

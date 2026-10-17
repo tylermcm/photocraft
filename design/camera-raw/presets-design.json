@@ -1,0 +1,21 @@
+{
+  "headingHeight": 39,
+  "amountHeight": 50,
+  "rowHeight": 24,
+  "fontSize": 11,
+  "listTopPadding": 6,
+  "labelInset": 23,
+  "disclosureInset": 12,
+  "groupGaps": [
+    17,
+    17,
+    16
+  ],
+  "headingInset": 18,
+  "headingOffsetY": -1,
+  "labelOffsetY": 0.5,
+  "disclosureOffsetY": 1.5,
+  "scrollbarWidth": 11,
+  "scrollbarInnerMargin": 2,
+  "scrollbarOuterMargin": 1.5
+}

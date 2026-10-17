@@ -1,5 +1,5 @@
 {
-  "scope": "Reference14 Presets: visible header, amount, group disclosures/labels and scrollbar. Native tab missing; no preset recipes are copied and no comparison is claimed.",
+  "scope": "Current reference10 Presets: observed header, disabled amount, 38 category disclosures/labels and scrollbar. Native category view implemented; proprietary recipes absent, unavailable actions disabled, no full behavior parity claimed.",
   "normalizedWidth": 540,
   "sourceRect": [
     26,
@@ -8,7 +8,7 @@
     2532
   ],
   "sourceSha256": "b7cb9423e42a7debc9902a4784161ae4bce306ff026847ea5c801bc51b2a883b",
-  "sourceImage": 14,
+  "sourceImage": 10,
   "elements": [
     {
       "id": "heading",

@@ -1295,6 +1295,7 @@ mod tests {
             include_str!("../camera_raw_workspace_ui.rs"),
             include_str!("../camera_raw_info_ui.rs"),
             include_str!("../camera_raw_snapshots_ui.rs"),
+            include_str!("../camera_raw_presets_ui.rs"),
             include_str!("../camera_raw_settings_menu_ui.rs"),
             include_str!("../camera_raw_tool_panels_ui.rs"),
             include_str!("../camera_raw_curve_regions_ui.rs"),

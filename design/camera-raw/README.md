@@ -523,3 +523,39 @@ Both PS1 test launchers select the isolated `acr-glyphs` development build.
 remains available. The ordinary debug bytes/timestamp and release are preserved.
 Latest exact hashes and incomplete coverage are in `sharedUiSourceValidation` in
 reference-inventory.json. No release packaging or push.
+
+### Settings menu and Presets work (2026-10-17)
+
+The validated development launcher now selects `acr-settings-menu` (source
+`28153cbb`). The user accepted its measured menu comparison as close enough;
+further pixel refinement was not requested. Exact hashes and validation are in
+`settingsMenuSourceValidation`. Earlier binaries and their compatible frozen
+design JSON remain available. The all-19/every-element goal is still incomplete.
+
+The Presets tab is a separate, unpromoted source change. Its measured JSON fragment
+is `presets-design.json`, with scrollbar colors in `presets-tokens.json`;
+`scripts/audit_camera_raw_presets.py` merges these into private copies of the main
+layout and tokens and renders the actual Rust view offscreen.
+This keeps the validated launcher's older design schema usable while the new tab
+is being checked. The tab and expanded categories are serialized workspace view
+state (`tab: "presets"`, `presetGroups: [...]`). Disclosures support pointer and
+keyboard input and never alter recipes or document history. Preset management
+remains disabled; the rail's existing global settings menu remains usable while
+the tab is open. All 38 visible group titles come from the supplied
+reference, not a copied preset library. Proprietary recipes are absent: expanded
+groups say Not available, and Create Preset and Amount remain disabled. No Adobe
+recipe compatibility or complete Presets behavior is claimed. Its native scroll
+area uses a consistently wide handle and track rather than the generic thin
+overlay bar; the style is scoped to this tab, with colors supplied by Tokens.
+
+Reference10's 88 named regions are compared at one dock scale/translation. The
+source crop `[26,432,566,2532]` and candidate crop `[2260,374,2800,2474]` have equal
+540x2100 dimensions at scale2. The viewport is1440x1297; no reference image or
+font is copied into the product. Scrollbar thumb/content extent, typography and
+unavailable processing remain explicit differences. Promotion requires the native
+and hosted gates; this source tab is not in the currently selected editor binary.
+
+The user is gaming. Agent-driven visible launches must stay on the secondary
+physical monitor without activation. Continue offscreen until a guarded live run
+can verify that behavior. The monitor helper's offscreen checks do not constitute
+live focus-preservation certification.

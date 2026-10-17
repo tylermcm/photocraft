@@ -34,6 +34,9 @@ mod extra_panels;
 mod info;
 #[path = "camera_raw_settings_menu_ui.rs"]
 mod settings_menu;
+#[path = "camera_raw_presets_ui.rs"]
+pub(crate) mod presets;
+pub use presets::Design as PresetsDesign;
 #[path = "camera_raw_snapshots_ui.rs"]
 mod snapshots;
 pub use settings_menu::{Design as SettingsMenuDesign, State as SettingsMenuState};
@@ -1708,7 +1711,11 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
         super::camera_raw_scope_ui::header(&mut props, d, scope);
         bars::metadata(&mut props, &d.camera_info);
         let show_snapshots = !workspace.info && workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Snapshots;
-        if show_snapshots {
+        let show_presets = !workspace.info && workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Presets;
+        if show_presets {
+            presets::scrollbar_style(&mut props);
+            presets::header(&mut props);
+        } else if show_snapshots {
             snapshots::header(&mut props, &mut d.snapshots, &d.params);
         } else if !workspace.info && workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Edit {
             bars::edit_bar(&mut props, d, false);
@@ -1717,10 +1724,15 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
         d.scope.alt_tone = None;
         let _ = ctx.data_mut(|data| data.remove_temp::<String>(super::camera_raw_workspace_ui::held_bypass_id()));
         let mut dirty = false;
-        egui::ScrollArea::vertical().id_salt("camera-raw-props").auto_shrink([false, false]).show(&mut props, |ui| {
+        egui::ScrollArea::vertical().id_salt(if show_presets { "camera-raw-presets" } else { "camera-raw-props" }).auto_shrink([false, false]).show(&mut props, |ui| {
             if workspace.info {
                 ui.set_width(right.width());
                 info::show(ui, d);
+                return;
+            }
+            if show_presets {
+                ui.set_width((right.width() - design.settings_scrollbar_gutter).max(1.0));
+                presets::list(ui, workspace);
                 return;
             }
             if show_snapshots {

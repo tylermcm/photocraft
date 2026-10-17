@@ -555,55 +555,55 @@
         2670
       ],
       "scope": "Presets: groups, favorites and preset list",
-      "status": "incomplete; Presets tab and observed preset groups not implemented in Camera Raw.",
+      "status": "Native preset-category browser implemented and audited offscreen in 88 uniformly registered regions; recipes/management remain unavailable. Not a full parity pass.",
       "elements": [
         {
           "name": "Presets title/create/overflow",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed 88-region native comparison; remaining visual or capability differences are explicit, not a parity pass."
         },
         {
           "name": "None/amount slider/value",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed 88-region native comparison; remaining visual or capability differences are explicit, not a parity pass."
         },
         {
           "name": "Preset scrollbar",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed 88-region native comparison; remaining visual or capability differences are explicit, not a parity pass."
         },
         {
           "name": "Adaptive Portrait/Sky/Subject/Landscape/Blur Background",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed 88-region native comparison; remaining visual or capability differences are explicit, not a parity pass."
         },
         {
           "name": "Portraits Deep Skin/Medium Skin/Light Skin/Black & White/Edgy/Group",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed 88-region native comparison; remaining visual or capability differences are explicit, not a parity pass."
         },
         {
           "name": "Auto+: Retro",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed 88-region native comparison; remaining visual or capability differences are explicit, not a parity pass."
         },
         {
           "name": "Seasons Spring/Summer/Autumn/Winter",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed 88-region native comparison; remaining visual or capability differences are explicit, not a parity pass."
         },
         {
           "name": "Style Black & White/Cinematic/Cinematic II/Film-Inspired/Futuristic/Vintage",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed 88-region native comparison; remaining visual or capability differences are explicit, not a parity pass."
         },
         {
           "name": "Subject Concerts/Food/Landscape/Lifestyle/Travel/Travel II/Urban Architecture",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed 88-region native comparison; remaining visual or capability differences are explicit, not a parity pass."
         },
         {
           "name": "Video Creative",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed 88-region native comparison; remaining visual or capability differences are explicit, not a parity pass."
         },
         {
           "name": "Color/Creative/B&W/Portraits/Defaults/Curve/Grain/Optics groups",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed 88-region native comparison; remaining visual or capability differences are explicit, not a parity pass."
         },
         {
           "name": "Group disclosure triangles/separators",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed 88-region native comparison; remaining visual or capability differences are explicit, not a parity pass."
         }
       ],
       "sharedElements": [
@@ -614,13 +614,13 @@
         "Footer buttons and split Open control"
       ],
       "legacyImage": 5,
-      "nativeCaptureState": null,
-      "coverageAudit": "Presets tab and observed preset groups not implemented in Camera Raw.",
+      "nativeCaptureState": "presets",
+      "coverageAudit": "Observed header, amount, 38 category disclosures/labels, separators and scrollbar compared. Shared rail/chrome still need complete matching-view validation.",
       "previousImage": 14,
       "elementRegionsFile": "presets-element-regions.json",
       "plannedElementCount": 88,
-      "lastIndividualPixelAudit": "Specification measured from reference; native view is not implemented/captured, so no individual comparison or parity pass.",
-      "currentValidation": "Pending matching native capture and individual audit; no parity pass."
+      "lastIndividualPixelAudit": "presets-v4: 88 regions, fixed 540x2100 registration; 50-percent overlay and absolute difference inspected. Mean of region RGB means5.973; scrollbar14.286. No per-element realignment.",
+      "currentValidation": "Unpromoted source; 3118 library tests/13ignored and51 Camera Raw integrations pass; clippy/layers30/wasm24 pass. Desktop build and hosted validation pending."
     },
     {
       "image": 11,
@@ -1306,5 +1306,48 @@
     "fullEveryElementParityVerified": false,
     "remaining": "Save Options, Preferences, Presets, Masking, Crop and Remove matching views; all unsupported menu operations and remaining elements across all 19 references.",
     "launchConstraint": "User is gaming: future agent-driven GUI launches must stay on secondary monitor and never activate. Helper has offscreen regression coverage; live focus preservation is not certified. No new GUI launches after this instruction."
+  },
+  "presetsSourceValidation": {
+    "status": "unpromoted Rust/JSON source; native offscreen verification passed; no new desktop executable promoted",
+    "sourceBaseCommit": "28153cbb",
+    "snapshotSha256": "69c9aacc8c908da1b08c787889f86bcddb6021dffaf758d71d68655d5bd174bb",
+    "privateLayoutSha256": "4ce0258e8ffbef43e600f237116110bf4bc1eba731f2b06b31535febfd98c00c",
+    "privateTokensSha256": "1459093c9f1170620613602abc82be66a865d29dc55153f1ddeb3d1147d45e56",
+    "designFragmentSha256": "8b935a75ee6c27f5ed4150ba49572bb578d135a195aaea3ea0742e548912a0a5",
+    "tokenFragmentSha256": "19a186eea601ddc5ab990237b35ba19ac7da912f52b25407cd7cd66c4d3b4b01",
+    "bodyRegionsMeasured": 88,
+    "versionedRegionsMeasuredIncludingOverlap": 958,
+    "captureStates": [
+      "collapsed",
+      "presets"
+    ],
+    "sourceImage": 10,
+    "candidateRect": [
+      2260,
+      374,
+      2800,
+      2474
+    ],
+    "photoIdentityEqualBetweenViews": true,
+    "originalUnchanged": true,
+    "nativeLibraryTests": "3118 passed, 13 ignored",
+    "cameraRawIntegrationTests": "51 passed including two Presets tests",
+    "clippyAllTargets": "passed",
+    "layers": "30 crates passed",
+    "wasm": "24 checks passed",
+    "overlayAuditorTests": "6 passed",
+    "meanOfRegionRgbMeans": 5.973104360817385,
+    "scrollbarMeanRgbDifference": 14.286155143662187,
+    "referencesWithoutIndividualAudits": [
+      6,
+      7,
+      13,
+      14,
+      15
+    ],
+    "fullEveryElementParityVerified": false,
+    "remaining": "All 19 still need complete every-element verification. Preset recipes, creation and management remain absent/disabled. Typography, glyphs, scrollbar extent and shared rail/chrome remain differences. Catalog titles are retained verbatim; title localization is not certified. Desktop/hosted validation remains pending.",
+    "selectedEditorBuildUnchanged": "acr-settings-menu",
+    "launchConstraint": "No visible windows launched; secondary-monitor/no-activation constraint remains in force. Live focus preservation remains unverified."
   }
 }
