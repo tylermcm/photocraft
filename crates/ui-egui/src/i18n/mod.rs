@@ -1297,6 +1297,7 @@ mod tests {
             include_str!("../camera_raw_snapshots_ui.rs"),
             include_str!("../camera_raw_presets_ui.rs"),
             include_str!("../camera_raw_settings_menu_ui.rs"),
+            include_str!("../camera_raw_save_options_ui.rs"),
             include_str!("../camera_raw_tool_panels_ui.rs"),
             include_str!("../camera_raw_curve_regions_ui.rs"),
         ];
@@ -1308,6 +1309,12 @@ mod tests {
                     labels.insert(tail.split('"').next().unwrap());
                 }
             }
+        }
+        let save_options: serde_json::Value = serde_json::from_str(include_str!("../../../../design/camera-raw/save-options-design.json")).unwrap();
+        for element in save_options["elements"].as_array().unwrap() {
+            let text=element["label"].as_str().unwrap_or("");
+            let key=text.trim_end_matches(':').trim_end_matches('…');
+            if !key.is_empty() && key!="+" { labels.insert(key); }
         }
         let bands = sources[0].split("const BANDS:").nth(1).unwrap().split(" = ").nth(1).unwrap().split(';').next().unwrap();
         for band in bands.split('"').skip(1).step_by(2) {

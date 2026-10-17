@@ -348,61 +348,61 @@
         2256
       ],
       "scope": "Save Options dialog: naming, format, metadata, sizing and sharpening",
-      "status": "incomplete; Matching Camera Raw Save Options dialog not implemented/captured.",
+      "status": "Native Save Options modal implemented as an export-configuration draft; 104 regions audited offscreen. DNG encoding, folder selection and credentials are unavailable; Save stays disabled. Not a full parity pass.",
       "elements": [
         {
           "name": "Save Options title/window frame",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed full-dialog native overlay; capability, context-data and visual differences remain, not a parity pass."
         },
         {
           "name": "Preset selector",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed full-dialog native overlay; capability, context-data and visual differences remain, not a parity pass."
         },
         {
           "name": "Destination selector/Select Folder/path",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed full-dialog native overlay; capability, context-data and visual differences remain, not a parity pass."
         },
         {
           "name": "File Naming document name and suffix rows/extension",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed full-dialog native overlay; capability, context-data and visual differences remain, not a parity pass."
         },
         {
           "name": "Format selector/compatibility/JPEG Preview",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed full-dialog native overlay; capability, context-data and visual differences remain, not a parity pass."
         },
         {
           "name": "Embed Fast Load Data/Lossy Compression/Embed Original Raw",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed full-dialog native overlay; capability, context-data and visual differences remain, not a parity pass."
         },
         {
           "name": "Content Credentials settings",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed full-dialog native overlay; capability, context-data and visual differences remain, not a parity pass."
         },
         {
           "name": "Color Space/bit depth/HDR",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed full-dialog native overlay; capability, context-data and visual differences remain, not a parity pass."
         },
         {
           "name": "Image Sizing dimensions/units/resolution",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed full-dialog native overlay; capability, context-data and visual differences remain, not a parity pass."
         },
         {
           "name": "Output Sharpening settings",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed full-dialog native overlay; capability, context-data and visual differences remain, not a parity pass."
         },
         {
           "name": "Save/Cancel buttons",
-          "status": "pending individual overlay verification"
+          "status": "Included in the fixed full-dialog native overlay; capability, context-data and visual differences remain, not a parity pass."
         }
       ],
       "legacyImage": 8,
-      "nativeCaptureState": null,
-      "coverageAudit": "Matching Camera Raw Save Options dialog not implemented/captured.",
+      "nativeCaptureState": "save-options",
+      "coverageAudit": "Complete measured dialog including naming, DNG settings, credentials, color, sizing and sharpening sections; differences retained.",
       "previousImage": 2,
       "elementRegionsFile": "save-options-element-regions.json",
       "plannedElementCount": 104,
-      "lastIndividualPixelAudit": "Planned individual region specification only; matching native screen missing.",
-      "currentValidation": "Pending matching native capture and individual audit; no parity pass."
+      "lastIndividualPixelAudit": "Private save-options-v2: 104 regions at one full-dialog 1574x2256 registration. Every ROI has candidate coverage. Mean of region RGB means8.856; dynamic path/name/account and unavailable capability differences are not masked.",
+      "currentValidation": "Unpromoted source:3120 library tests/13ignored,54 Camera Raw integrations, six auditor tests, clippy/layers30/wasm24 pass. Hosted validation pending."
     },
     {
       "image": 7,
@@ -1349,5 +1349,50 @@
     "remaining": "All 19 still need complete every-element verification. Preset recipes, creation and management remain absent/disabled. Typography, glyphs, scrollbar extent and shared rail/chrome remain differences. Catalog titles are retained verbatim; title localization is not certified. Desktop/hosted validation remains pending.",
     "selectedEditorBuildUnchanged": "acr-settings-menu",
     "launchConstraint": "No visible windows launched; secondary-monitor/no-activation constraint remains in force. Live focus preservation remains unverified."
+  },
+  "saveOptionsSourceValidation": {
+    "status": "unpromoted native Rust/JSON draft view; no desktop build or promotion",
+    "sourceBaseCommit": "c5d76df4",
+    "snapshotSha256": "c05abcf666e2545f316e6321bfd8983b2996c6cc9f19e4f99bef2f59fca944f5",
+    "privateLayoutSha256": "6fae93b6914663bc46e0dd2b61175a86e25ab4dc14f7477a16c0a1cd1d9b944f",
+    "privateTokensSha256": "5f7aca24cf6fc78a963b4521d45c480340ef7949271bc03e6d45985cfb022f3e",
+    "nativeWidgetDefinitions": 72,
+    "regionsMeasured": 104,
+    "versionedRegionsMeasuredIncludingOverlap": 1062,
+    "sourceImage": 6,
+    "candidateRect": [
+      653,
+      272,
+      2227,
+      2528
+    ],
+    "sourceRect": [
+      0,
+      0,
+      1574,
+      2256
+    ],
+    "photoIdentityEqualBetweenViews": true,
+    "originalFixtureUnchanged": true,
+    "nativeLibraryTests": "3120 passed,13 ignored",
+    "cameraRawIntegrationTests": "54 passed including three Save Options tests",
+    "smallViewport": "720x900: actual wheel scroll moves the content; Escape closes the draft and preserves Camera Raw",
+    "draftInteractions": "Menu entry, checkbox/Space, extension dropdown, Cancel rollback, mixed invalid request rejection, protected Paste/Y and Escape passed",
+    "localization": "Default descriptor labels and code labels have contextual/plain lookup coverage in all20 catalogs; not all-language pixel certification",
+    "clippyAllTargets": "passed after final test changes",
+    "layers": "30 crates passed",
+    "wasm": "24 checks passed",
+    "overlayAuditorTests": "6 passed",
+    "meanOfRegionRgbMeans": 8.855655689803719,
+    "fullEveryElementParityVerified": false,
+    "referencesWithoutIndividualAudits": [
+      7,
+      13,
+      14,
+      15
+    ],
+    "remaining": "All19 remain in every-element scope. DNG writer and complete export bindings, folder selection, credentials/account management, output settings, shared chrome, type/glyph/border differences and hosted validation remain incomplete. Current values use real document context rather than reference paths or account names.",
+    "selectedEditorBuildUnchanged": "acr-settings-menu",
+    "launchConstraint": "Entirely offscreen; no visible launches or focus-preservation claim."
   }
 }

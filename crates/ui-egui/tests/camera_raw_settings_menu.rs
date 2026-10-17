@@ -46,7 +46,6 @@ fn opening_dismissing_and_unavailable_rows_preserve_recipe_and_document() {
         "Paste Edit Settings",
         "Create Preset…",
         "Render to DNG",
-        "Save Image",
         "Update AI Settings",
     ] {
         assert!(h.get_by_role_and_label(Role::Button, label).accesskit_node().is_disabled(), "{label}");

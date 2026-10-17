@@ -1,0 +1,8 @@
+{
+  "camera_raw_dialog_title": "#414141",
+  "camera_raw_dialog_disabled": "#838383",
+  "camera_raw_dialog_radius": 11,
+  "camera_raw_action_radius": 18,
+  "camera_raw_dialog_check_fill": "#b3b3b3",
+  "camera_raw_dialog_check_border": "#808080"
+}

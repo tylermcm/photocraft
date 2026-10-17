@@ -3951,3 +3951,36 @@ cameraRaw	Not available	利用できません
 	Update DNG Previews…	DNG プレビューを更新…
 	Set Raw Defaults…	RAW 初期設定を指定…
 	AI Model Downloads…	AI モデルのダウンロード…
+cameraRaw	Adobe account name	Adobe アカウント名
+cameraRaw	Apply Content Credentials	コンテンツクレデンシャルを適用
+cameraRaw	Begin Numbering	開始番号
+cameraRaw	Camera Raw 16.0 and later	Camera Raw 16.0 以降
+cameraRaw	Color Space	カラースペース
+cameraRaw	Connected accounts	連携アカウント
+cameraRaw	Digital Negative	デジタルネガティブ
+cameraRaw	Document Name	ドキュメント名
+cameraRaw	Don't Enlarge	拡大しない
+cameraRaw	Edits and activity	編集内容とアクティビティ
+cameraRaw	Embed Fast Load Data	高速読み込みデータを埋め込む
+cameraRaw	Embed Original Raw File	元の Raw ファイルを埋め込む
+cameraRaw	Example	例
+cameraRaw	File Extension	ファイル拡張子
+cameraRaw	HDR Output	HDR 出力
+cameraRaw	Image Sizing	画像サイズ
+cameraRaw	Information to include	含める情報
+cameraRaw	Intent	マッチング方法
+cameraRaw	JPEG Preview	JPEG プレビュー
+cameraRaw	Manage	管理
+cameraRaw	Maximize Compatibility	互換性を優先
+cameraRaw	Medium Size	中サイズ
+cameraRaw	Output Sharpening	出力シャープ
+cameraRaw	Preserve Pixel Count	ピクセル数を保持
+cameraRaw	Publish to Content Credentials cloud	コンテンツクレデンシャルのクラウドに公開
+cameraRaw	Resize to Fit	サイズを変更して合わせる
+cameraRaw	Save Options	保存オプション
+cameraRaw	Save in Same Location	同じ場所に保存
+cameraRaw	Select Folder	フォルダーを選択
+cameraRaw	Sharpen For	シャープ対象
+cameraRaw	Space	スペース
+cameraRaw	Storage method	保存方法
+cameraRaw	Use Lossy Compression	非可逆圧縮を使用

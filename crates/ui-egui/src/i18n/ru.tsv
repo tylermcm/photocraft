@@ -3246,3 +3246,36 @@ cameraRaw	Not available	Недоступно
 	Update DNG Previews…	Обновить предпросмотры DNG…
 	Set Raw Defaults…	Задать настройки RAW по умолчанию…
 	AI Model Downloads…	Загрузка моделей ИИ…
+cameraRaw	Adobe account name	Имя учётной записи Adobe
+cameraRaw	Apply Content Credentials	Применить Content Credentials
+cameraRaw	Begin Numbering	Начать нумерацию
+cameraRaw	Camera Raw 16.0 and later	Camera Raw 16.0 и новее
+cameraRaw	Color Space	Цветовое пространство
+cameraRaw	Connected accounts	Подключённые учётные записи
+cameraRaw	Digital Negative	Цифровой негатив
+cameraRaw	Document Name	Имя документа
+cameraRaw	Don't Enlarge	Не увеличивать
+cameraRaw	Edits and activity	Правки и действия
+cameraRaw	Embed Fast Load Data	Встроить данные быстрой загрузки
+cameraRaw	Embed Original Raw File	Встроить исходный файл Raw
+cameraRaw	Example	Пример
+cameraRaw	File Extension	Расширение файла
+cameraRaw	HDR Output	Вывод HDR
+cameraRaw	Image Sizing	Размер изображения
+cameraRaw	Information to include	Включаемые сведения
+cameraRaw	Intent	Метод преобразования
+cameraRaw	JPEG Preview	Предпросмотр JPEG
+cameraRaw	Manage	Управление
+cameraRaw	Maximize Compatibility	Максимальная совместимость
+cameraRaw	Medium Size	Средний размер
+cameraRaw	Output Sharpening	Резкость при выводе
+cameraRaw	Preserve Pixel Count	Сохранить число пикселей
+cameraRaw	Publish to Content Credentials cloud	Опубликовать в облаке Content Credentials
+cameraRaw	Resize to Fit	Вписать в размер
+cameraRaw	Save Options	Параметры сохранения
+cameraRaw	Save in Same Location	Сохранить в том же расположении
+cameraRaw	Select Folder	Выбрать папку
+cameraRaw	Sharpen For	Повысить резкость для
+cameraRaw	Space	Пространство
+cameraRaw	Storage method	Способ хранения
+cameraRaw	Use Lossy Compression	Использовать сжатие с потерями

@@ -86,6 +86,7 @@ enum Action {
     Load,
     Save,
     SnapshotPicker,
+    SaveOptions,
 }
 
 fn item(ui: &mut Ui, rect: Rect, label: &str, shortcut: &str, enabled: bool, submenu: bool, d: &Design) -> egui::Response {
@@ -152,7 +153,7 @@ fn rows(ui: &mut Ui, rect: Rect, d: &Design, a: Availability, focus: &mut Option
             (tl!("Flatten AI Settings"), "", None, false, false),
             (tl!("Reset Flattened AI Settings"), "", None, false, false),
         ],
-        vec![(tl!("Save Image"), "", None, false, true)],
+        vec![(tl!("Save Image"), "", Some(Action::SaveOptions), true, true)],
         vec![(tl!("Render to DNG"), "", None, false, false)],
         vec![(tl!("Export Settings to XMP"), "", Some(Action::Save), true, false)],
         vec![(tl!("Update DNG Previews…"), "", None, false, false)],
@@ -313,6 +314,8 @@ fn apply(app: &mut PhotocraftApp, ctx: &egui::Context, params: CameraRaw) -> Res
 /// Transient menus cannot follow a closed/replaced photo into another dialog.
 pub(super) fn close_view(ui: &mut crate::state::UiState) {
     ui.camera_raw_workspace.settings_menu = false;
+    ui.camera_raw_workspace.save_options = false;
+    ui.camera_raw_save_options.close();
     ui.camera_raw_menu.rect = None;
     ui.camera_raw_menu.snapshot_picker = false;
     ui.camera_raw_menu.focus = None;
@@ -400,6 +403,7 @@ pub(super) fn show(app: &mut PhotocraftApp, ctx: &egui::Context, screen: Rect, a
         Some(Action::ResetDefault) => *action = Some("reset-default"),
         Some(Action::Load) => *action = Some("load"),
         Some(Action::Save) => *action = Some("save"),
+        Some(Action::SaveOptions) => app.ui.camera_raw_workspace.save_options=true,
         Some(Action::Previous) => {
             if let Some(p) = app.ui.camera_raw_menu.previous.clone() {
                 error = apply(app, ctx, p).err();

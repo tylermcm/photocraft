@@ -1454,6 +1454,7 @@ pub fn inspect(app: &PhotocraftApp, ctx: &egui::Context) -> Value {
         "jobs": crate::jobs_ui::inspect(app),
         "cameraRawDesign": super::camera_raw_design::get(ctx).as_ref(),
         "cameraRawMenu": &app.ui.camera_raw_menu,
+        "cameraRawSaveOptions": {"state": &app.ui.camera_raw_save_options, "canSave": false},
         "filmstrip": super::camera_raw_filmstrip_ui::inspect(ctx),
         "cameraRaw": app.camera_raw.as_ref().map(|d| d.describe(&app.ui.camera_raw_scope, &app.ui.camera_raw_preview, &app.ui.camera_raw_workspace)),
     })

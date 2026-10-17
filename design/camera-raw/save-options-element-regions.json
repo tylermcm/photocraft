@@ -1,5 +1,5 @@
 {
-  "scope": "Reference2 Save Options dialog: naming, format, metadata, sizing and sharpening. Planned visible UI regions only: native screen not yet captured. Dynamic paths/account/file values are not copied into product code. No individual comparison or parity pass.",
+  "scope": "Current reference6 Save Options: complete measured dialog registration, naming, DNG settings and disabled output sections. Dynamic document/folder/account values and unsupported capabilities remain explicit differences; no full parity pass.",
   "normalizedWidth": 1574,
   "sourceRect": [
     0,
@@ -8,7 +8,7 @@
     2256
   ],
   "sourceSha256": "8ee8a680fa61cd07b0dd7278c72bce46bf2972900a933e89f1e2307aa36c5243",
-  "sourceImage": 2,
+  "sourceImage": 6,
   "elements": [
     {
       "id": "window-frame",

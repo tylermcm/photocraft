@@ -559,3 +559,44 @@ The user is gaming. Agent-driven visible launches must stay on the secondary
 physical monitor without activation. Continue offscreen until a guarded live run
 can verify that behavior. The monitor helper's offscreen checks do not constitute
 live focus-preservation certification.
+
+
+### Save Options source view (2026-10-17)
+
+Save Image in the native settings menu now opens a real egui modal. The measured
+save-options-design.json contains72 widget definitions; save-options-tokens.json
+supplies its dedicated colors and theme radii. The auditor merges these into
+private layout/token copies, preserving the validated editor's existing schema.
+The component controls geometry and bounded labels; bindings are a fixed Rust
+enum, with no filesystem destinations or executable actions in the design.
+
+The export draft is typed/serialized in UiState.camera_raw_save_options. The
+control channel accepts ui.saveOptions for naming parts, extension case and DNG
+checkbox draft values; workspace.saveOptions opens/closes the view. Edits stage
+atomically and cannot modify photo parameters. Cancel/Escape discard the draft.
+Parent close/reopen clears transient modal state. The modal is explicitly layered
+above Camera Raw, sized to its measured height, and scrolls on smaller viewports.
+Clipboard recipe paste, Y and parent Escape do not act behind it.
+
+There is no DNG-writing path in the existing exporter. Save, folder selection and
+unsupported provider actions remain disabled, including if a design requests an
+enabled Save button. The shown format/compatibility/preview are observed readonly
+choices; no compatibility or successful output claim is made. Other output
+sections remain disabled in this observed DNG view. Filename/folder information
+comes from the actual document; reference personal/account/path values were not
+copied. Existing raster-export functionality is not an implementation of this
+Camera Raw draft's DNG output. Complete export bindings remain future work.
+
+Reference6 is compared in104 regions at one fixed full-dialog registration,
+1574x2256 pixels at scale2; no independent row alignment or dynamic-value masking.
+The final save-options-v2 comparison was inspected. Region-mean RGB error improves
+11.798 to8.856; type, glyphs, borders and capability/context-data differences remain.
+The two native captures retain identical document/photo/recipe identity and the
+synthetic original hash.3120 library tests/13ignored,54 Camera Raw integrations,
+six auditor tests, all-target clippy, layers30 and wasm24 pass. Descriptor/code
+labels have translation lookup coverage in all20 catalogs. Three new integration
+tests include real pointer/keyboard draft interaction, atomic invalid input,
+clipboard/Y/Escape ownership, Cancel rollback and actual720x900 wheel scrolling.
+No visible window, release build, push or new desktop promotion occurred. The
+PS1 default remains the validated acr-settings-menu editor. Missing individual
+matching-view audits remain7,13,14,15; every element across all19 remains in scope.
