@@ -3437,3 +3437,21 @@ cameraRaw	Not available	사용할 수 없음
 	Grid Size	격자 크기
 	New Sample	새 샘플
 	Open Object	개체 열기
+	Apply Previous Settings	이전 설정 적용
+	Apply Snapshot	스냅숏 적용
+	Apply Favorite Preset	즐겨찾는 사전 설정 적용
+	Create Snapshot…	스냅숏 만들기…
+	Create Preset…	사전 설정 만들기…
+	Copy Edit Settings	편집 설정 복사
+	Copy Selected Edit Settings…	선택한 편집 설정 복사…
+	Paste Edit Settings	편집 설정 붙여넣기
+	Update AI Settings	AI 설정 업데이트
+	Ignore Update AI Settings	AI 설정 업데이트 무시
+	Flatten AI Settings	AI 설정 병합
+	Reset Flattened AI Settings	병합된 AI 설정 재설정
+	Save Image	이미지 저장
+	Render to DNG	DNG로 렌더링
+	Export Settings to XMP	XMP로 설정 내보내기
+	Update DNG Previews…	DNG 미리 보기 업데이트…
+	Set Raw Defaults…	RAW 기본값 설정…
+	AI Model Downloads…	AI 모델 다운로드…

@@ -73,6 +73,7 @@ pub struct WorkspaceState {
     pub sharpening_details: bool,
     pub noise_details: bool,
     pub info: bool,
+    pub settings_menu: bool,
     pub grid: bool,
     pub grid_size: f32,
     pub grid_opacity: f32,
@@ -95,6 +96,7 @@ impl Default for WorkspaceState {
             sharpening_details: false,
             noise_details: false,
             info: false,
+            settings_menu: false,
             grid: false,
             grid_size: 40.0,
             grid_opacity: 0.35,
@@ -707,6 +709,15 @@ pub(crate) fn rail(ui: &mut Ui, rect: Rect, state: &mut WorkspaceState, navigati
     if icons::button(&mut snapshots_ui, "layers", 28.0, !state.info && state.tab == WorkspaceTab::Snapshots, tl!("Snapshots")).clicked() {
         state.info = false;
         state.tab = WorkspaceTab::Snapshots;
+    }
+    let menu_rect = Rect::from_center_size(pos2(rect.center().x, rect.top() + 308.0), vec2(28.0, 28.0));
+    let menu_response = ui.interact(menu_rect, ui.id().with("acr-more"), Sense::click());
+    menu_response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), tl!("Settings")));
+    for x in [-7.0, 0.0, 7.0] {
+        ui.painter().circle_filled(menu_rect.center() + vec2(x, 0.0), 2.0, t.icon);
+    }
+    if menu_response.clicked() {
+        state.settings_menu = !state.settings_menu;
     }
     let design = super::camera_raw_design::get(ui.ctx());
     let available = (rect.bottom() - design.rail_bottom_inset - top.min_rect().bottom() - 8.0).max(1.0);

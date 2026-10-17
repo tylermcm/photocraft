@@ -3263,3 +3263,21 @@ cameraRaw	Not available	Non disponible
 	Grid Size	Taille de la grille
 	New Sample	Nouvel échantillon
 	Open Object	Ouvrir l’objet
+	Apply Previous Settings	Appliquer les paramètres précédents
+	Apply Snapshot	Appliquer un instantané
+	Apply Favorite Preset	Appliquer le paramètre prédéfini favori
+	Create Snapshot…	Créer un instantané…
+	Create Preset…	Créer un paramètre prédéfini…
+	Copy Edit Settings	Copier les paramètres de modification
+	Copy Selected Edit Settings…	Copier les paramètres de modification sélectionnés…
+	Paste Edit Settings	Coller les paramètres de modification
+	Update AI Settings	Mettre à jour les paramètres d’IA
+	Ignore Update AI Settings	Ignorer la mise à jour des paramètres d’IA
+	Flatten AI Settings	Aplatir les paramètres d’IA
+	Reset Flattened AI Settings	Réinitialiser les paramètres d’IA aplatis
+	Save Image	Enregistrer l’image
+	Render to DNG	Rendu au format DNG
+	Export Settings to XMP	Exporter les paramètres au format XMP
+	Update DNG Previews…	Mettre à jour les aperçus DNG…
+	Set Raw Defaults…	Définir les paramètres RAW par défaut…
+	AI Model Downloads…	Téléchargements des modèles d’IA…

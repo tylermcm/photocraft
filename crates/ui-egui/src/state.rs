@@ -1304,6 +1304,8 @@ pub struct UiState {
     #[serde(default)]
     pub camera_raw_scope: CameraRawScopeState,
     #[serde(default)]
+    pub camera_raw_menu: crate::camera_raw_ui::SettingsMenuState,
+    #[serde(default)]
     pub camera_raw_preview: CameraRawPreviewState,
     #[serde(default)]
     pub camera_raw_workspace: crate::camera_raw_workspace_ui::WorkspaceState,
@@ -1397,6 +1399,7 @@ impl Default for UiState {
             slow_refresh_noticed: Vec::new(),
             chrome: Default::default(),
             camera_raw_scope: Default::default(),
+            camera_raw_menu: Default::default(),
             camera_raw_preview: Default::default(),
             camera_raw_workspace: Default::default(),
         }

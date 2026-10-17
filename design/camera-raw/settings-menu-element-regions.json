@@ -1,5 +1,5 @@
 {
-  "scope": "Reference15 Settings menu: enabled/disabled commands and submenus. Planned visible UI regions only: native screen not yet captured. Dynamic paths/account/file values are not copied into product code. No individual comparison or parity pass.",
+  "scope": "Current reference 11: complete settings-menu frame, rows, shortcut text, separators and submenu arrow. Fixed full-menu registration; unsupported actions remain disabled and no parity pass is claimed.",
   "normalizedWidth": 540,
   "sourceRect": [
     18,
@@ -8,7 +8,7 @@
     1282
   ],
   "sourceSha256": "1e5a324963e79927450295c8dfff646fb88a53c85d0c3bb0ef52e388fc4ca8fa",
-  "sourceImage": 15,
+  "sourceImage": 11,
   "elements": [
     {
       "id": "menu-frame",

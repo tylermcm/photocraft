@@ -631,7 +631,7 @@
         1356
       ],
       "scope": "Settings menu: enabled/disabled commands and submenus",
-      "status": "incomplete; Reference-wide settings menu has no matching captured state yet.",
+      "status": "Matching native menu audited in 41 regions; user accepted displayed comparison as close enough. Unsupported operations remain disabled; full behavior parity is incomplete.",
       "elements": [
         {
           "name": "Menu shell/radius/shadow",
@@ -697,7 +697,13 @@
       "elementRegionsFile": "settings-menu-element-regions.json",
       "plannedElementCount": 41,
       "lastIndividualPixelAudit": "Planned individual region specification only; matching native screen missing.",
-      "currentValidation": "Pending matching native capture and individual audit; no parity pass."
+      "currentValidation": "Pending matching native capture and individual audit; no parity pass.",
+      "visualAcceptance": {
+        "status": "Accepted as close enough by the user",
+        "scope": "Displayed settings-menu comparison",
+        "furtherPixelRefinementRequested": false,
+        "remaining": "Unimplemented operations remain disabled; other tools and tabs still need implementation."
+      }
     },
     {
       "image": 12,
@@ -1267,5 +1273,38 @@
     "fullEditorHandoff": "Passed Save, four grid notifications, closed-tab reopen, hidden start, five themes and cleanup",
     "twoCameraRecipeFlow": "Passed Nikon D3/Z6 recipe/export equality, edit persistence, document continuation and native Save; timing ceiling not certified",
     "remaining": "All 19 remain open for every-element parity. Missing screens 6,7,10,11,13,14,15; shared rail, workflow output settings, unsupported Open Object, grid rendering, typography and glyphs remain incomplete."
+  },
+  "settingsMenuSourceValidation": {
+    "editorBuild": "acr-settings-menu",
+    "status": "validated isolated development build; no release or push",
+    "executableSha256": "38112b97bd45d648edf0a9af7a03376381fd0cf416f20364f31e328232ab5d6f",
+    "snapshotSha256": "d66b09bd92f9523f1914842e4ed3815f282685545ce0260a77c58d3e75bbf3c9",
+    "layoutSha256": "b13b4f66d52df83b06633a071a7fd726611601e8a1f27d0030b05e21bde293c9",
+    "tokensSha256": "d94d6de0cb20d7f0b00be2d2317af93b76f07a2498a841d7090fb1e8e917e896",
+    "menuRegionsMeasured": 41,
+    "regionsMeasuredIncludingOverlap": 870,
+    "nativeLibraryTests": "3117 passed, 13 ignored",
+    "menuInteractionTests": "8 passed",
+    "nativeRegressionTests": "41 passed",
+    "desktopTests": "146 passed",
+    "hostRegressionTests": "137 passed",
+    "clippyAllTargets": "passed",
+    "layers": "30 crates passed",
+    "wasm": "24 checks passed",
+    "hostedSynthetic": "Passed native strip navigation, ratings/reject, before/after pixels, themes, resize, fullscreen and cleanup",
+    "hostedRaw": "Passed native strip lifecycle and RAW recipe restore",
+    "fullEditorHandoff": "Passed native Save, four grid notifications, closed-tab reopen, hidden start, five themes and cleanup",
+    "twoCameraRecipeFlow": "Passed D3/Z6 recipe export equality, saved document continuation and Save. Lightweight recipe harness logged missing thumbnail stub errors; native strip is independently covered by real MainWindow checks. Timing ceiling exceeded; not certified.",
+    "referencesWithoutIndividualAudits": [
+      6,
+      7,
+      10,
+      13,
+      14,
+      15
+    ],
+    "fullEveryElementParityVerified": false,
+    "remaining": "Save Options, Preferences, Presets, Masking, Crop and Remove matching views; all unsupported menu operations and remaining elements across all 19 references.",
+    "launchConstraint": "User is gaming: future agent-driven GUI launches must stay on secondary monitor and never activate. Helper has offscreen regression coverage; live focus preservation is not certified. No new GUI launches after this instruction."
   }
 }

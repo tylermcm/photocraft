@@ -32,8 +32,11 @@ mod curve_regions;
 mod extra_panels;
 #[path = "camera_raw_info_ui.rs"]
 mod info;
+#[path = "camera_raw_settings_menu_ui.rs"]
+mod settings_menu;
 #[path = "camera_raw_snapshots_ui.rs"]
 mod snapshots;
+pub use settings_menu::{Design as SettingsMenuDesign, State as SettingsMenuState};
 #[path = "camera_raw_tool_panels_ui.rs"]
 pub(crate) mod tool_panels;
 
@@ -639,6 +642,7 @@ pub fn on_redevelop_event(app: &mut PhotocraftApp, e: &photocraft_engine::jobs::
 /// Cancel: closes the dialog; for the open-time dialog also the document it was opening.
 pub(crate) fn cancel(app: &mut PhotocraftApp) {
     let Some(d) = app.camera_raw.take() else { return };
+    settings_menu::close_view(&mut app.ui);
     // Cancel hands the window to the full editor: its canvas draws from now on.
     app.raw_workspace.browsing = None;
     // In the Camera Raw workspace the host owns the document: Cancel only closes the dialog.
@@ -752,6 +756,7 @@ fn open_pixels(
     {
         app.ui.camera_raw_scope = view;
     }
+    settings_menu::close_view(&mut app.ui);
     app.ui.camera_raw_preview = Default::default();
     app.ui.camera_raw_scope.samplers.clear();
     // Keep Camera Raw compact on open; vectorscope is an opt-in context-menu view.
@@ -1109,6 +1114,7 @@ fn history_keys(d: &mut CameraRawDialog, ctx: &egui::Context) {
 
 pub(crate) fn commit(app: &mut PhotocraftApp) -> Result<Value, String> {
     let d = app.camera_raw.as_ref().ok_or(tl!("Camera Raw isn't open"))?;
+    let previous_params = d.params.clone();
     let result = match d.target {
         Target::NewFilter => {
             let mut p = d.command_params();
@@ -1142,6 +1148,8 @@ pub(crate) fn commit(app: &mut PhotocraftApp) -> Result<Value, String> {
             app.raw_workspace.browsing = None;
             if let Some(project) = raw.continue_from.clone() {
                 // The photo already has a full-editor document: go back to it, untouched.
+                app.ui.camera_raw_menu.previous = Some(params.clone());
+                settings_menu::close_view(&mut app.ui);
                 app.camera_raw = None;
                 app.raw_workspace.expect_continue = Some(raw.document);
                 return match crate::control_files::open_with_camera_raw(app, &project, true, None) {
@@ -1160,6 +1168,8 @@ pub(crate) fn commit(app: &mut PhotocraftApp) -> Result<Value, String> {
             commit_open_raw(app, &params, &raw)?
         }
     };
+    app.ui.camera_raw_menu.previous = Some(previous_params);
+    settings_menu::close_view(&mut app.ui);
     app.camera_raw = None;
     Ok(result)
 }
@@ -1213,6 +1223,8 @@ pub(crate) fn done(app: &mut PhotocraftApp) -> Result<Value, String> {
     if changed {
         crate::raw_recipe::persist(app, raw.document, &raw.targets, &params, &developed)?;
     }
+    app.ui.camera_raw_menu.previous = Some(params.clone());
+    settings_menu::close_view(&mut app.ui);
     app.camera_raw = None;
     Ok(json!({"open": false, "changed": changed, "recipe": crate::raw_recipe::to_json(&params)}))
 }
@@ -1566,6 +1578,8 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
     super::camera_raw_tool_bar_ui::sync(ctx, &app.ui.camera_raw_workspace, &app.ui.camera_raw_scope);
     let current_display = app.session.active().and_then(|st| app.session.color.canvas_display(&st.doc).ok());
     let mut action: Option<&str> = None;
+    let menu_was_open =
+        app.ui.camera_raw_workspace.settings_menu || app.ui.camera_raw_menu.snapshot_picker || app.camera_raw.as_ref().is_some_and(|d| d.snapshots.creating());
     // The photo was left for the next one, which has not taken the dialog over yet: nothing in the dialog may act
     // meanwhile, and if the swap takes more than a moment the controls dim to say so.
     let busy_since = app.camera_raw.as_ref().and_then(|d| d.busy_since);
@@ -1576,7 +1590,11 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
     }
     egui::Area::new(egui::Id::new("camera-raw-dialog")).order(egui::Order::Foreground).fixed_pos(screen.min).show(ctx, |ui| {
         let Some(d) = app.camera_raw.as_mut() else { return };
-        history_keys(d, ctx);
+        if menu_was_open {
+            ui.disable();
+        } else {
+            history_keys(d, ctx);
+        }
         let frame_origin = d.params.clone();
         let pointer = ctx.input(|i| i.pointer.primary_down());
         if pointer && d.edit_origin.is_none() {
@@ -1915,7 +1933,9 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
             ctx.request_repaint();
         }
         super::camera_raw_scope_ui::floating(ctx, d, scope, right);
-        super::camera_raw_scope_ui::shortcuts(ctx, scope);
+        if !menu_was_open {
+            super::camera_raw_scope_ui::shortcuts(ctx, scope);
+        }
         if scope.sampler_tool {
             workspace.white_balance_tool = false;
         }
@@ -1965,13 +1985,18 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
             }
         }
     });
+    if !busy {
+        settings_menu::show(app, ctx, screen, &mut action);
+    }
     super::camera_raw_scope_ui::persist(app, ctx);
-    if ctx.input(|i| i.key_pressed(egui::Key::Y))
+    if !menu_was_open
+        && !ctx.text_edit_focused()
+        && ctx.input(|i| i.key_pressed(egui::Key::Y))
         && let Some(d) = app.camera_raw.as_mut()
     {
         d.show_before = !d.show_before;
     }
-    if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+    if !menu_was_open && ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
         action = Some("cancel");
     }
     if busy {

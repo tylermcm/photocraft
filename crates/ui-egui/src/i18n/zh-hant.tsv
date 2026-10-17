@@ -2862,3 +2862,22 @@ cameraRaw	Not available	無法使用
 	Grid Size	格線大小
 	New Sample	新增取樣點
 	Open Object	開啟物件
+	Apply Previous Settings	套用先前的設定
+	Apply Snapshot	套用快照
+	Apply Favorite Preset	套用我的最愛預設集
+	Create Snapshot…	建立快照…
+	Create Preset…	建立預設集…
+	Copy Edit Settings	複製編輯設定
+	Copy Selected Edit Settings…	複製選取的編輯設定…
+	Paste Edit Settings	貼上編輯設定
+	Update AI Settings	更新 AI 設定
+	Ignore Update AI Settings	忽略更新 AI 設定
+	Flatten AI Settings	平面化 AI 設定
+	Reset Flattened AI Settings	重設已平面化的 AI 設定
+	Save Image	儲存影像
+	Render to DNG	演算為 DNG
+	Export Settings to XMP	將設定匯出至 XMP
+	Update DNG Previews…	更新 DNG 預視…
+	Set Raw Defaults…	設定 Raw 預設值…
+	AI Model Downloads…	AI 模型下載…
+	Settings	設定

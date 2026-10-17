@@ -3933,3 +3933,21 @@ cameraRaw	Not available	利用できません
 	Grid Size	グリッドサイズ
 	New Sample	新規サンプル
 	Open Object	オブジェクトを開く
+	Apply Previous Settings	前の設定を適用
+	Apply Snapshot	スナップショットを適用
+	Apply Favorite Preset	お気に入りのプリセットを適用
+	Create Snapshot…	スナップショットを作成…
+	Create Preset…	プリセットを作成…
+	Copy Edit Settings	編集設定をコピー
+	Copy Selected Edit Settings…	選択した編集設定をコピー…
+	Paste Edit Settings	編集設定をペースト
+	Update AI Settings	AI 設定を更新
+	Ignore Update AI Settings	AI 設定の更新を無視
+	Flatten AI Settings	AI 設定を統合
+	Reset Flattened AI Settings	統合した AI 設定をリセット
+	Save Image	画像を保存
+	Render to DNG	DNG にレンダリング
+	Export Settings to XMP	設定を XMP に書き出し
+	Update DNG Previews…	DNG プレビューを更新…
+	Set Raw Defaults…	RAW 初期設定を指定…
+	AI Model Downloads…	AI モデルのダウンロード…

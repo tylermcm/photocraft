@@ -11,9 +11,37 @@ pub(super) struct Store {
     items: Vec<(String, CameraRaw)>,
     name: String,
     selected: Option<usize>,
+    creating: bool,
 }
 
 impl Store {
+    pub(super) fn can_capture(&self) -> bool {
+        self.items.len() < MAX_SNAPSHOTS
+    }
+    pub(super) fn creating(&self) -> bool {
+        self.creating
+    }
+    pub(super) fn request_creation(&mut self) {
+        self.creating = true;
+    }
+    pub(super) fn parameters(&self, index: usize) -> Option<CameraRaw> {
+        self.items.get(index).map(|(_, p)| p.clone())
+    }
+    pub(super) fn creation_dialog(&mut self, ctx: &egui::Context, p: &CameraRaw) {
+        if !self.creating {
+            return;
+        }
+        egui::Modal::new(egui::Id::new("acr-create-snapshot")).show(ctx, |ui| {
+            ui.label(tl!("Create Snapshot"));
+            ui.add(egui::TextEdit::singleline(&mut self.name).char_limit(128));
+            if ui.add_enabled(self.can_capture(), egui::Button::new(tl!("Create"))).clicked() && self.capture(p) {
+                self.creating = false;
+            }
+            if ui.button(tl!("Cancel")).clicked() || ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+                self.creating = false;
+            }
+        });
+    }
     pub(super) fn names(&self) -> Vec<&str> {
         self.items.iter().map(|(name, _)| name.as_str()).collect()
     }

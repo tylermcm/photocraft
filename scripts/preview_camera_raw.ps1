@@ -1,8 +1,8 @@
 param(
     [string]$Image,
     [switch]$Build,
-    [ValidateSet('acr18', 'acr-filmstrip', 'acr-glyphs')]
-    [string]$EditorBuild = 'acr-glyphs'
+    [ValidateSet('acr18', 'acr-filmstrip', 'acr-glyphs', 'acr-settings-menu')]
+    [string]$EditorBuild = 'acr-settings-menu'
 )
 $ErrorActionPreference = 'Stop'
 $previewRoot = Split-Path -Parent $PSScriptRoot
@@ -38,6 +38,11 @@ if (-not (Test-Path -LiteralPath $previewExe)) {
 }
 $env:PHOTOCRAFT_CAMERA_RAW_LAYOUT_FILE = Join-Path $previewRoot 'design/camera-raw/layout.json'
 $env:PHOTOCRAFT_THEME_FILE = Join-Path $previewRoot 'design/camera-raw/tokens.json'
+$frozenDesign = Join-Path $previewRoot "target/$EditorBuild/validated-design"
+if ($EditorBuild -ne 'acr-settings-menu' -and (Test-Path -LiteralPath (Join-Path $frozenDesign 'layout.json'))) {
+    $env:PHOTOCRAFT_CAMERA_RAW_LAYOUT_FILE = Join-Path $frozenDesign 'layout.json'
+    $env:PHOTOCRAFT_THEME_FILE = Join-Path $frozenDesign 'tokens.json'
+}
 $env:PHOTOCRAFT_CONFIG_DIR = Join-Path $previewRoot "target/$EditorBuild/preview-profile"
 $env:PHOTOCRAFT_LOCALE = 'en'
 if (-not $Image) {

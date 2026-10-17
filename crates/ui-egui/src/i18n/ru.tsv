@@ -3228,3 +3228,21 @@ cameraRaw	Not available	Недоступно
 	Grid Size	Размер сетки
 	New Sample	Новый образец
 	Open Object	Открыть объект
+	Apply Previous Settings	Применить предыдущие настройки
+	Apply Snapshot	Применить снимок
+	Apply Favorite Preset	Применить избранную предустановку
+	Create Snapshot…	Создать снимок…
+	Create Preset…	Создать предустановку…
+	Copy Edit Settings	Копировать настройки редактирования
+	Copy Selected Edit Settings…	Копировать выбранные настройки редактирования…
+	Paste Edit Settings	Вставить настройки редактирования
+	Update AI Settings	Обновить настройки ИИ
+	Ignore Update AI Settings	Игнорировать обновление настроек ИИ
+	Flatten AI Settings	Объединить настройки ИИ
+	Reset Flattened AI Settings	Сбросить объединённые настройки ИИ
+	Save Image	Сохранить изображение
+	Render to DNG	Рендеринг в DNG
+	Export Settings to XMP	Экспортировать настройки в XMP
+	Update DNG Previews…	Обновить предпросмотры DNG…
+	Set Raw Defaults…	Задать настройки RAW по умолчанию…
+	AI Model Downloads…	Загрузка моделей ИИ…

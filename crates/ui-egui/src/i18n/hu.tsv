@@ -4174,3 +4174,20 @@ cameraRaw	Not available	Nem érhető el
 	Grid Size	Rácsméret
 	New Sample	Új minta
 	Open Object	Objektum megnyitása
+	Apply Previous Settings	Előző beállítások alkalmazása
+	Apply Snapshot	Pillanatkép alkalmazása
+	Apply Favorite Preset	Kedvenc készlet alkalmazása
+	Create Snapshot…	Pillanatkép létrehozása…
+	Create Preset…	Készlet létrehozása…
+	Copy Edit Settings	Szerkesztési beállítások másolása
+	Copy Selected Edit Settings…	Kijelölt szerkesztési beállítások másolása…
+	Paste Edit Settings	Szerkesztési beállítások beillesztése
+	Update AI Settings	MI-beállítások frissítése
+	Ignore Update AI Settings	MI-beállítások frissítésének mellőzése
+	Flatten AI Settings	MI-beállítások összeolvasztása
+	Reset Flattened AI Settings	Összeolvasztott MI-beállítások visszaállítása
+	Render to DNG	Renderelés DNG-be
+	Export Settings to XMP	Beállítások exportálása XMP-be
+	Update DNG Previews…	DNG-előnézetek frissítése…
+	Set Raw Defaults…	RAW-alapértékek megadása…
+	AI Model Downloads…	MI-modellek letöltése…

@@ -2877,3 +2877,22 @@ cameraRaw	Not available	不可用
 	Grid Size	网格大小
 	New Sample	新建取样点
 	Open Object	打开对象
+	Apply Previous Settings	应用以前的设置
+	Apply Snapshot	应用快照
+	Apply Favorite Preset	应用收藏的预设
+	Create Snapshot…	创建快照…
+	Create Preset…	创建预设…
+	Copy Edit Settings	复制编辑设置
+	Copy Selected Edit Settings…	复制所选编辑设置…
+	Paste Edit Settings	粘贴编辑设置
+	Update AI Settings	更新 AI 设置
+	Ignore Update AI Settings	忽略更新 AI 设置
+	Flatten AI Settings	拼合 AI 设置
+	Reset Flattened AI Settings	重置已拼合的 AI 设置
+	Save Image	存储图像
+	Render to DNG	渲染为 DNG
+	Export Settings to XMP	将设置导出到 XMP
+	Update DNG Previews…	更新 DNG 预览…
+	Set Raw Defaults…	设置 Raw 默认值…
+	AI Model Downloads…	AI 模型下载…
+	Settings	设置

@@ -128,5 +128,18 @@
     "fontSize": 13,
     "openTextOffsetX": 2,
     "cancelTextOffsetX": 1.5
+  },
+  "settingsMenu": {
+    "width": 269,
+    "rowHeight": 22,
+    "groupGap": 11,
+    "topPadding": 6.5,
+    "bottomPadding": 3.5,
+    "textInset": 14,
+    "shortcutInset": 13,
+    "fontSize": 12.65,
+    "radius": 6,
+    "separatorOffset": 4,
+    "textOffsetY": -1.5
   }
 }
