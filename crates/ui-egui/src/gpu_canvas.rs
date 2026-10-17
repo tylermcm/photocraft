@@ -183,7 +183,16 @@ impl GpuCanvas {
             rs.target_format,
             vram.map_or_else(|| "unknown".to_owned(), |b| format!("{} MB", b >> 20))
         );
-        Self { rs: rs.clone(), tile, high, health, vram, canvas_budget: budget, warming: Arc::new(AtomicBool::new(false)), background_build: Arc::new(AtomicBool::new(false)) }
+        Self {
+            rs: rs.clone(),
+            tile,
+            high,
+            health,
+            vram,
+            canvas_budget: budget,
+            warming: Arc::new(AtomicBool::new(false)),
+            background_build: Arc::new(AtomicBool::new(false)),
+        }
     }
 
     /// Builds the wgpu compositor on a worker thread, so the first document that wants it does not stop the UI while the
