@@ -5038,6 +5038,7 @@ dependencies = [
  "sha2",
  "sys-locale",
  "toml",
+ "unicode-bidi",
  "winsafe",
 ]
 
