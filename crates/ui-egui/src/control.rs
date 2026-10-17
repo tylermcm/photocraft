@@ -392,8 +392,12 @@ fn dispatch(app: &mut PhotocraftApp, ctx: &egui::Context, req: &ControlRequest) 
     let wait = p.get("wait").and_then(Value::as_bool).unwrap_or(true);
     match req.method.as_str() {
         "app.handoff" => ok(
-            json!({"version": 2, "replace": true, "hiddenStart": true, "cameraRaw": 1, "cameraRawPrefetch": 1, "cameraRawSwitch": 1, "stashWithoutPreview": 1, "renderManifest": 1, "fullRender": 1}),
+            json!({"version": 2, "replace": true, "hiddenStart": true, "cameraRaw": 1, "cameraRawPrefetch": 1, "cameraRawSwitch": 1, "stashWithoutPreview": 1, "renderManifest": 1, "fullRender": 1, "filmstrip": 1}),
         ),
+        "ui.filmstrip" => wrap(crate::camera_raw_filmstrip_ui::control(ctx, p).map(|mut reply| {
+            reply["cameraRawOpen"] = json!(app.camera_raw.is_some() || crate::raw_workspace::shell_active(app));
+            reply
+        })),
         "ui.cameraRaw" => run_waiting(app, wait, |app| crate::raw_workspace::control(app, ctx, p)),
         "app.prefetch" => match (s("path"), s("signature")) {
             (Some(path), Some(signature)) => wrap(crate::raw_workspace::request_prefetch(app, path, signature)),
@@ -1449,6 +1453,7 @@ pub fn inspect(app: &PhotocraftApp, ctx: &egui::Context) -> Value {
         "distort": app.distort.describe(),
         "jobs": crate::jobs_ui::inspect(app),
         "cameraRawDesign": super::camera_raw_design::get(ctx).as_ref(),
+        "filmstrip": super::camera_raw_filmstrip_ui::inspect(ctx),
         "cameraRaw": app.camera_raw.as_ref().map(|d| d.describe(&app.ui.camera_raw_scope, &app.ui.camera_raw_preview, &app.ui.camera_raw_workspace)),
     })
 }

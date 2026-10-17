@@ -1414,6 +1414,7 @@ pub(crate) struct Layout {
     pub right: ERect,
     pub rail: ERect,
     pub nav: ERect,
+    pub filmstrip: ERect,
     pub foot: ERect,
 }
 
@@ -1431,13 +1432,15 @@ pub(crate) fn layout(ctx: &egui::Context, screen: ERect, _own_window: bool) -> L
         pos2(preview_body.left(), (preview_body.bottom() - design.navigation_height.min(preview_body.height() * 0.25)).max(preview_body.top())),
         preview_body.max,
     );
-    let margin = design.preview_margin.min(preview_body.width() * 0.25).min((nav.top() - preview_body.top()) * 0.25);
+    let strip_height = super::camera_raw_filmstrip_ui::height(ctx).min((nav.top() - preview_body.top()) * 0.4);
+    let filmstrip = ERect::from_min_max(pos2(preview_body.left(), nav.top() - strip_height), nav.right_top());
+    let margin = design.preview_margin.min(preview_body.width() * 0.25).min((filmstrip.top() - preview_body.top()) * 0.25);
     let view = ERect::from_min_max(
         preview_body.min + vec2(margin, margin),
-        pos2((preview_body.right() - margin).max(preview_body.left() + margin + 1.0), (nav.top() - margin).max(preview_body.top() + margin + 1.0)),
+        pos2((preview_body.right() - margin).max(preview_body.left() + margin + 1.0), (filmstrip.top() - margin).max(preview_body.top() + margin + 1.0)),
     );
     let foot = ERect::from_min_max(pos2(screen.left(), screen.bottom() - footer_h), screen.max);
-    Layout { title, body, preview_body, view, right, rail, nav, foot }
+    Layout { title, body, preview_body, view, right, rail, nav, filmstrip, foot }
 }
 
 /// Leaves the open-time dialog's photo without closing the dialog: the next photo is on its way and takes the dialog
@@ -1480,6 +1483,7 @@ pub(crate) fn draw_shell(ctx: &egui::Context, name: &str) {
         painter.rect_filled(lay.title, 0.0, t.dock);
         painter.line_segment([lay.title.left_bottom(), lay.title.right_bottom()], Stroke::new(1.0, t.separator));
         painter.rect_filled(lay.view, 0.0, t.canvas);
+        super::camera_raw_filmstrip_ui::draw(ui, lay.filmstrip);
         // The photo's name is not known in the moment between leaving one photo and being asked for the next: no title
         // rather than the wrong one.
         if !name.is_empty() {
@@ -1564,6 +1568,7 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
         if d.dirty {
             d.render(ctx);
         }
+        super::camera_raw_filmstrip_ui::seed(ctx, &d.layer_name, d.tex.as_ref());
         let (full, _) = ui.allocate_exact_size(screen.size(), Sense::click());
         let painter = ui.painter().clone();
         painter.rect_filled(full, 0.0, t.chrome);
@@ -1604,6 +1609,13 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
             let detail_needed =
                 !raw_tone && (r.width() * ctx.pixels_per_point() > d.pw as f32 || r.height() * ctx.pixels_per_point() > d.ph as f32) && !d.is_stand_in();
             d.detail.paint(&preview, r, d.preview_revision, d.show_before, &preview_parameters, detail_needed, &d.display);
+            if super::camera_raw_filmstrip_ui::comparison_split(ctx)
+                && let Some(before) = d.before_tex.as_ref()
+            {
+                let left = ERect::from_min_max(view.min, pos2(r.center().x, view.bottom())).intersect(view);
+                preview.painter().with_clip_rect(left).image(before.id(), r, ERect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
+                preview.painter().line_segment([pos2(r.center().x, view.top()), pos2(r.center().x, view.bottom())], Stroke::new(1.0, t.separator));
+            }
             if d.detail.pending() {
                 ctx.request_repaint_after(std::time::Duration::from_millis(50));
             }
@@ -1615,13 +1627,14 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
         if let Some(region) = zoom_box {
             preview.painter().rect_stroke(region, 0.0, egui::Stroke::new(1.0, t.accent), egui::StrokeKind::Inside);
         }
+        super::camera_raw_filmstrip_ui::draw(ui, lay.filmstrip);
         painter.rect_filled(lay.nav, 0.0, t.dock);
         painter.line_segment([lay.nav.left_top(), lay.nav.right_top()], Stroke::new(1.0, t.separator));
         let mut nav_ui =
-            ui.new_child(egui::UiBuilder::new().max_rect(lay.nav.shrink2(vec2(8.0, 2.0))).layout(egui::Layout::left_to_right(egui::Align::Center)));
+            ui.new_child(egui::UiBuilder::new().max_rect(lay.nav.shrink2(vec2(0.0, 1.0))).layout(egui::Layout::left_to_right(egui::Align::Center)));
         nav_ui.set_clip_rect(lay.nav.intersect(ui.clip_rect()));
         super::camera_raw_preview_ui::toolbar(&mut nav_ui, navigation, view, size, &mut scope.sampler_tool);
-        widgets::checkbox(&mut nav_ui, &mut d.show_before, tl!("Before (Y)"));
+        super::camera_raw_filmstrip_ui::navigation(&mut nav_ui, lay.nav, &mut d.show_before);
         if d.detail.pending() || busy_visible {
             nav_ui.spinner();
         }

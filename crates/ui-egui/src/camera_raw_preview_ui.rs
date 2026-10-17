@@ -234,17 +234,18 @@ pub(crate) fn interact(ui: &mut Ui, state: &mut CameraRawPreviewState, viewport:
     (state.image_rect(viewport, size), response, panning || temporary_zoom, zoom_box)
 }
 
-fn navigation_button(ui: &mut Ui, text: &str, size: Vec2, selected: bool) -> egui::Response {
+fn navigation_button(ui: &mut Ui, text: &str, size: Vec2, selected: bool, divider: bool) -> egui::Response {
     let t = Tokens::get(ui.ctx());
     let (rect, response) = ui.allocate_exact_size(size, Sense::click());
-    if response.hovered() || selected {
-        ui.painter().rect_filled(rect, 0.0, if response.hovered() { t.hover } else { t.field });
+    ui.painter().rect_filled(rect, 0.0, if response.hovered() { t.hover } else { t.field });
+    if divider {
+        ui.painter().line_segment([rect.left_top(), rect.left_bottom()], egui::Stroke::new(1.0, t.separator));
     }
     ui.painter().text(
-        rect.center(),
+        rect.center() + vec2(0.0, 0.5),
         egui::Align2::CENTER_CENTER,
         text,
-        egui::FontId::proportional(super::camera_raw_design::get(ui.ctx()).panel_font_size),
+        egui::FontId::proportional(super::camera_raw_design::get(ui.ctx()).navigation_font_size),
         t.text_dim,
     );
     if selected {
@@ -261,16 +262,16 @@ pub(crate) fn toolbar(ui: &mut Ui, state: &mut CameraRawPreviewState, viewport: 
     let mut fitted = *state;
     fitted.fit();
     let fit_label = format!("{} ({:.1}%)", tl!("Fit"), fitted.scale(viewport, size) * 100.0);
-    if navigation_button(ui, &fit_label, vec2(design.navigation_fit_width, height), state.zoom.is_none()).clicked() {
+    if navigation_button(ui, &fit_label, vec2(design.navigation_fit_width, height), state.zoom.is_none(), false).clicked() {
         state.fit();
     }
     let zoom_value = state.zoom.unwrap_or(1.0);
     let zoom_label = format!("{:.0}%", zoom_value * 100.0);
-    let arrow_width = 16.0;
-    if navigation_button(ui, &zoom_label, vec2(design.navigation_zoom_width - arrow_width, height), state.zoom.is_some()).clicked() {
+    let arrow_width = 18.0;
+    if navigation_button(ui, &zoom_label, vec2(design.navigation_zoom_width - arrow_width, height), state.zoom.is_some(), true).clicked() {
         state.zoom_at(zoom_value, viewport.center(), viewport, size);
     }
-    let arrow = navigation_button(ui, "", vec2(arrow_width, height), false).on_hover_text(tl!("Zoom"));
+    let arrow = navigation_button(ui, "", vec2(arrow_width, height), false, true).on_hover_text(tl!("Zoom"));
     arrow.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), tl!("Zoom")));
     let t = Tokens::get(ui.ctx());
     let center = arrow.rect.center();
@@ -289,7 +290,7 @@ pub(crate) fn toolbar(ui: &mut Ui, state: &mut CameraRawPreviewState, viewport: 
         }
     });
     let (divider, _) = ui.allocate_exact_size(vec2(1.0, height), Sense::hover());
-    ui.painter().line_segment([divider.left_top(), divider.left_bottom()], egui::Stroke::new(1.0, t.separator));
+    let _ = divider;
     ui.add_space(8.0);
 }
 

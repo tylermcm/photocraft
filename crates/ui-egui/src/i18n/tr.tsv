@@ -3964,3 +3964,21 @@ cameraRaw	Not available	Kullanılamıyor
 	GPU Memory (MB, 0 = Automatic)	GPU Belleği (MB, 0 = Otomatik)
 	{name} was changed by another app after it was opened or saved here.	{name}, burada açıldıktan veya kaydedildikten sonra başka bir uygulama tarafından değiştirildi.
 	Replace it with this document, or cancel and use File › Save As to keep both.	Bu belgeyle değiştirin ya da iptal edip ikisini de korumak için Dosya › Farklı Kaydet'i kullanın.
+	Show or hide filmstrip	Film şeridini göster veya gizle
+	Toggle rejected	Reddetme durumunu değiştir
+	Before / After	Önce / Sonra
+	Additional camera profiles are not available	Ek kamera profilleri kullanılamıyor
+	Adjust	Ayarla
+	As Shot	Çekildiği Gibi
+	Automatic Camera Raw tone adjustment is not available	Camera Raw otomatik ton ayarı kullanılamıyor
+	Browse Profiles	Profillere Göz At
+	Camera Raw Settings	Camera Raw Ayarları
+	Content Credentials	İçerik Kimlik Bilgileri
+	Embedded	Gömülü
+	HDR editing is not available	HDR düzenleme kullanılamıyor
+	Snapshot	Anlık Görüntü
+	Toggle Full Screen	Tam Ekranı Değiştir
+	Tutorials are not available	Eğitimler kullanılamıyor
+	White Balance Tool	Beyaz Dengesi Aracı
+	White balance	Beyaz dengesi
+	Browse Profiles — additional camera profiles are not available	Profillere Göz At — Ek kamera profilleri kullanılamıyor

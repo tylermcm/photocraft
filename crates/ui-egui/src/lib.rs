@@ -42,6 +42,7 @@ pub(crate) mod cam_preview;
 mod cam_transform;
 pub mod camera_raw_design;
 mod camera_raw_detail_ui;
+pub mod camera_raw_filmstrip_ui;
 mod camera_raw_preview_ui;
 mod camera_raw_scope_ui;
 pub mod camera_raw_ui;

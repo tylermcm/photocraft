@@ -1,14 +1,16 @@
 param(
     [string]$Image,
-    [switch]$Build
+    [switch]$Build,
+    [ValidateSet('acr18', 'acr-filmstrip')]
+    [string]$EditorBuild = 'acr-filmstrip'
 )
 $ErrorActionPreference = 'Stop'
 $previewRoot = Split-Path -Parent $PSScriptRoot
-$previewTarget = Join-Path $previewRoot 'target/acr18'
+$previewTarget = Join-Path $previewRoot "target/$EditorBuild"
 $existingDebugExe = Join-Path $previewRoot 'target/debug/photocraft.exe'
 $previewExe = Join-Path $previewTarget 'debug/photocraft.exe'
 # Rebuild the same cached target that ordinary preview launches already use.
-if (-not (Test-Path -LiteralPath $previewExe) -and (Test-Path -LiteralPath (Join-Path $previewRoot 'target/debug/.fingerprint'))) {
+if ($EditorBuild -eq 'acr18' -and -not (Test-Path -LiteralPath $previewExe) -and (Test-Path -LiteralPath (Join-Path $previewRoot 'target/debug/.fingerprint'))) {
     $previewTarget = Join-Path $previewRoot 'target'
     $previewExe = $existingDebugExe
 }
@@ -16,7 +18,7 @@ if ($Build) {
     Push-Location $previewRoot
     try {
         $env:CARGO_TARGET_DIR = $previewTarget
-        if ($previewTarget -eq (Join-Path $previewRoot 'target/acr18')) {
+        if ($previewTarget -ne (Join-Path $previewRoot 'target')) {
             $env:CARGO_PROFILE_DEV_DEBUG = '0'
             $env:CARGO_PROFILE_DEV_INCREMENTAL = 'false'
         }
@@ -28,7 +30,7 @@ if (-not (Test-Path -LiteralPath $previewExe)) {
     # Reuse the normal development build when the isolated preview was built on
     # another machine. Ordinary design launches must never start Cargo implicitly.
     $existingDebugExe = Join-Path $previewRoot 'target/debug/photocraft.exe'
-    if (Test-Path -LiteralPath $existingDebugExe) {
+    if ($EditorBuild -eq 'acr18' -and (Test-Path -LiteralPath $existingDebugExe)) {
         $previewExe = $existingDebugExe
     } else {
         throw 'No native preview executable is available. Build it once with ./scripts/preview_camera_raw.ps1 -Build.'
@@ -36,7 +38,7 @@ if (-not (Test-Path -LiteralPath $previewExe)) {
 }
 $env:PHOTOCRAFT_CAMERA_RAW_LAYOUT_FILE = Join-Path $previewRoot 'design/camera-raw/layout.json'
 $env:PHOTOCRAFT_THEME_FILE = Join-Path $previewRoot 'design/camera-raw/tokens.json'
-$env:PHOTOCRAFT_CONFIG_DIR = Join-Path $previewRoot 'target/acr18/preview-profile'
+$env:PHOTOCRAFT_CONFIG_DIR = Join-Path $previewRoot "target/$EditorBuild/preview-profile"
 $env:PHOTOCRAFT_LOCALE = 'en'
 if (-not $Image) {
     $Image = Join-Path $previewRoot 'target/acr18/design-fixture.png'

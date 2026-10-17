@@ -676,3 +676,33 @@ dock target. The panel menu and icon rail remain
 available in custom workspaces. `window.panel.<id> {show:true}` always reveals, selects
 and expands the panel, including when another tab is selected. Workspace snapshots
 retain custom collapse settings and Timeline visibility.
+
+### Hosted native Camera Raw filmstrip (development)
+
+`app.handoff` advertises `filmstrip: 1`. `ui.filmstrip {}` inspects the native
+presentation. Updates contain `generation` (>0), `total` (0..1,000,000), `current`,
+`enabled`, `items` and optional `collapsed` / `ack`. Each item has a unique `index`
+and stable host `id`, `name`, `rating` (0..5), `rejected`, `edited` and thumbnail
+`version`. No file paths are opened by this API. At most 32 metadata items and one
+thumbnail are accepted per request. A thumbnail is `{width,height,rgba}` with a
+base64, tightly packed RGBA8 display image, max 384 pixels per edge. It is a UI
+preview, not a document or a color-processing interchange format. Validation is
+atomic; malformed/oversized/stale packets retain the last good state.
+
+Replies include `ready`, `cameraRawOpen`, `generation`, `total`, `current`, visible
+`first`/`last`, `selected` annotation metadata and `rect` in egui points. Multiply
+by pixels-per-point for screenshot registration. A pending `request` identifies
+`serial`, `generation`, anchor `index`/`id`, `kind` and `value`. Kinds are `select`,
+`navigate` (absolute target index, anchored to the stable current photo), `rating`
+(0..5), `reject` (annotation toggle, no file deletion), `sort` and `filter`. The
+host validates identity/generation/value, dispatches once through its existing
+controllers, then acknowledges the serial. A new generation clears old requests
+and textures. Metadata-window eviction also evicts textures; the parent resends
+thumbnails on return. Scroll does not pull the view back to the current photo.
+
+Hosted startup draws no tray until negotiation. Send initial data with
+`enabled:false`, detach the parent's retained strip after a ready/open reply,
+then send `enabled:true`. A lost reply must not restore a second strip over the
+possibly visible native tray; keep the last acknowledged presentation and retry.
+The host restores its retained widget on process exit or when leaving the editor.
+Standalone preview seeds its one-photo strip from the existing Camera Raw texture.

@@ -1,0 +1,232 @@
+{
+  "scope": "Current reference 19: native filmstrip, its selected thumbnail frame and every visible navigation control. Photo content is diagnostic only; multi-photo spacing is not observed in this reference.",
+  "normalizedWidth": 3728,
+  "sourceRect": [
+    6,
+    2180,
+    3734,
+    2540
+  ],
+  "sourceSha256": "b00a3fe24ede39382f5827adf014592d5b19eed0925b6ecfc7ad55024cb67340",
+  "sourceImage": 19,
+  "elements": [
+    {
+      "id": "tray-background",
+      "rect": [
+        344,
+        0,
+        3728,
+        280
+      ]
+    },
+    {
+      "id": "selected-frame-top",
+      "rect": [
+        0,
+        4,
+        343,
+        10
+      ]
+    },
+    {
+      "id": "selected-frame-bottom",
+      "rect": [
+        0,
+        272,
+        343,
+        278
+      ]
+    },
+    {
+      "id": "selected-frame-left",
+      "rect": [
+        0,
+        4,
+        6,
+        278
+      ]
+    },
+    {
+      "id": "selected-frame-right",
+      "rect": [
+        337,
+        4,
+        343,
+        278
+      ]
+    },
+    {
+      "id": "thumbnail-fit-box",
+      "rect": [
+        6,
+        10,
+        337,
+        272
+      ],
+      "notes": "Photo-dependent: this box includes content. Compare fit/inset geometry using the actual photo aspect, not its RGB score."
+    },
+    {
+      "id": "thumbnail-content",
+      "rect": [
+        7,
+        11,
+        337,
+        270
+      ],
+      "notes": "Different synthetic photo pixels; diagnostic only, excluded from structural parity conclusions."
+    },
+    {
+      "id": "navigation-background",
+      "rect": [
+        624,
+        282,
+        1700,
+        358
+      ]
+    },
+    {
+      "id": "fit-button",
+      "rect": [
+        0,
+        280,
+        181,
+        360
+      ]
+    },
+    {
+      "id": "zoom-value",
+      "rect": [
+        181,
+        280,
+        299,
+        360
+      ]
+    },
+    {
+      "id": "zoom-menu",
+      "rect": [
+        299,
+        280,
+        335,
+        360
+      ]
+    },
+    {
+      "id": "filmstrip-toggle",
+      "rect": [
+        353,
+        292,
+        433,
+        348
+      ]
+    },
+    {
+      "id": "sort-menu",
+      "rect": [
+        491,
+        292,
+        563,
+        348
+      ]
+    },
+    {
+      "id": "filter-menu",
+      "rect": [
+        563,
+        292,
+        635,
+        348
+      ]
+    },
+    {
+      "id": "review-container",
+      "rect": [
+        1714,
+        296,
+        2014,
+        344
+      ]
+    },
+    {
+      "id": "reject-button",
+      "rect": [
+        1954,
+        296,
+        2014,
+        344
+      ]
+    },
+    {
+      "id": "before-button",
+      "rect": [
+        3560,
+        290,
+        3638,
+        350
+      ]
+    },
+    {
+      "id": "before-after-separator",
+      "rect": [
+        3638,
+        286,
+        3642,
+        354
+      ]
+    },
+    {
+      "id": "before-after-layout",
+      "rect": [
+        3642,
+        290,
+        3728,
+        350
+      ]
+    },
+    {
+      "id": "rating-star-1",
+      "rect": [
+        1728,
+        296,
+        1772,
+        344
+      ]
+    },
+    {
+      "id": "rating-star-2",
+      "rect": [
+        1772,
+        296,
+        1816,
+        344
+      ]
+    },
+    {
+      "id": "rating-star-3",
+      "rect": [
+        1816,
+        296,
+        1860,
+        344
+      ]
+    },
+    {
+      "id": "rating-star-4",
+      "rect": [
+        1860,
+        296,
+        1904,
+        344
+      ]
+    },
+    {
+      "id": "rating-star-5",
+      "rect": [
+        1904,
+        296,
+        1948,
+        344
+      ]
+    }
+  ]
+}

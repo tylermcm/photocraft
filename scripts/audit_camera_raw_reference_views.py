@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 
-# Current goal numbering; source hashes and crops live in the region specs.
+# Legacy numbering is descriptive only; resolve references by their source hash.
 # Multiple sections from a single image share the same dock scale/translation.
 REGISTRATIONS = [
     (1, "info", "info", [2260, 64, 2800, 948]),
@@ -35,6 +35,14 @@ def main():
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     inventory = json.loads((repo / "design/camera-raw/reference-inventory.json").read_text(encoding="utf-8"))
+    by_hash = {item["sha256"]: item for item in inventory["references"]}
+    registrations = []
+    for _, section, state, rect in REGISTRATIONS:
+        specification = json.loads((repo / f"design/camera-raw/{section}-element-regions.json").read_text(encoding="utf-8"))
+        reference = by_hash.get(specification["sourceSha256"])
+        if reference is None:
+            parser.error(f"{section} reference is missing from the supplied set")
+        registrations.append((reference["image"], section, state, rect))
     captured = json.loads((args.capture / "capture-report.json").read_text(encoding="utf-8"))
     if not captured.get("complete") or captured.get("scale") != 2.0 or captured.get("size") != [1440, 1400]:
         parser.error("these fixed registrations require a complete, verified 1440x1400 capture at scale 2")
@@ -47,7 +55,7 @@ def main():
             digest = hashlib.file_digest(source_file, "sha256").hexdigest()
         if digest != reference["sha256"]:
             parser.error(f"reference {reference['image']} does not match the inventoried image hash")
-        files = {f"{section}-element-regions.json" for number, section, _, _ in REGISTRATIONS if number == reference["image"]}
+        files = {f"{section}-element-regions.json" for number, section, _, _ in registrations if number == reference["image"]}
         if reference.get("elementRegionsFile"):
             files.add(reference["elementRegionsFile"])
         specifications = []
@@ -62,7 +70,7 @@ def main():
                                      "sharedElementsUnverified": reference.get("sharedElements", []),
                                      "fullReferenceVerified": False})
     args.output.mkdir(parents=True, exist_ok=False)
-    for number, section, state, candidate_rect in REGISTRATIONS:
+    for number, section, state, candidate_rect in registrations:
         if not captured["states"].get(state, {}).get("matchedRequestedView"):
             parser.error(f"native {state} view was not verified in this capture")
         specification_path = repo / f"design/camera-raw/{section}-element-regions.json"

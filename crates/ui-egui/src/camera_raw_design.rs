@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default, deny_unknown_fields)]
 pub struct Design {
+    pub filmstrip: crate::camera_raw_filmstrip_ui::Design,
     pub red_eye: crate::camera_raw_ui::tool_panels::RedEyeDesign,
     pub panel_width: f32,
     pub rail_width: f32,
@@ -89,6 +90,7 @@ pub struct Design {
     pub disclosure_button_size: f32,
     pub disclosure_button_gap: f32,
     pub navigation_control_height: f32,
+    pub navigation_font_size: f32,
     pub navigation_fit_width: f32,
     pub navigation_zoom_width: f32,
     pub navigation_control_gap: f32,
@@ -126,6 +128,7 @@ pub struct Design {
 impl Default for Design {
     fn default() -> Self {
         Self {
+            filmstrip: Default::default(),
             red_eye: Default::default(),
             panel_width: 270.0,
             rail_width: 36.0,
@@ -208,6 +211,7 @@ impl Default for Design {
             disclosure_button_size: 16.0,
             disclosure_button_gap: 4.0,
             navigation_control_height: 28.0,
+            navigation_font_size: 13.0,
             navigation_fit_width: 92.0,
             navigation_zoom_width: 72.0,
             navigation_control_gap: 0.0,
@@ -267,6 +271,7 @@ impl Design {
     pub fn parse(text: &str) -> Result<Self, String> {
         let value: Self = serde_json::from_str(text).map_err(|e| e.to_string())?;
         value.red_eye.validate()?;
+        value.filmstrip.validate()?;
         for (label, number, min, max) in [
             ("panelWidth", value.panel_width, 220.0, 600.0),
             ("railWidth", value.rail_width, 32.0, 64.0),
@@ -315,6 +320,7 @@ impl Design {
             ("disclosureButtonSize", value.disclosure_button_size, 12.0, 28.0),
             ("disclosureButtonGap", value.disclosure_button_gap, 0.0, 12.0),
             ("navigationControlHeight", value.navigation_control_height, 20.0, 48.0),
+            ("navigationFontSize", value.navigation_font_size, 9.0, 24.0),
             ("navigationFitWidth", value.navigation_fit_width, 64.0, 140.0),
             ("navigationZoomWidth", value.navigation_zoom_width, 52.0, 120.0),
             ("navigationControlGap", value.navigation_control_gap, 0.0, 16.0),

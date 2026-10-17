@@ -9,12 +9,21 @@ Open the live native preview from the repository root:
 ./scripts/preview_camera_raw.ps1
 ```
 
-The script reuses an existing debug executable and opens a synthetic color
-fixture. Normal launches never compile. If the isolated target/acr18 build is
-absent, it reuses target/debug/photocraft.exe. `-Image <path>` opens a specific
+The script reuses the tested `target/acr-filmstrip/debug/photocraft.exe` candidate
+and opens a synthetic color fixture. Normal launches never compile.
+`-EditorBuild acr18` selects the preceding build and its legacy debug fallback.
+`-Image <path>` opens a specific
 image instead; only explicit `-Build` compiles native behavior. A missing
 executable reports that one build is needed. It uses a separate preview profile.
 It does not replace the editor discovered by Image Triage.
+
+The native filmstrip candidate is tested inside the source Image Triage checkout
+with its `scripts/test_camera_raw.ps1`. That launcher now selects
+`target/acr-filmstrip/debug/photocraft.exe` and live JSON by default. Pass
+`-EditorBuild acr18` to use the preserved preceding test build. Both PowerShell
+launchers select the same candidate by default. Rust changes require a compiled
+candidate, while layout/theme JSON reloads live.
+The ordinary installed editor and release build are unchanged.
 
 While the preview is open, save either of these files:
 

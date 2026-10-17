@@ -662,6 +662,9 @@ fn main() -> eframe::Result {
             tablet::spawn_x11(&app.stylus.feed, display);
             // Camera Raw first: it opens on each document and is drawn inside the window.
             app.raw_workspace.enabled = raw_workspace;
+            if hosted {
+                photocraft_ui_egui::camera_raw_filmstrip_ui::hosted(&cc.egui_ctx);
+            }
             // Paths on the command line (Linux/Windows file associations, `photocraft a.psd`).
             app.open_paths(&files);
             if !unreadable_paths.is_empty() {

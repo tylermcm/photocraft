@@ -4153,3 +4153,21 @@ cameraRaw	Not available	Nem érhető el
 	GPU Memory (MB, 0 = Automatic)	GPU-memória (MB, 0 = Automatikus)
 	{name} was changed by another app after it was opened or saved here.	A(z) {name} fájlt egy másik alkalmazás módosította, miután itt megnyitották vagy mentették.
 	Replace it with this document, or cancel and use File › Save As to keep both.	Cserélje le erre a dokumentumra, vagy válassza a Mégse gombot, és a Fájl › Mentés másként paranccsal tartsa meg mindkettőt.
+	Show or hide filmstrip	Filmszalag megjelenítése vagy elrejtése
+	Toggle rejected	Elutasítás váltása
+	Before / After	Előtte / Utána
+	Additional camera profiles are not available	További kameraprofilok nem érhetők el
+	Adjust	Beállítás
+	As Shot	Felvétel szerint
+	Automatic Camera Raw tone adjustment is not available	A Camera Raw automatikus tónusbeállítása nem érhető el
+	Browse Profiles	Profilok böngészése
+	Camera Raw Settings	Camera Raw beállításai
+	Content Credentials	Tartalom-hitelesítő adatok
+	Embedded	Beágyazott
+	HDR editing is not available	A HDR-szerkesztés nem érhető el
+	Snapshot	Pillanatkép
+	Toggle Full Screen	Teljes képernyő váltása
+	Tutorials are not available	Az oktatóanyagok nem érhetők el
+	White Balance Tool	Fehéregyensúly eszköz
+	White balance	Fehéregyensúly
+	Browse Profiles — additional camera profiles are not available	Profilok böngészése — További kameraprofilok nem érhetők el
