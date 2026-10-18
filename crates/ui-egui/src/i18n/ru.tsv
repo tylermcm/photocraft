@@ -3300,3 +3300,23 @@ cameraRaw	Use legacy Target Adjustment Tool	Использовать прежн�
 cameraRaw	Use legacy undo shortcuts	Использовать прежние сочетания клавиш отмены
 cameraRaw	Workflow	Рабочий процесс
 cameraRaw	Zoom and Pan	Масштабирование и панорамирование
+cameraRaw	Anamorphic	Анаморфный
+cameraRaw	Aspect	Пропорции
+cameraRaw	Crop & Expand	Кадрирование и расширение
+cameraRaw	Crop Overlay	Наложение кадрирования
+cameraRaw	Enable Expand	Включить расширение
+cameraRaw	For best results, apply lens corrections first.	Для лучших результатов сначала примените коррекцию объектива.
+cameraRaw	Full	Полный
+cameraRaw	Generative Expand	Генеративное расширение
+cameraRaw	Generative Expand options	Параметры генеративного расширения
+cameraRaw	Geometry	Геометрия
+cameraRaw	Guided	По направляющим
+cameraRaw	Lock aspect ratio	Зафиксировать пропорции
+cameraRaw	Offset X	Смещение X
+cameraRaw	Offset Y	Смещение Y
+cameraRaw	Projection	Проекция
+cameraRaw	Rotate & Flip	Поворот и отражение
+cameraRaw	Rotate Left	Повернуть влево
+cameraRaw	Rotate Right	Повернуть вправо
+cameraRaw	Swap orientation	Сменить ориентацию
+cameraRaw	Trim	Обрезать края

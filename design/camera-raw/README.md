@@ -638,3 +638,46 @@ all-target clippy, layers30 and wasm24 pass. Four new integrations cover actual
 pointer controls, OK/Cancel, click zoom, startup persistence, malformed profiles,
 atomic validation and modal Escape ownership. No visible app launch or focus
 preservation claim. Known-good desktop hashes remain unchanged.
+
+
+### Crop & Expand source view (2026-10-17)
+
+The native rail exposes a Crop & Expand view with JSON-measured panel geometry,
+preset/angle controls, rotate/flip controls, Generative Expand, Trim, Geometry
+and Anamorphic sections. Crop group disclosures are pure serialized view state
+(`tab: "crop"`, `cropGroups: ["Geometry"]` by default). Pointer and Space/Enter
+toggle the sections without changing photo parameters or document history.
+Geometry collapse moves Anamorphic up; other expanded sections show Not available.
+
+The current Camera Raw recipe has no crop/geometry transform that can preview
+and replay on commit. Processing controls remain disabled, including Expand,
+aspect/preset/angle, rotate/flip, Upright and geometry values. They expose disabled
+accessibility state and unavailable hints; no successful edit is simulated.
+Actual crop/geometry processing remains unfinished. Original vector marks are
+drawn from observation using native shapes; no source assets/fonts are copied.
+Main live layout/tokens and desktop executables remain unchanged.
+
+The reference14 audit uses a single full-dock registration, source[98,432,638,1892]
+and candidate[2260,374,2800,1834], at1440x1000/scale2. There are81 named regions:
+the two old spec entries for an absent Trim eye and duplicate Expand menu glyph
+were removed after inspecting the actual reference. No per-row registration or
+difference masking. Typography, glyphs and unavailable capabilities remain
+explicit differences. Matching-view audits remain absent for13(Masking) and
+15(Remove); every element across all19 remains in the active goal.
+
+Final evidence: crop-v3/crop-audit.json and overlay/comparison.png in this chat's
+acr-filmstrip artifacts. Renderer SHA256b1d54c6c7a7cd317919c3c473d70c37c78e83c1ae27ebf728772b66406061a43;
+private layout1b55cb63e522a7538af762cf927b65c6b65513fbd14e8eb3d84481ba68e30a55;
+private tokensd94d6de0cb20d7f0b00be2d2317af93b76f07a2498a841d7090fb1e8e917e896. Final PNG inspected. Mean of
+region RGB means is15.042 (initial14.831); geometry background extent and semantic
+glyphs were corrected, but no numerical improvement or pixel-parity pass is claimed.
+Captures preserve photo/document/recipe identity and the synthetic original.
+3123 library tests/13ignored,60 Camera Raw integrations,6 auditor tests,
+all-target ui+desktop clippy,layers30,wasm24 pass. The new rail translation lookup
+was corrected before final gates. Disabled accessibility/atomic invalid mixed
+requests and real pointer/Space disclosures are covered. No visible GUI launch,
+desktop build/promotion, release or push. Protected executable hashes unchanged.
+
+Inventory correction:1280 is the current sum of all21 region specifications,
+including repeated/overlapping controls and unaudited Masking/Remove specs.
+Earlier1115/1062 totals counted subsets; none of these counts prove parity.

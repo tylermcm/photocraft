@@ -4056,3 +4056,23 @@ cameraRaw	Use legacy Target Adjustment Tool	Eski Hedef Ayarlama Aracını kullan
 cameraRaw	Use legacy undo shortcuts	Eski geri alma kısayollarını kullan
 cameraRaw	Workflow	İş akışı
 cameraRaw	Zoom and Pan	Yakınlaştırma ve kaydırma
+cameraRaw	Anamorphic	Anamorfik
+cameraRaw	Aspect	En boy oranı
+cameraRaw	Crop & Expand	Kırp ve genişlet
+cameraRaw	Crop Overlay	Kırpma kaplaması
+cameraRaw	Enable Expand	Genişletmeyi etkinleştir
+cameraRaw	For best results, apply lens corrections first.	En iyi sonuçlar için önce mercek düzeltmelerini uygulayın.
+cameraRaw	Full	Tam
+cameraRaw	Generative Expand	Üretken genişletme
+cameraRaw	Generative Expand options	Üretken genişletme seçenekleri
+cameraRaw	Geometry	Geometri
+cameraRaw	Guided	Kılavuzlu
+cameraRaw	Lock aspect ratio	En boy oranını kilitle
+cameraRaw	Offset X	X kaydırma
+cameraRaw	Offset Y	Y kaydırma
+cameraRaw	Projection	İzdüşüm
+cameraRaw	Rotate & Flip	Döndür ve çevir
+cameraRaw	Rotate Left	Sola döndür
+cameraRaw	Rotate Right	Sağa döndür
+cameraRaw	Swap orientation	Yönü değiştir
+cameraRaw	Trim	Kenarları kırp

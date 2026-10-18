@@ -1,5 +1,5 @@
 {
-  "scope": "Reference9 Crop & Expand: measured visible controls. This is an unaudited specification until the native tab exists; no processing or appearance parity claim.",
+  "scope": "Reference14 Crop & Expand: one uniform full-dock registration. Unsupported processing remains disabled; no complete behavior or all-element parity claim.",
   "normalizedWidth": 540,
   "sourceRect": [
     98,
@@ -8,7 +8,7 @@
     1892
   ],
   "sourceSha256": "063a131976b1086ae63823b73962d03f55ea0755895bef0e120d927566a30e83",
-  "sourceImage": 9,
+  "sourceImage": 14,
   "elements": [
     {
       "id": "heading",
@@ -227,15 +227,6 @@
       ]
     },
     {
-      "id": "generative-expand-eye",
-      "rect": [
-        385,
-        424,
-        427,
-        460
-      ]
-    },
-    {
       "id": "generative-expand-disclosure",
       "rect": [
         441,
@@ -269,15 +260,6 @@
         494,
         340,
         540
-      ]
-    },
-    {
-      "id": "trim-eye",
-      "rect": [
-        385,
-        500,
-        427,
-        536
       ]
     },
     {

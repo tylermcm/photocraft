@@ -1,0 +1,968 @@
+{
+  "width": 270,
+  "height": 730,
+  "fontSize": 12,
+  "headingSize": 14,
+  "elements": [
+    {
+      "id": "heading",
+      "kind": "text",
+      "rect": [
+        17.5,
+        10.0,
+        161.0,
+        32.0
+      ],
+      "label": "Crop & Expand",
+      "display": ""
+    },
+    {
+      "id": "crop-overlay-toggle",
+      "kind": "icon",
+      "rect": [
+        192.5,
+        8.0,
+        215.0,
+        32.0
+      ],
+      "label": "Crop Overlay",
+      "display": ""
+    },
+    {
+      "id": "reset",
+      "kind": "icon",
+      "rect": [
+        219.5,
+        9.5,
+        240.0,
+        31.5
+      ],
+      "label": "Reset",
+      "display": ""
+    },
+    {
+      "id": "expand-checkbox",
+      "kind": "check",
+      "rect": [
+        18.0,
+        45.5,
+        33.5,
+        62.0
+      ],
+      "label": "Enable Expand",
+      "display": ""
+    },
+    {
+      "id": "expand-label",
+      "kind": "text",
+      "rect": [
+        37.5,
+        44.0,
+        166.5,
+        63.0
+      ],
+      "label": "Enable Expand",
+      "display": ""
+    },
+    {
+      "id": "preset-label",
+      "kind": "text",
+      "rect": [
+        18.0,
+        80.5,
+        61.0,
+        101.5
+      ],
+      "label": "Preset",
+      "display": ""
+    },
+    {
+      "id": "preset-field",
+      "kind": "field",
+      "rect": [
+        61.5,
+        80.0,
+        185.0,
+        100.5
+      ],
+      "label": "Preset",
+      "display": "Full"
+    },
+    {
+      "id": "swap-orientation",
+      "kind": "icon",
+      "rect": [
+        195.5,
+        81.0,
+        216.0,
+        102.0
+      ],
+      "label": "Swap orientation",
+      "display": ""
+    },
+    {
+      "id": "aspect-lock",
+      "kind": "icon",
+      "rect": [
+        221.0,
+        81.0,
+        239.0,
+        102.0
+      ],
+      "label": "Lock aspect ratio",
+      "display": ""
+    },
+    {
+      "id": "angle-label",
+      "kind": "text",
+      "rect": [
+        18.0,
+        118.0,
+        69.0,
+        138.0
+      ],
+      "label": "Angle",
+      "display": ""
+    },
+    {
+      "id": "angle-value",
+      "kind": "field",
+      "rect": [
+        158.5,
+        115.0,
+        203.0,
+        135.0
+      ],
+      "label": "Angle",
+      "display": "0.00"
+    },
+    {
+      "id": "angle-track",
+      "kind": "track",
+      "rect": [
+        19.0,
+        137.5,
+        205.5,
+        143.0
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "angle-handle",
+      "kind": "handle",
+      "rect": [
+        102.0,
+        132.5,
+        122.0,
+        150.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "angle-level-tool",
+      "kind": "icon",
+      "rect": [
+        214.0,
+        122.5,
+        237.0,
+        142.0
+      ],
+      "label": "Straighten",
+      "display": ""
+    },
+    {
+      "id": "rotation-divider",
+      "kind": "divider",
+      "rect": [
+        19.0,
+        155.0,
+        238.0,
+        158.0
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "rotate-flip-label",
+      "kind": "text",
+      "rect": [
+        18.0,
+        171.0,
+        116.5,
+        191.5
+      ],
+      "label": "Rotate & Flip",
+      "display": ""
+    },
+    {
+      "id": "rotate-left",
+      "kind": "icon",
+      "rect": [
+        125.5,
+        169.0,
+        146.5,
+        191.0
+      ],
+      "label": "Rotate Left",
+      "display": ""
+    },
+    {
+      "id": "rotate-right",
+      "kind": "icon",
+      "rect": [
+        154.5,
+        169.0,
+        176.5,
+        191.0
+      ],
+      "label": "Rotate Right",
+      "display": ""
+    },
+    {
+      "id": "flip-horizontal",
+      "kind": "icon",
+      "rect": [
+        183.0,
+        169.0,
+        206.5,
+        191.0
+      ],
+      "label": "Flip Horizontal",
+      "display": ""
+    },
+    {
+      "id": "flip-vertical",
+      "kind": "icon",
+      "rect": [
+        214.5,
+        169.0,
+        238.0,
+        191.0
+      ],
+      "label": "Flip Vertical",
+      "display": ""
+    },
+    {
+      "id": "generative-expand-panel",
+      "kind": "panel",
+      "rect": [
+        10.0,
+        203.0,
+        246.0,
+        236.0
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "generative-expand-glyph",
+      "kind": "icon",
+      "rect": [
+        18.5,
+        209.0,
+        41.0,
+        232.0
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "generative-expand-title",
+      "kind": "text",
+      "rect": [
+        44.0,
+        209.0,
+        170.0,
+        232.0
+      ],
+      "label": "Generative Expand",
+      "display": ""
+    },
+    {
+      "id": "generative-expand-disclosure",
+      "kind": "disclosure",
+      "rect": [
+        220.5,
+        210.5,
+        240.0,
+        232.5
+      ],
+      "label": "Generative Expand",
+      "display": ""
+    },
+    {
+      "id": "trim-panel",
+      "kind": "panel",
+      "rect": [
+        10.0,
+        241.0,
+        246.0,
+        274.0
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "trim-glyph",
+      "kind": "icon",
+      "rect": [
+        18.5,
+        247.0,
+        41.0,
+        270.0
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "trim-title",
+      "kind": "text",
+      "rect": [
+        44.0,
+        247.0,
+        170.0,
+        270.0
+      ],
+      "label": "Trim",
+      "display": ""
+    },
+    {
+      "id": "trim-disclosure",
+      "kind": "disclosure",
+      "rect": [
+        220.5,
+        248.5,
+        240.0,
+        270.5
+      ],
+      "label": "Trim",
+      "display": ""
+    },
+    {
+      "id": "geometry-panel",
+      "kind": "panel",
+      "rect": [
+        10.0,
+        279.0,
+        246.0,
+        312.0
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "geometry-glyph",
+      "kind": "icon",
+      "rect": [
+        18.5,
+        285.0,
+        41.0,
+        308.0
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "geometry-title",
+      "kind": "text",
+      "rect": [
+        44.0,
+        285.0,
+        170.0,
+        308.0
+      ],
+      "label": "Geometry",
+      "display": ""
+    },
+    {
+      "id": "geometry-eye",
+      "kind": "icon",
+      "rect": [
+        192.5,
+        288.0,
+        213.5,
+        306.0
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "geometry-disclosure",
+      "kind": "disclosure",
+      "rect": [
+        220.5,
+        286.5,
+        240.0,
+        308.5
+      ],
+      "label": "Geometry",
+      "display": ""
+    },
+    {
+      "id": "anamorphic-panel",
+      "kind": "panel",
+      "rect": [
+        10.0,
+        676.0,
+        246.0,
+        709.0
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "anamorphic-glyph",
+      "kind": "icon",
+      "rect": [
+        18.5,
+        682.0,
+        41.0,
+        705.0
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "anamorphic-title",
+      "kind": "text",
+      "rect": [
+        44.0,
+        682.0,
+        170.0,
+        705.0
+      ],
+      "label": "Anamorphic",
+      "display": ""
+    },
+    {
+      "id": "anamorphic-eye",
+      "kind": "icon",
+      "rect": [
+        192.5,
+        685.0,
+        213.5,
+        703.0
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "anamorphic-disclosure",
+      "kind": "disclosure",
+      "rect": [
+        220.5,
+        683.5,
+        240.0,
+        705.5
+      ],
+      "label": "Anamorphic",
+      "display": ""
+    },
+    {
+      "id": "expand-options",
+      "kind": "icon",
+      "rect": [
+        192.5,
+        208.0,
+        212.5,
+        229.0
+      ],
+      "label": "Generative Expand options",
+      "display": ""
+    },
+    {
+      "id": "upright-off",
+      "kind": "icon",
+      "rect": [
+        43.5,
+        323.0,
+        69.5,
+        352.0
+      ],
+      "label": "Off",
+      "display": ""
+    },
+    {
+      "id": "upright-auto",
+      "kind": "icon",
+      "rect": [
+        72.5,
+        323.0,
+        98.5,
+        352.0
+      ],
+      "label": "Auto",
+      "display": ""
+    },
+    {
+      "id": "upright-level",
+      "kind": "icon",
+      "rect": [
+        101.5,
+        323.0,
+        127.5,
+        352.0
+      ],
+      "label": "Level",
+      "display": ""
+    },
+    {
+      "id": "upright-vertical",
+      "kind": "icon",
+      "rect": [
+        130.0,
+        323.0,
+        156.0,
+        352.0
+      ],
+      "label": "Vertical",
+      "display": ""
+    },
+    {
+      "id": "upright-full",
+      "kind": "icon",
+      "rect": [
+        159.0,
+        323.0,
+        185.0,
+        352.0
+      ],
+      "label": "Full",
+      "display": ""
+    },
+    {
+      "id": "upright-guided",
+      "kind": "icon",
+      "rect": [
+        187.0,
+        323.0,
+        213.0,
+        352.0
+      ],
+      "label": "Guided",
+      "display": ""
+    },
+    {
+      "id": "geometry-info-glyph",
+      "kind": "icon",
+      "rect": [
+        34.0,
+        364.5,
+        50.5,
+        379.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "geometry-info-text",
+      "kind": "text",
+      "rect": [
+        54.0,
+        362.0,
+        226.5,
+        392.5
+      ],
+      "label": "For best results, apply lens corrections first.",
+      "display": ""
+    },
+    {
+      "id": "geometry-divider",
+      "kind": "divider",
+      "rect": [
+        20.0,
+        400.0,
+        236.0,
+        403.0
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "projection-label",
+      "kind": "text",
+      "rect": [
+        21.0,
+        412.5,
+        140.5,
+        433.5
+      ],
+      "label": "Projection",
+      "display": ""
+    },
+    {
+      "id": "projection-value",
+      "kind": "field",
+      "rect": [
+        191.0,
+        412.5,
+        235.5,
+        433.0
+      ],
+      "label": "Projection",
+      "display": "0"
+    },
+    {
+      "id": "projection-track",
+      "kind": "track",
+      "rect": [
+        20.0,
+        434.5,
+        237.0,
+        439.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "projection-handle",
+      "kind": "handle",
+      "rect": [
+        14.0,
+        429.5,
+        32.0,
+        446.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "vertical-label",
+      "kind": "text",
+      "rect": [
+        21.0,
+        443.5,
+        140.5,
+        464.5
+      ],
+      "label": "Vertical",
+      "display": ""
+    },
+    {
+      "id": "vertical-value",
+      "kind": "field",
+      "rect": [
+        191.0,
+        443.5,
+        235.5,
+        464.0
+      ],
+      "label": "Vertical",
+      "display": "0"
+    },
+    {
+      "id": "vertical-track",
+      "kind": "track",
+      "rect": [
+        20.0,
+        465.5,
+        237.0,
+        470.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "vertical-handle",
+      "kind": "handle",
+      "rect": [
+        119.0,
+        460.5,
+        137.0,
+        477.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "horizontal-label",
+      "kind": "text",
+      "rect": [
+        21.0,
+        474.5,
+        140.5,
+        495.5
+      ],
+      "label": "Horizontal",
+      "display": ""
+    },
+    {
+      "id": "horizontal-value",
+      "kind": "field",
+      "rect": [
+        191.0,
+        474.5,
+        235.5,
+        495.0
+      ],
+      "label": "Horizontal",
+      "display": "0"
+    },
+    {
+      "id": "horizontal-track",
+      "kind": "track",
+      "rect": [
+        20.0,
+        496.5,
+        237.0,
+        501.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "horizontal-handle",
+      "kind": "handle",
+      "rect": [
+        119.0,
+        491.5,
+        137.0,
+        508.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "rotate-label",
+      "kind": "text",
+      "rect": [
+        21.0,
+        505.5,
+        140.5,
+        526.5
+      ],
+      "label": "Rotate",
+      "display": ""
+    },
+    {
+      "id": "rotate-value",
+      "kind": "field",
+      "rect": [
+        191.0,
+        505.5,
+        235.5,
+        526.0
+      ],
+      "label": "Rotate",
+      "display": "0.0"
+    },
+    {
+      "id": "rotate-track",
+      "kind": "track",
+      "rect": [
+        20.0,
+        527.5,
+        237.0,
+        532.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "rotate-handle",
+      "kind": "handle",
+      "rect": [
+        119.0,
+        522.5,
+        137.0,
+        539.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "aspect-label",
+      "kind": "text",
+      "rect": [
+        21.0,
+        536.5,
+        140.5,
+        557.5
+      ],
+      "label": "Aspect",
+      "display": ""
+    },
+    {
+      "id": "aspect-value",
+      "kind": "field",
+      "rect": [
+        191.0,
+        536.5,
+        235.5,
+        557.0
+      ],
+      "label": "Aspect",
+      "display": "0"
+    },
+    {
+      "id": "aspect-track",
+      "kind": "track",
+      "rect": [
+        20.0,
+        558.5,
+        237.0,
+        563.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "aspect-handle",
+      "kind": "handle",
+      "rect": [
+        119.0,
+        553.5,
+        137.0,
+        570.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "scale-label",
+      "kind": "text",
+      "rect": [
+        21.0,
+        567.5,
+        140.5,
+        588.5
+      ],
+      "label": "Scale",
+      "display": ""
+    },
+    {
+      "id": "scale-value",
+      "kind": "field",
+      "rect": [
+        191.0,
+        567.5,
+        235.5,
+        588.0
+      ],
+      "label": "Scale",
+      "display": "100"
+    },
+    {
+      "id": "scale-track",
+      "kind": "track",
+      "rect": [
+        20.0,
+        589.5,
+        237.0,
+        594.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "scale-handle",
+      "kind": "handle",
+      "rect": [
+        119.0,
+        584.5,
+        137.0,
+        601.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "offset-x-label",
+      "kind": "text",
+      "rect": [
+        21.0,
+        598.5,
+        140.5,
+        619.5
+      ],
+      "label": "Offset X",
+      "display": ""
+    },
+    {
+      "id": "offset-x-value",
+      "kind": "field",
+      "rect": [
+        191.0,
+        598.5,
+        235.5,
+        619.0
+      ],
+      "label": "Offset X",
+      "display": "0.0"
+    },
+    {
+      "id": "offset-x-track",
+      "kind": "track",
+      "rect": [
+        20.0,
+        620.5,
+        237.0,
+        625.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "offset-x-handle",
+      "kind": "handle",
+      "rect": [
+        119.0,
+        615.5,
+        137.0,
+        632.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "offset-y-label",
+      "kind": "text",
+      "rect": [
+        21.0,
+        629.5,
+        140.5,
+        650.5
+      ],
+      "label": "Offset Y",
+      "display": ""
+    },
+    {
+      "id": "offset-y-value",
+      "kind": "field",
+      "rect": [
+        191.0,
+        629.5,
+        235.5,
+        650.0
+      ],
+      "label": "Offset Y",
+      "display": "0.0"
+    },
+    {
+      "id": "offset-y-track",
+      "kind": "track",
+      "rect": [
+        20.0,
+        651.5,
+        237.0,
+        656.5
+      ],
+      "label": "",
+      "display": ""
+    },
+    {
+      "id": "offset-y-handle",
+      "kind": "handle",
+      "rect": [
+        119.0,
+        646.5,
+        137.0,
+        663.5
+      ],
+      "label": "",
+      "display": ""
+    }
+  ]
+}

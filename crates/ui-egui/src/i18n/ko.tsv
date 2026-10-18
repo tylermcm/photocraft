@@ -3510,3 +3510,23 @@ cameraRaw	Use legacy Target Adjustment Tool	이전 대상 조정 도구 사용
 cameraRaw	Use legacy undo shortcuts	이전 실행 취소 단축키 사용
 cameraRaw	Workflow	작업 과정
 cameraRaw	Zoom and Pan	확대/축소 및 이동
+cameraRaw	Anamorphic	아나모픽
+cameraRaw	Aspect	종횡비
+cameraRaw	Crop & Expand	자르기 및 확장
+cameraRaw	Crop Overlay	자르기 오버레이
+cameraRaw	Enable Expand	확장 사용
+cameraRaw	For best results, apply lens corrections first.	최상의 결과를 얻으려면 먼저 렌즈 교정을 적용하세요.
+cameraRaw	Full	전체
+cameraRaw	Generative Expand	생성형 확장
+cameraRaw	Generative Expand options	생성형 확장 옵션
+cameraRaw	Geometry	기하학
+cameraRaw	Guided	안내선 사용
+cameraRaw	Lock aspect ratio	종횡비 잠금
+cameraRaw	Offset X	오프셋 X
+cameraRaw	Offset Y	오프셋 Y
+cameraRaw	Projection	투영
+cameraRaw	Rotate & Flip	회전 및 뒤집기
+cameraRaw	Rotate Left	왼쪽으로 회전
+cameraRaw	Rotate Right	오른쪽으로 회전
+cameraRaw	Swap orientation	방향 전환
+cameraRaw	Trim	가장자리 다듬기

@@ -30,6 +30,8 @@ mod bars;
 mod curve_regions;
 #[path = "camera_raw_extra_panels_ui.rs"]
 mod extra_panels;
+#[path = "camera_raw_crop_ui.rs"]
+pub(crate) mod crop;
 #[path = "camera_raw_info_ui.rs"]
 mod info;
 #[path = "camera_raw_preferences_ui.rs"]
@@ -1767,6 +1769,11 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
                     d.params = parameters;
                     dirty = true;
                 }
+                return;
+            }
+            if workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Crop {
+                ui.set_width(right.width());
+                crop::show(ui, &mut workspace.crop_groups);
                 return;
             }
             if workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::RedEye {

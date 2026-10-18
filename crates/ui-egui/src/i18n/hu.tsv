@@ -4245,3 +4245,23 @@ cameraRaw	Use legacy Target Adjustment Tool	Régi célzott korrekciós eszköz h
 cameraRaw	Use legacy undo shortcuts	Régi visszavonási gyorsbillentyűk használata
 cameraRaw	Workflow	Munkafolyamat
 cameraRaw	Zoom and Pan	Nagyítás és pásztázás
+cameraRaw	Anamorphic	Anamorfikus
+cameraRaw	Aspect	Oldalarány
+cameraRaw	Crop & Expand	Vágás és kibővítés
+cameraRaw	Crop Overlay	Vágási átfedés
+cameraRaw	Enable Expand	Kibővítés engedélyezése
+cameraRaw	For best results, apply lens corrections first.	A legjobb eredményhez először alkalmazza az objektívkorrekciókat.
+cameraRaw	Full	Teljes
+cameraRaw	Generative Expand	Generatív kibővítés
+cameraRaw	Generative Expand options	Generatív kibővítés beállításai
+cameraRaw	Geometry	Geometria
+cameraRaw	Guided	Segédvonalakkal
+cameraRaw	Lock aspect ratio	Oldalarány zárolása
+cameraRaw	Offset X	X eltolás
+cameraRaw	Offset Y	Y eltolás
+cameraRaw	Projection	Vetítés
+cameraRaw	Rotate & Flip	Forgatás és tükrözés
+cameraRaw	Rotate Left	Forgatás balra
+cameraRaw	Rotate Right	Forgatás jobbra
+cameraRaw	Swap orientation	Tájolás felcserélése
+cameraRaw	Trim	Szegélyek levágása

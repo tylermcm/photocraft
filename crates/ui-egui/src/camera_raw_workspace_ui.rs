@@ -45,6 +45,7 @@ pub enum WorkspaceTab {
     Snapshots,
     Presets,
     RedEye,
+    Crop,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -77,6 +78,7 @@ pub struct WorkspaceState {
     pub settings_menu: bool,
     pub save_options: bool,
     pub preferences: bool,
+    pub crop_groups: Vec<String>,
     pub preset_groups: Vec<String>,
     pub grid: bool,
     pub grid_size: f32,
@@ -103,6 +105,7 @@ impl Default for WorkspaceState {
             settings_menu: false,
             save_options: false,
             preferences: false,
+            crop_groups: vec!["Geometry".into()],
             preset_groups: Vec::new(),
             grid: false,
             grid_size: 40.0,
@@ -286,6 +289,12 @@ pub(crate) fn prepare(current: &WorkspaceState, value: &Value) -> Result<Workspa
         || next.panels.single && next.panels.open.len() > 1
     {
         return Err("Camera Raw panels must be unique supported names (at most one in single-panel mode)".into());
+    }
+    let crop_groups = &crate::camera_raw_ui::crop::GROUPS;
+    if next.crop_groups.len() > crop_groups.len()
+        || next.crop_groups.iter().any(|v| !crop_groups.contains(&v.as_str()))
+        || next.crop_groups.iter().enumerate().any(|(i,v)| next.crop_groups.iter().take(i).any(|old|old==v)) {
+        return Err("Camera Raw cropGroups must contain unique observed group names".into());
     }
     let groups = &crate::camera_raw_ui::presets::GROUPS;
     if next.preset_groups.len() > groups.len()
@@ -712,6 +721,11 @@ pub(crate) fn rail(ui: &mut Ui, rect: Rect, state: &mut WorkspaceState, navigati
     if icons::button(&mut top, "sliders-horizontal", 28.0, !state.info && state.tab == WorkspaceTab::Edit, tl!("Edit")).clicked() {
         state.info = false;
         state.tab = WorkspaceTab::Edit;
+    }
+    let crop_rect = Rect::from_center_size(pos2(rect.center().x, rect.top() + design.rail_top_inset + 50.0), vec2(28.0,28.0));
+    let mut crop_ui=ui.new_child(egui::UiBuilder::new().id_salt("camera-raw-crop-tab").max_rect(crop_rect));
+    if icons::button(&mut crop_ui,"crop",28.0,!state.info && state.tab==WorkspaceTab::Crop,crate::i18n::tr_ctx(crate::i18n::current(),"cameraRaw","Crop & Expand")).clicked() {
+        state.info=false; state.tab=WorkspaceTab::Crop;
     }
     let red_eye_rect = Rect::from_center_size(pos2(rect.center().x, rect.top() + design.snapshots_rail_offset - 36.0), vec2(28.0, 28.0));
     let mut red_eye_ui = ui.new_child(egui::UiBuilder::new().id_salt("camera-raw-red-eye-tab").max_rect(red_eye_rect));

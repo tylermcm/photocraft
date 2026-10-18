@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 pub struct Design {
     pub filmstrip: crate::camera_raw_filmstrip_ui::Design,
     pub footer: crate::camera_raw_footer_ui::Design,
+    pub crop: crate::camera_raw_ui::crop::Design,
     pub presets: crate::camera_raw_ui::PresetsDesign,
     pub preferences: crate::camera_raw_ui::SaveOptionsDesign,
     pub save_options: crate::camera_raw_ui::SaveOptionsDesign,
@@ -143,6 +144,7 @@ impl Default for Design {
             settings_menu: Default::default(),
             save_options: Default::default(),
             preferences: crate::camera_raw_ui::preferences::default_design(),
+            crop: Default::default(),
             presets: Default::default(),
             red_eye: Default::default(),
             panel_width: 270.0,
@@ -297,6 +299,7 @@ impl Design {
         value.save_options.validate()?;
         crate::camera_raw_ui::preferences::validate_design(&value.preferences)?;
         value.presets.validate()?;
+        value.crop.validate()?;
         for (label, number, min, max) in [
             ("panelWidth", value.panel_width, 220.0, 600.0),
             ("railWidth", value.rail_width, 32.0, 64.0),

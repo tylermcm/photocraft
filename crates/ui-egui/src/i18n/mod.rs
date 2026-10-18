@@ -1299,6 +1299,7 @@ mod tests {
             include_str!("../camera_raw_settings_menu_ui.rs"),
             include_str!("../camera_raw_save_options_ui.rs"),
             include_str!("../camera_raw_preferences_ui.rs"),
+            include_str!("../camera_raw_crop_ui.rs"),
             include_str!("../camera_raw_tool_panels_ui.rs"),
             include_str!("../camera_raw_curve_regions_ui.rs"),
         ];
@@ -1326,6 +1327,14 @@ mod tests {
                 labels.insert(key);
             }
         }
+        let crop: serde_json::Value = serde_json::from_str(include_str!("../../../../design/camera-raw/crop-design.json")).unwrap();
+        for e in crop["elements"].as_array().unwrap() {
+            let key = e["label"].as_str().unwrap_or("");
+            if !key.is_empty() {
+                labels.insert(key);
+            }
+        }
+        labels.insert("Full");
         labels.extend(["Single", "Multiple", "Single: Opening an edit panel closes the others.", "Default", "Horizontal"]);
         let bands = sources[0].split("const BANDS:").nth(1).unwrap().split(" = ").nth(1).unwrap().split(';').next().unwrap();
         for band in bands.split('"').skip(1).step_by(2) {

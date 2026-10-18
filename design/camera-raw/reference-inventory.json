@@ -813,51 +813,51 @@
         2662
       ],
       "scope": "Crop & Expand: geometry, rotation, flip and aspect controls",
-      "status": "incomplete; Crop & Expand tab and geometry controls missing in Camera Raw workspace.",
+      "status": "matching native Crop & Expand view captured; unavailable processing and pixel differences remain; no parity pass",
       "elements": [
         {
           "name": "Crop & Expand title/reset",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; remaining glyph/type/capability differences; no parity pass"
         },
         {
           "name": "Enable Expand",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; remaining glyph/type/capability differences; no parity pass"
         },
         {
           "name": "Preset combo/orientation/lock",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; remaining glyph/type/capability differences; no parity pass"
         },
         {
           "name": "Angle/level tool",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; remaining glyph/type/capability differences; no parity pass"
         },
         {
           "name": "Rotate left/right/flip horizontal/vertical",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; remaining glyph/type/capability differences; no parity pass"
         },
         {
           "name": "Generative Expand/Trim disclosures",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; remaining glyph/type/capability differences; no parity pass"
         },
         {
           "name": "Geometry disclosure/bypass",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; remaining glyph/type/capability differences; no parity pass"
         },
         {
           "name": "Six Upright modes",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; remaining glyph/type/capability differences; no parity pass"
         },
         {
           "name": "Lens correction advisory",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; remaining glyph/type/capability differences; no parity pass"
         },
         {
           "name": "Projection/Vertical/Horizontal/Rotate/Aspect/Scale/Offset X/Offset Y sliders",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; remaining glyph/type/capability differences; no parity pass"
         },
         {
           "name": "Anamorphic disclosure",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; remaining glyph/type/capability differences; no parity pass"
         }
       ],
       "sharedElements": [
@@ -868,13 +868,18 @@
         "Footer buttons and split Open control"
       ],
       "legacyImage": 15,
-      "nativeCaptureState": null,
-      "coverageAudit": "Crop & Expand tab and geometry controls missing in Camera Raw workspace.",
+      "nativeCaptureState": {
+        "tab": "crop",
+        "cropGroups": [
+          "Geometry"
+        ]
+      },
+      "coverageAudit": "crop-v3:81 named regions, single full-dock registration, complete candidate coverage; no per-row adjustment.",
       "previousImage": 9,
       "elementRegionsFile": "crop-element-regions.json",
-      "plannedElementCount": 83,
-      "lastIndividualPixelAudit": "Specification measured from reference; native view is not implemented/captured, so no individual comparison or parity pass.",
-      "currentValidation": "Pending matching native capture and individual audit; no parity pass."
+      "plannedElementCount": 81,
+      "lastIndividualPixelAudit": "crop-v3/crop-audit.json; source[98,432,638,1892],candidate[2260,374,2800,1834],1440x1000/scale2.",
+      "currentValidation": "3123 library tests/13ignored,60 Camera Raw integration tests,all-target clippy pass. Transform processing remains unavailable. Source only; no desktop promotion."
     },
     {
       "image": 15,
@@ -1398,5 +1403,25 @@
     "remaining": "All19 remain in every-element scope. DNG writer and complete export bindings, folder selection, credentials/account management, output settings, shared chrome, type/glyph/border differences and hosted validation remain incomplete. Current values use real document context rather than reference paths or account names.",
     "selectedEditorBuildUnchanged": "acr-settings-menu",
     "launchConstraint": "Entirely offscreen; no visible launches or focus-preservation claim."
+  },
+  "regionInventoryNote": "Current sum of all21 *element-regions.json files is1280 including overlap/repeated controls and unaudited Masking/Remove specifications. Earlier1115/1062 totals were partial counts, not full inventory totals or proof of parity.",
+  "cropSourceValidation": {
+    "executableSha256": "b1d54c6c7a7cd317919c3c473d70c37c78e83c1ae27ebf728772b66406061a43",
+    "layoutSha256": "1b55cb63e522a7538af762cf927b65c6b65513fbd14e8eb3d84481ba68e30a55",
+    "tokensSha256": "d94d6de0cb20d7f0b00be2d2317af93b76f07a2498a841d7090fb1e8e917e896",
+    "sourceImage": 14,
+    "candidateRect": [
+      2260,
+      374,
+      2800,
+      1834
+    ],
+    "originalUnchanged": true,
+    "fullEveryElementParityVerified": false,
+    "sourceBaseCommit": "66c5b156",
+    "status": "unpromoted source; offscreen gates pass, transforms unavailable",
+    "regionsCompared": 81,
+    "evidence": "crop-v3/crop-audit.json and overlay/comparison.png",
+    "remaining": "Masking13 and Remove15 matching-view audits; all19 every-element verification, processing bindings and hosted validation remain incomplete."
   }
 }

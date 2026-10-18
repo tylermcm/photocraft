@@ -4005,3 +4005,23 @@ cameraRaw	Use legacy Target Adjustment Tool	従来のターゲット調整ツー
 cameraRaw	Use legacy undo shortcuts	従来の取り消しショートカットを使用
 cameraRaw	Workflow	ワークフロー
 cameraRaw	Zoom and Pan	ズームとパン
+cameraRaw	Anamorphic	アナモルフィック
+cameraRaw	Aspect	縦横比
+cameraRaw	Crop & Expand	切り抜きと拡張
+cameraRaw	Crop Overlay	切り抜きオーバーレイ
+cameraRaw	Enable Expand	拡張を有効にする
+cameraRaw	For best results, apply lens corrections first.	最適な結果を得るには、先にレンズ補正を適用してください。
+cameraRaw	Full	全体
+cameraRaw	Generative Expand	生成拡張
+cameraRaw	Generative Expand options	生成拡張のオプション
+cameraRaw	Geometry	ジオメトリ
+cameraRaw	Guided	ガイド付き
+cameraRaw	Lock aspect ratio	縦横比を固定
+cameraRaw	Offset X	オフセット X
+cameraRaw	Offset Y	オフセット Y
+cameraRaw	Projection	投影
+cameraRaw	Rotate & Flip	回転と反転
+cameraRaw	Rotate Left	左に回転
+cameraRaw	Rotate Right	右に回転
+cameraRaw	Swap orientation	縦横を入れ替え
+cameraRaw	Trim	周辺をトリミング

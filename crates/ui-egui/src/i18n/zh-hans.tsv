@@ -2951,3 +2951,23 @@ cameraRaw	Use legacy Target Adjustment Tool	使用旧版目标调整工具
 cameraRaw	Use legacy undo shortcuts	使用旧版撤销快捷键
 cameraRaw	Workflow	工作流程
 cameraRaw	Zoom and Pan	缩放和平移
+cameraRaw	Anamorphic	变形镜头
+cameraRaw	Aspect	长宽比
+cameraRaw	Crop & Expand	裁剪和扩展
+cameraRaw	Crop Overlay	裁剪叠加
+cameraRaw	Enable Expand	启用扩展
+cameraRaw	For best results, apply lens corrections first.	为获得最佳效果，请先应用镜头校正。
+cameraRaw	Full	完整
+cameraRaw	Generative Expand	生成式扩展
+cameraRaw	Generative Expand options	生成式扩展选项
+cameraRaw	Geometry	几何
+cameraRaw	Guided	引导式
+cameraRaw	Lock aspect ratio	锁定长宽比
+cameraRaw	Offset X	偏移 X
+cameraRaw	Offset Y	偏移 Y
+cameraRaw	Projection	投影
+cameraRaw	Rotate & Flip	旋转和翻转
+cameraRaw	Rotate Left	向左旋转
+cameraRaw	Rotate Right	向右旋转
+cameraRaw	Swap orientation	切换方向
+cameraRaw	Trim	修剪
