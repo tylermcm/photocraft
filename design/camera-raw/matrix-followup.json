@@ -1,0 +1,85 @@
+{
+  "evidence": "matrix-v2",
+  "sourceRuntimeBaseCommit": "4d022559",
+  "fullEveryElementParityVerified": false,
+  "items": [
+    {
+      "id": "mixer-missing-controls",
+      "priority": 1,
+      "references": [
+        2
+      ],
+      "evidence": "ref02/curve-mixer-element-regions/comparison.png",
+      "finding": "Native Color Mixer lacks Mixer/Point Color row and Adjust caption, has8 instead of9 visible swatches, and uses different selector/gradient styling. Missing vertical rows shift all following sections upward.",
+      "next": "Implement measured Mixer header/selector presentation and supported bindings; preserve unavailable capabilities honestly. Re-render entire shared panel with one transform."
+    },
+    {
+      "id": "whole-sidebar-scroll",
+      "priority": 1,
+      "references": [
+        2,
+        3,
+        4
+      ],
+      "evidence": "sidebar-ref02-diagnostic/comparison.png",
+      "finding": "A fixed histogram/metadata registration shows native Edit/Profile bars still visible where ACR has scrolled them away. Rotated panel order plus section-only cropping conceals this whole-sidebar mismatch. Current panel captures also use taller viewports than the source client.",
+      "next": "Verify actual ACR whole-sidebar scroll behavior; move the appropriate controls into the real scroll area and expose/test scroll view state. Match source scroll/viewport rather than moving compared regions independently."
+    },
+    {
+      "id": "curve-controls",
+      "priority": 2,
+      "references": [
+        1,
+        2,
+        19
+      ],
+      "finding": "Curve Adjust text/icon spacing overlaps and the reference target-adjustment control is absent. Curve channel defaults require source-state review.",
+      "next": "Implement missing measured controls, resolve spacing and verify reachable source view state without fake processing."
+    },
+    {
+      "id": "remaining-style-and-capability",
+      "priority": 2,
+      "references": [
+        3,
+        4,
+        6,
+        7,
+        8,
+        10,
+        12,
+        13,
+        14,
+        15
+      ],
+      "finding": "Wheel adornments, lower-panel spacing, glyphs, disabled-state styling, unavailable operations and context-dependent values remain visibly different.",
+      "next": "Use the recorded paired views and measured regions for concrete fixes; do not claim parity from complete pixel coverage."
+    },
+    {
+      "id": "uncompared-chrome-and-hosted",
+      "priority": 1,
+      "references": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "finding": "Named crop coverage is not every-element coverage. Partial sidebar references leave surrounding chrome/footer/empty or clipped areas unreviewed; full-client comparisons retain synthetic photo/EXIF/output differences. Live hosted behavior and secondary-monitor/no-activation preservation remain unverified.",
+      "next": "Extend source element accounting/shared-client registration where needed, inspect source/native at useful scale, then run guarded native+hosted gates before promoting the development executable."
+    }
+  ]
+}

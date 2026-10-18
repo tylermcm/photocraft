@@ -59,7 +59,19 @@
       "previousImage": 4,
       "elementRegionsFile": "edit-element-regions.json",
       "lastIndividualPixelAudit": "Current individual fixed-registration audit pending; no parity pass.",
-      "currentValidation": "114 individual regions measured against the current native build; remaining differences and shared elements pending."
+      "currentValidation": "114 individual regions measured against the current native build; remaining differences and shared elements pending.",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "edit-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.7496987910094309,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 2,
@@ -146,7 +158,19 @@
       "previousImage": 5,
       "elementRegionsFile": "curve-mixer-element-regions.json",
       "lastIndividualPixelAudit": "Current individual fixed-registration audit pending; no parity pass.",
-      "currentValidation": "98 individual regions measured against the current native build; remaining differences and shared elements pending."
+      "currentValidation": "98 individual regions measured against the current native build; remaining differences and shared elements pending.",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "curve-mixer-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.6130135475045232,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 3,
@@ -217,7 +241,20 @@
       "elementRegionsFile": "grading-element-regions.json",
       "lastIndividualPixelAudit": "v6: zero listed regions pixel-identical; geometry and typography improved but differences remain.",
       "previousImage": 6,
-      "currentValidation": "58 individual regions measured against the current native build; remaining differences and shared elements pending."
+      "currentValidation": "58 individual regions measured against the current native build; remaining differences and shared elements pending.",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "grading-element-regions.json",
+          "detail-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.4675445347549415,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 4,
@@ -295,7 +332,19 @@
       "coverageAudit": "Native Optics/Lens Blur/Calibration layouts captured and 93 regions audited. Processing unavailable/disabled; glyph, type, field, gradient and spacing differences remain.",
       "elementRegionsFile": "lower-panels-element-regions.json",
       "previousImage": 7,
-      "currentValidation": "93 individual regions measured against the current native build; remaining differences and shared elements pending."
+      "currentValidation": "93 individual regions measured against the current native build; remaining differences and shared elements pending.",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "lower-panels-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.636717798879961,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 5,
@@ -337,7 +386,19 @@
       "coverageAudit": "All ten headers/disclosures/eye glyphs captured, 40 registered regions. Seven implemented stages support temporary hold-to-bypass preview; three unsupported stages have disabled eyes. Not a visual parity pass.",
       "elementRegionsFile": "collapsed-element-regions.json",
       "previousImage": 8,
-      "currentValidation": "40 individual regions measured against the current native build; remaining differences and shared elements pending."
+      "currentValidation": "40 individual regions measured against the current native build; remaining differences and shared elements pending.",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "collapsed-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.3893588968851288,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 6,
@@ -402,7 +463,19 @@
       "elementRegionsFile": "save-options-element-regions.json",
       "plannedElementCount": 104,
       "lastIndividualPixelAudit": "Private save-options-v2: 104 regions at one full-dialog 1574x2256 registration. Every ROI has candidate coverage. Mean of region RGB means8.856; dynamic path/name/account and unavailable capability differences are not masked.",
-      "currentValidation": "Unpromoted source:3120 library tests/13ignored,54 Camera Raw integrations, six auditor tests, clippy/layers30/wasm24 pass. Hosted validation pending."
+      "currentValidation": "Unpromoted source:3120 library tests/13ignored,54 Camera Raw integrations, six auditor tests, clippy/layers30/wasm24 pass. Hosted validation pending.",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "save-options-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 1.0,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 7,
@@ -463,7 +536,19 @@
       "elementRegionsFile": "preferences-element-regions.json",
       "plannedElementCount": 53,
       "lastIndividualPixelAudit": "preferences-v2/preferences-audit.json; source [0,0,2004,1530], candidate [438,635,2442,2165], scale2 at1440x1400.",
-      "currentValidation": "3122 library tests (13 ignored),58 Camera Raw integrations,6 auditors,all-target clippy,layers30,wasm24 pass. All offscreen. Unsupported capabilities remain disabled; unpromoted source only."
+      "currentValidation": "3122 library tests (13 ignored),58 Camera Raw integrations,6 auditors,all-target clippy,layers30,wasm24 pass. All offscreen. Unsupported capabilities remain disabled; unpromoted source only.",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "preferences-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 1.0,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 8,
@@ -474,7 +559,7 @@
         2664
       ],
       "scope": "Red Eye: pupil size, darken, overlay",
-      "status": "native baseline captured with 18 registered element regions; revised source awaiting recapture; processing unavailable in Camera Raw transaction",
+      "status": "current-source Red Eye recaptured in the common matrix; processing unavailable and visual differences remain; no parity pass",
       "elements": [
         {
           "name": "Red Eye title/reset/bypass",
@@ -509,7 +594,19 @@
       "coverageAudit": "Native Red Eye presentation captured with 18 element regions. Geometry/color revisions awaiting final render. Processing and shared rail/chrome parity remain incomplete.",
       "previousImage": 12,
       "elementRegionsFile": "red-eye-element-regions.json",
-      "currentValidation": "18 individual regions measured against the current native build; remaining differences and shared elements pending."
+      "currentValidation": "18 individual regions measured against the current native build; remaining differences and shared elements pending.",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "red-eye-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.11741924851680949,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 9,
@@ -548,7 +645,19 @@
       "elementRegionsFile": "snapshots-element-regions.json",
       "lastIndividualPixelAudit": "v6: zero listed regions pixel-identical; geometry and typography improved but differences remain.",
       "previousImage": 13,
-      "currentValidation": "5 individual regions measured against the current native build; remaining differences and shared elements pending."
+      "currentValidation": "5 individual regions measured against the current native build; remaining differences and shared elements pending.",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "snapshots-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.1461009558946839,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 10,
@@ -624,7 +733,19 @@
       "elementRegionsFile": "presets-element-regions.json",
       "plannedElementCount": 88,
       "lastIndividualPixelAudit": "presets-v4: 88 regions, fixed 540x2100 registration; 50-percent overlay and absolute difference inspected. Mean of region RGB means5.973; scrollbar14.286. No per-element realignment.",
-      "currentValidation": "Unpromoted source; 3118 library tests/13ignored and51 Camera Raw integrations pass; clippy/layers30/wasm24 pass. Desktop build and hosted validation pending."
+      "currentValidation": "Unpromoted source; 3118 library tests/13ignored and51 Camera Raw integrations pass; clippy/layers30/wasm24 pass. Desktop build and hosted validation pending.",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "presets-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.6435137895812053,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 11,
@@ -695,7 +816,11 @@
         }
       ],
       "legacyImage": 6,
-      "nativeCaptureState": null,
+      "nativeCaptureState": {
+        "tab": "presets",
+        "settingsMenu": true,
+        "previousRecipeFromRealCommit": true
+      },
       "coverageAudit": "Reference-wide settings menu has no matching captured state yet.",
       "previousImage": 15,
       "elementRegionsFile": "settings-menu-element-regions.json",
@@ -707,6 +832,18 @@
         "scope": "Displayed settings-menu comparison",
         "furtherPixelRefinementRequested": false,
         "remaining": "Unimplemented operations remain disabled; other tools and tabs still need implementation."
+      },
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "settings-menu-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.8272995441137034,
+        "fullReferenceVerified": false
       }
     },
     {
@@ -750,7 +887,19 @@
       "elementRegionsFile": "info-element-regions.json",
       "lastIndividualPixelAudit": "v6: zero listed regions pixel-identical; geometry and typography improved but differences remain.",
       "previousImage": 1,
-      "currentValidation": "21 individual regions measured against the current native build; remaining differences and shared elements pending."
+      "currentValidation": "21 individual regions measured against the current native build; remaining differences and shared elements pending.",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "info-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.2573979811923044,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 13,
@@ -806,7 +955,19 @@
       "elementRegionsFile": "masking-element-regions.json",
       "plannedElementCount": 35,
       "lastIndividualPixelAudit": "masking-v2: source[34,432,574,1492],candidate[2260,374,2800,1434],1440x1000/scale2. People capability text differs deliberately; no masking of differences.",
-      "currentValidation": "3124 library tests/13ignored and62 Camera Raw integrations pass. People disclosure/help work; local mask creation stays disabled. Source only; no desktop promotion."
+      "currentValidation": "3124 library tests/13ignored and62 Camera Raw integrations pass. People disclosure/help work; local mask creation stays disabled. Source only; no desktop promotion.",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "masking-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.31295516277605007,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 14,
@@ -883,7 +1044,19 @@
       "elementRegionsFile": "crop-element-regions.json",
       "plannedElementCount": 81,
       "lastIndividualPixelAudit": "crop-v3/crop-audit.json; source[98,432,638,1892],candidate[2260,374,2800,1834],1440x1000/scale2.",
-      "currentValidation": "3123 library tests/13ignored,60 Camera Raw integration tests,all-target clippy pass. Transform processing remains unavailable. Source only; no desktop promotion."
+      "currentValidation": "3123 library tests/13ignored,60 Camera Raw integration tests,all-target clippy pass. Transform processing remains unavailable. Source only; no desktop promotion.",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "crop-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.4068245803782994,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 15,
@@ -955,7 +1128,19 @@
       "elementRegionsFile": "remove-element-regions.json",
       "plannedElementCount": 49,
       "lastIndividualPixelAudit": "remove-v2/remove-audit.json; source[88,432,628,1522],candidate[2260,374,2800,1464],1440x1000/scale2.",
-      "currentValidation": "3125 library tests/13ignored,64 Camera Raw integrations,6 auditors,all-target clippy,layers30,wasm24 pass. Disclosures/help work; retouch/detector/feedback operations stay disabled. Unpromoted source only."
+      "currentValidation": "3125 library tests/13ignored,64 Camera Raw integrations,6 auditors,all-target clippy,layers30,wasm24 pass. Disclosures/help work; retouch/detector/feedback operations stay disabled. Unpromoted source only.",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "remove-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.303352024408345,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 16,
@@ -994,7 +1179,19 @@
       "coverageAudit": "Alternate Info full-window scale/margins capture and shared chrome audit pending.",
       "previousImage": 18,
       "currentValidation": "69 regions measured at one fixed client registration; repeated/nested regions and content differences are not unique-feature completion.",
-      "fullWindowRegionsFile": "full-window-16-element-regions.json"
+      "fullWindowRegionsFile": "full-window-16-element-regions.json",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "full-window-16-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.970069693103401,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 17,
@@ -1029,7 +1226,19 @@
       "coverageAudit": "Grid/Info view state supported; matching full-window capture and element audit pending.",
       "previousImage": 17,
       "currentValidation": "70 regions measured at one fixed client registration; repeated/nested regions and content differences are not unique-feature completion.",
-      "fullWindowRegionsFile": "full-window-17-element-regions.json"
+      "fullWindowRegionsFile": "full-window-17-element-regions.json",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "full-window-17-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.9733077764854058,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 18,
@@ -1080,7 +1289,19 @@
       "coverageAudit": "Info dock exists; matching full-window dimensions and shared chrome audit pending.",
       "previousImage": 16,
       "currentValidation": "63 regions measured at one fixed client registration; repeated/nested regions and content differences are not unique-feature completion.",
-      "fullWindowRegionsFile": "full-window-18-element-regions.json"
+      "fullWindowRegionsFile": "full-window-18-element-regions.json",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "full-window-18-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.9715251615101578,
+        "fullReferenceVerified": false
+      }
     },
     {
       "image": 19,
@@ -1149,7 +1370,20 @@
           1301
         ]
       },
-      "fullWindowRegionsFile": "full-window-19-element-regions.json"
+      "fullWindowRegionsFile": "full-window-19-element-regions.json",
+      "currentMatrixEvidence": {
+        "artifact": "matrix-v2/matrix-audit.json",
+        "sourceRuntimeBaseCommit": "4d022559",
+        "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+        "specifications": [
+          "full-window-19-element-regions.json",
+          "filmstrip-element-regions.json"
+        ],
+        "requestedStateAndProfileVerified": true,
+        "candidateCoverageComplete": true,
+        "comparedSourceCropFraction": 0.9747702975620179,
+        "fullReferenceVerified": false
+      }
     }
   ],
   "nativeSupportAuthorized": true,
@@ -1452,7 +1686,7 @@
     "evidence": "masking-v2/masking-audit.json and overlay/comparison.png",
     "remaining": "Remove15 matching-view audit; all19 every-element verification, processing and hosted validation remain incomplete."
   },
-  "sourceCoverageAtRecordedRevisions": "All19 references now have recorded matching-view captures at recorded source revisions, including the accepted settings menu. This is not a current-build/full-element pass. Fresh current-source matrix, revised Red Eye capture, incomplete element/shared-chrome coverage, processing and hosted gates remain pending.",
+  "sourceCoverageAtRecordedRevisions": "All19 now freshly captured with one common merged profile and stable renderer (matrix-v2). All21 versioned specifications/1280 overlapping regions compared. This is not full-source/every-element parity: crop coverage, missing UI, whole-sidebar scroll behavior, visual/capability differences and hosted validation remain incomplete.",
   "removeSourceValidation": {
     "executableSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
     "layoutSha256": "2c43d2a4804893da80d014b3a45524c3a2cda34b5d74d2dc229f75ebb4c1926d",
@@ -1471,5 +1705,19 @@
     "regionsCompared": 49,
     "evidence": "remove-v2/remove-audit.json and overlay/comparison.png",
     "remaining": "All19 current-source matrix, incomplete element coverage/shared chrome, remaining type/glyph/capability differences, processing and hosted validation."
+  },
+  "currentMatrixValidation": {
+    "sourceRuntimeBaseCommit": "4d022559",
+    "artifact": "matrix-v2/matrix-audit.json",
+    "capturesComplete": true,
+    "references": 19,
+    "specifications": 21,
+    "namedRegions": 1280,
+    "rendererSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+    "baseLayoutSha256": "47ddc3d1fafc86f20ce360320a6075b6ca53aab571f3195a5d397db5756cb450",
+    "tokensSha256": "b4aace2dc4d44f3976d06eed7590ba9bde8bbc20363bddb491e7f7aca2db8d30",
+    "fullEveryElementParityVerified": false,
+    "visualReview": "All21 source/native pairs inspected via four contact sheets; Curve/Mixer and lower panels also inspected individually. Full-sidebar ref02 diagnostic exposes header/scroll composition mismatch. Accepted menu geometry unchanged.",
+    "next": "Fix Color Mixer missing tabs/Adjust row/ninth selector and subsequent spacing; correct whole-sidebar scrolling and viewport coverage; review remaining curves/grading/disabled/glyph/chrome gaps; hosted gates before promotion."
   }
 }

@@ -769,3 +769,42 @@ Space disclosures and lower-row displacement, atomic invalid mixed requests,
 help Escape/Y ownership and parent-close cleanup. All work ran offscreen; no new
 desktop executable, visible launch, release, push or promotion. Protected debug,
 selected acr-settings-menu and release executable hashes remain unchanged.
+
+
+### Common current-source matrix (2026-10-17)
+
+scripts/audit_camera_raw_matrix.py merges all six design fragments and three token
+fragments into private copies, preserves the accepted menu design, and captures
+all19 references using one pinned native renderer. It checks actual view/profile,
+ordered panels, scope/navigation/filmstrip state, PNG sizes, input hashes and photo/
+document/recipe identity. A real setup commit creates the menu's previous recipe;
+that case is compared with its own closed-menu baseline. Fit zoom is normalized
+from the command alias "fit" to native serde null; numeric zoom checks remain strict.
+All sections within a reference must share one scale/translation. The extra filmstrip
+crop is derived from the same full-client transform, never aligned independently.
+
+matrix-v2/matrix-audit.json covers all21 versioned region specifications and1280
+overlapping/repeated named regions across19 verified views. Runtime base4d022559,
+renderer6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda,
+merged layout47ddc3d1fafc86f20ce360320a6075b6ca53aab571f3195a5d397db5756cb450,
+merged tokensb4aace2dc4d44f3976d06eed7590ba9bde8bbc20363bddb491e7f7aca2db8d30.
+Input pins and partial/final status are retained. Six new matrix verifier tests
+and six existing comparator tests pass. No Rust runtime change or desktop build.
+
+All21 source/native pairs were inspected via four contact sheets, with individual
+Curve/Mixer and lower-panel review. The whole-sidebar ref02 diagnostic aligns the
+fixed histogram/metadata and reveals a real mismatch: native Edit/Profile bars
+remain pinned while the reference has scrolled them away. Rotating the panel order
+and comparing only the section misses that mismatch. Color Mixer also lacks the
+Mixer/Point Color row, Adjust caption and ninth selector, shifting following
+sections. Curve target control/spacing, wheel adornments, lower-panel styling,
+unavailable capabilities and surrounding chrome coverage remain incomplete.
+See matrix-followup.json for concrete follow-up work. The accepted settings-menu
+comparison is not reopened for cosmetic refinement.
+
+Capture completion is not a parity pass. The report includes source crop coverage,
+which ranges from partial panels to complete dialogs/client crops and is not an
+estimate of element completeness. No data/unsupported capability differences are
+masked. All work remained offscreen; selected editor and live JSON are unchanged.
+A fresh full-source matrix after structural fixes and complete hosted gates are
+still required before promotion. The every-element/all19 goal remains active.
