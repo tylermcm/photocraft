@@ -102,6 +102,12 @@ pub enum Binding {
     Folder,
     Account,
     Connected,
+    PanelMode,
+    PrefNames,
+    PrefZoom,
+    PanelInfo,
+    PrefRich,
+    PrefHints,
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default, deny_unknown_fields)]
@@ -194,9 +200,9 @@ impl Default for Design {
 impl Design {
     pub(crate) fn validate(&self) -> Result<(), String> {
         if !self.width.is_finite()
-            || !(640.0..=1000.0).contains(&self.width)
+            || !(640.0..=1200.0).contains(&self.width)
             || !self.height.is_finite()
-            || !(800.0..=1400.0).contains(&self.height)
+            || !(400.0..=1400.0).contains(&self.height)
             || !self.font_size.is_finite()
             || !(9.0..=20.0).contains(&self.font_size)
             || !self.title_size.is_finite()
@@ -229,11 +235,12 @@ impl Design {
                 return Err(format!("invalid Save Options element {}", e.id));
             }
         }
-        for (id, kind) in [("window-frame", Kind::Frame), ("title", Kind::Title), ("save-button", Kind::Button), ("cancel-button", Kind::Button)] {
+        for (id, kind) in [("window-frame", Kind::Frame), ("title", Kind::Title),  ("cancel-button", Kind::Button)] {
             if !self.elements.iter().any(|e| e.id == id && e.kind == kind) {
                 return Err(format!("Save Options design requires {id}"));
             }
         }
+        if !self.elements.iter().any(|e|matches!(e.id.as_str(),"save-button"|"ok-button") && e.kind==Kind::Button) { return Err("dialog design requires a primary button".into()); }
         Ok(())
     }
     fn valid_rect(&self, r: [f32; 4]) -> bool {

@@ -3489,3 +3489,24 @@ cameraRaw	Sharpen For	선명 효과 대상
 cameraRaw	Space	공간
 cameraRaw	Storage method	저장 방법
 cameraRaw	Use Lossy Compression	손실 압축 사용
+cameraRaw	Camera Raw Preferences	Camera Raw 환경 설정
+cameraRaw	Color Theme	색상 테마
+cameraRaw	Default image click zooms to	이미지 클릭 시 기본 확대 비율
+cameraRaw	Defaults	기본값
+cameraRaw	Edit panel behavior	편집 패널 동작
+cameraRaw	Filmstrip	필름 스트립
+cameraRaw	Generative AI	생성형 AI
+cameraRaw	Multiple	여러 개
+cameraRaw	Multiple: Edit panels will stay open until you close them.	여러 개: 직접 닫을 때까지 편집 패널이 열린 상태로 유지됩니다.
+cameraRaw	Show contextual menu hints on hover	가리킬 때 상황에 맞는 메뉴 힌트 표시
+cameraRaw	Show filenames	파일 이름 표시
+cameraRaw	Show ratings & color labels	등급 및 색상 레이블 표시
+cameraRaw	Show rich tooltips	자세한 도구 설명 표시
+cameraRaw	Single	하나
+cameraRaw	Single: Opening an edit panel closes the others.	하나: 편집 패널을 열면 다른 패널이 닫힙니다.
+cameraRaw	Use Lightroom style zoom and pan	Lightroom 스타일 확대/축소 및 이동 사용
+cameraRaw	Use compact layout	간결한 레이아웃 사용
+cameraRaw	Use legacy Target Adjustment Tool	이전 대상 조정 도구 사용
+cameraRaw	Use legacy undo shortcuts	이전 실행 취소 단축키 사용
+cameraRaw	Workflow	작업 과정
+cameraRaw	Zoom and Pan	확대/축소 및 이동

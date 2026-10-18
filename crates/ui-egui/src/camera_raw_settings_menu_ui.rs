@@ -315,6 +315,8 @@ fn apply(app: &mut PhotocraftApp, ctx: &egui::Context, params: CameraRaw) -> Res
 pub(super) fn close_view(ui: &mut crate::state::UiState) {
     ui.camera_raw_workspace.settings_menu = false;
     ui.camera_raw_workspace.save_options = false;
+    ui.camera_raw_workspace.preferences = false;
+    ui.camera_raw_preferences.close();
     ui.camera_raw_save_options.close();
     ui.camera_raw_menu.rect = None;
     ui.camera_raw_menu.snapshot_picker = false;

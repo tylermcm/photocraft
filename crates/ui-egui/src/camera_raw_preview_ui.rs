@@ -170,7 +170,8 @@ pub(crate) fn interact(ui: &mut Ui, state: &mut CameraRawPreviewState, viewport:
         } else if modifiers.alt {
             state.zoom_at(state.scale(viewport, size) / 1.25, at, viewport, size);
         } else if state.zoom.is_none() {
-            state.zoom_at(1.0, at, viewport, size);
+            let zoom=crate::camera_raw_ui::preferences::effective(ui.ctx()).map_or(1.0,|p|p.click_zoom);
+            state.zoom_at(zoom, at, viewport, size);
         } else {
             state.fit();
         }

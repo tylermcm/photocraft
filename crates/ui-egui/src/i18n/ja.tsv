@@ -3984,3 +3984,24 @@ cameraRaw	Sharpen For	シャープ対象
 cameraRaw	Space	スペース
 cameraRaw	Storage method	保存方法
 cameraRaw	Use Lossy Compression	非可逆圧縮を使用
+cameraRaw	Camera Raw Preferences	Camera Raw 環境設定
+cameraRaw	Color Theme	カラーテーマ
+cameraRaw	Default image click zooms to	画像クリック時の既定のズーム倍率
+cameraRaw	Defaults	初期設定
+cameraRaw	Edit panel behavior	編集パネルの動作
+cameraRaw	Filmstrip	フィルムストリップ
+cameraRaw	Generative AI	生成 AI
+cameraRaw	Multiple	複数
+cameraRaw	Multiple: Edit panels will stay open until you close them.	複数：編集パネルは閉じるまで開いたままになります。
+cameraRaw	Show contextual menu hints on hover	マウスオーバー時にコンテキストメニューのヒントを表示
+cameraRaw	Show filenames	ファイル名を表示
+cameraRaw	Show ratings & color labels	評価とカラーラベルを表示
+cameraRaw	Show rich tooltips	詳細なツールヒントを表示
+cameraRaw	Single	単一
+cameraRaw	Single: Opening an edit panel closes the others.	単一：編集パネルを開くと他のパネルが閉じます。
+cameraRaw	Use Lightroom style zoom and pan	Lightroom スタイルのズームとパンを使用
+cameraRaw	Use compact layout	コンパクトレイアウトを使用
+cameraRaw	Use legacy Target Adjustment Tool	従来のターゲット調整ツールを使用
+cameraRaw	Use legacy undo shortcuts	従来の取り消しショートカットを使用
+cameraRaw	Workflow	ワークフロー
+cameraRaw	Zoom and Pan	ズームとパン

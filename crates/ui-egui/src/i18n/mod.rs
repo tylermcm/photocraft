@@ -1298,6 +1298,7 @@ mod tests {
             include_str!("../camera_raw_presets_ui.rs"),
             include_str!("../camera_raw_settings_menu_ui.rs"),
             include_str!("../camera_raw_save_options_ui.rs"),
+            include_str!("../camera_raw_preferences_ui.rs"),
             include_str!("../camera_raw_tool_panels_ui.rs"),
             include_str!("../camera_raw_curve_regions_ui.rs"),
         ];
@@ -1312,10 +1313,20 @@ mod tests {
         }
         let save_options: serde_json::Value = serde_json::from_str(include_str!("../../../../design/camera-raw/save-options-design.json")).unwrap();
         for element in save_options["elements"].as_array().unwrap() {
-            let text=element["label"].as_str().unwrap_or("");
-            let key=text.trim_end_matches(':').trim_end_matches('…');
-            if !key.is_empty() && key!="+" { labels.insert(key); }
+            let text = element["label"].as_str().unwrap_or("");
+            let key = text.trim_end_matches(':').trim_end_matches('…');
+            if !key.is_empty() && key != "+" {
+                labels.insert(key);
+            }
         }
+        let preferences: serde_json::Value = serde_json::from_str(include_str!("../../../../design/camera-raw/preferences-design.json")).unwrap();
+        for e in preferences["elements"].as_array().unwrap() {
+            let key = e["label"].as_str().unwrap_or("").trim_end_matches(':');
+            if !key.is_empty() {
+                labels.insert(key);
+            }
+        }
+        labels.extend(["Single", "Multiple", "Single: Opening an edit panel closes the others.", "Default", "Horizontal"]);
         let bands = sources[0].split("const BANDS:").nth(1).unwrap().split(" = ").nth(1).unwrap().split(';').next().unwrap();
         for band in bands.split('"').skip(1).step_by(2) {
             labels.insert(band);

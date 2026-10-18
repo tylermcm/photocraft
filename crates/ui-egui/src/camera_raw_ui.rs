@@ -32,6 +32,9 @@ mod curve_regions;
 mod extra_panels;
 #[path = "camera_raw_info_ui.rs"]
 mod info;
+#[path = "camera_raw_preferences_ui.rs"]
+pub(crate) mod preferences;
+pub use preferences::State as PreferencesState;
 #[path = "camera_raw_save_options_ui.rs"]
 mod save_options;
 pub use save_options::{Design as SaveOptionsDesign, State as SaveOptionsState, Settings as SaveOptionsSettings};
@@ -875,11 +878,11 @@ pub fn menu(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &Val
     };
     for (key, value) in fields {
         match key.as_str() {
-            "set" | "scope" | "view" | "workspace" | "saveOptions" => {}
+            "set" | "scope" | "view" | "workspace" | "saveOptions" | "preferences" => {}
             "reset" if matches!(value.as_str(), Some("open" | "default")) => {}
             "reset" => return Some(Err("Camera Raw reset must be open or default".into())),
-            "before" | "commit" | "cancel" | "saveSettings" | "loadSettings" | "undo" | "redo" if value.is_boolean() => {}
-            "before" | "commit" | "cancel" | "saveSettings" | "loadSettings" | "undo" | "redo" => {
+            "before" | "commit" | "cancel" | "saveSettings" | "loadSettings" | "undo" | "redo" | "applyPreferences" if value.is_boolean() => {}
+            "before" | "commit" | "cancel" | "saveSettings" | "loadSettings" | "undo" | "redo" | "applyPreferences" => {
                 return Some(Err(format!("Camera Raw {key} must be a boolean")));
             }
             _ => return Some(Err(format!("unknown Camera Raw ui property {key}"))),
@@ -887,6 +890,10 @@ pub fn menu(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &Val
     }
     if ui.get("commit").and_then(Value::as_bool) == Some(true) && ui.get("cancel").and_then(Value::as_bool) == Some(true) {
         return Some(Err("Camera Raw cannot commit and cancel together".into()));
+    }
+    if ui.get("applyPreferences").and_then(Value::as_bool)==Some(true) {
+        if fields.len()!=1 { return Some(Err("applyPreferences must be sent on its own".into())); }
+        return Some(preferences::confirm(app,ctx).map(|_|json!({"applied":true})));
     }
     for (key, run) in [("saveSettings", save_settings as fn(&mut PhotocraftApp) -> Result<Value, String>), ("loadSettings", load_settings)] {
         if ui.get(key).and_then(Value::as_bool) == Some(true) {
@@ -937,6 +944,9 @@ fn menu_update(app: &mut PhotocraftApp, ctx: &egui::Context, ui: &Value) -> Opti
             Ok(next)=>Some(next),Err(e)=>return Some(Err(e)),
         },None=>None,
     };
+    let preferences = match ui.get("preferences") {
+        Some(v)=>match preferences::prepare(app.ui.camera_raw_preferences.current(),v) {Ok(next)=>Some(next),Err(e)=>return Some(Err(e))},None=>None,
+    };
     if let Some(set) = ui.get("set") {
         if !set.is_object() {
             return Some(Err("bad Camera Raw settings: expected an object".into()));
@@ -979,6 +989,9 @@ fn menu_update(app: &mut PhotocraftApp, ctx: &egui::Context, ui: &Value) -> Opti
     if let Some(next) = save_options {
         if app.ui.camera_raw_workspace.save_options { app.ui.camera_raw_save_options.draft=Some(next); }
         else { app.ui.camera_raw_save_options.settings=next; }
+    }
+    if let Some(next)=preferences {
+        if app.ui.camera_raw_workspace.preferences {app.ui.camera_raw_preferences.draft=Some(next);} else {app.ui.camera_raw_preferences.settings=next;}
     }
     if let Some(view) = navigation {
         app.ui.camera_raw_preview = view;
@@ -1588,13 +1601,14 @@ pub(crate) fn draw_shell(ctx: &egui::Context, name: &str) {
 fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
     let t = Tokens::get(ctx);
     let screen = ctx.content_rect();
+    preferences::sync(app,ctx);
     let design = super::camera_raw_design::get(ctx);
     super::camera_raw_design::apply_preview(ctx, &design, &mut app.ui.camera_raw_workspace);
     super::camera_raw_tool_bar_ui::sync(ctx, &app.ui.camera_raw_workspace, &app.ui.camera_raw_scope);
     let current_display = app.session.active().and_then(|st| app.session.color.canvas_display(&st.doc).ok());
     let mut action: Option<&str> = None;
     let menu_was_open =
-        app.ui.camera_raw_workspace.settings_menu || app.ui.camera_raw_workspace.save_options || app.ui.camera_raw_menu.snapshot_picker || app.camera_raw.as_ref().is_some_and(|d| d.snapshots.creating());
+        app.ui.camera_raw_workspace.settings_menu || app.ui.camera_raw_workspace.preferences || app.ui.camera_raw_workspace.save_options || app.ui.camera_raw_menu.snapshot_picker || app.camera_raw.as_ref().is_some_and(|d| d.snapshots.creating());
     // The photo was left for the next one, which has not taken the dialog over yet: nothing in the dialog may act
     // meanwhile, and if the swap takes more than a moment the controls dim to say so.
     let busy_since = app.camera_raw.as_ref().and_then(|d| d.busy_since);
@@ -2009,10 +2023,10 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
             }
         }
     });
-    if !busy && !app.ui.camera_raw_workspace.save_options {
+    if !busy && !app.ui.camera_raw_workspace.save_options && !app.ui.camera_raw_workspace.preferences {
         settings_menu::show(app, ctx, screen, &mut action);
     }
-    if !busy { save_options::show(app,ctx); }
+    if !busy { save_options::show(app,ctx); preferences::show(app,ctx); }
     super::camera_raw_scope_ui::persist(app, ctx);
     if !menu_was_open
         && !ctx.text_edit_focused()
@@ -2028,6 +2042,7 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
         action = None;
     }
     match action {
+        Some("preferences")=>app.ui.camera_raw_workspace.preferences=true,
         Some("ok") => {
             if let Err(e) = commit(app) {
                 app.ui.status = e;

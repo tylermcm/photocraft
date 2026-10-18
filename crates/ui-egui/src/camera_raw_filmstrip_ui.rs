@@ -176,9 +176,15 @@ pub(crate) fn seed(ctx: &egui::Context, name: &str, texture: Option<&TextureHand
     store(ctx, s);
 }
 
+fn view_design(ctx:&egui::Context)->Design {
+    let mut d=crate::camera_raw_design::get(ctx).filmstrip.clone();
+    if let Some(p)=crate::camera_raw_ui::preferences::effective(ctx) {d.show_filenames=p.show_filenames;}
+    d
+}
 pub(crate) fn inspect(ctx: &egui::Context) -> Value {
     let s = state(ctx);
     json!({"version":1, "ready":s.hosted && s.generation > 0, "enabled":s.enabled, "collapsed":s.collapsed, "comparisonSplit":s.comparison_split, "generation":s.generation,
+        "display":{"showFilenames":view_design(ctx).show_filenames,"showRatings":view_design(ctx).show_ratings},
         "total":s.total, "current":s.current, "first":s.first, "last":s.last, "request":s.request,
         "selected":s.items.iter().find(|item| item.index == s.current).map(|item|json!({"id":item.id,"name":item.name,"rating":item.rating,"rejected":item.rejected,"edited":item.edited})),
         "rect":s.rect.map(|r|json!({"x":r.left(),"y":r.top(),"width":r.width(),"height":r.height()}))})
@@ -301,7 +307,7 @@ pub(crate) fn draw(ui: &mut Ui, rect: Rect) {
     if !s.enabled || s.collapsed || rect.height() <= 0.0 {
         return;
     }
-    let d = crate::camera_raw_design::get(ui.ctx()).filmstrip.clone();
+    let d=view_design(ui.ctx());
     let t = Tokens::get(ui.ctx());
     s.rect = Some(rect);
     let painter = ui.painter_at(rect);
@@ -350,13 +356,13 @@ pub(crate) fn draw(ui: &mut Ui, rect: Rect) {
             painter.text(
                 pos2(cell.center().x, image_rect.bottom() + 8.0),
                 Align2::CENTER_CENTER,
-                "â˜…".repeat(usize::from(item.rating)),
+                "★".repeat(usize::from(item.rating)),
                 FontId::proportional(10.0),
                 t.text_dim,
             );
         }
         if response.hovered() {
-            response.on_hover_text(format!("{}{}{}", item.name, if item.rejected { " Â· Rejected" } else { "" }, if item.edited { " Â· Edited" } else { "" }));
+            response.on_hover_text(format!("{}{}{}", item.name, if item.rejected { " · Rejected" } else { "" }, if item.edited { " · Edited" } else { "" }));
         }
     }
     if let Some(index) = clicked {

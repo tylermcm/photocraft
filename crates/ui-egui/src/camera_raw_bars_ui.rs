@@ -269,6 +269,8 @@ pub(super) fn top_actions(ui: &mut Ui, title: Rect, action: &mut Option<&'static
     let divider = settings.rect.right() + design.title_action_gap * 0.5;
     child.painter().line_segment([pos2(divider, title.center().y - 10.0), pos2(divider, title.center().y + 10.0)], Stroke::new(1.0, t.separator));
     egui::Popup::menu(&settings).show(|ui| {
+        if ui.button(format!("{}…",crate::i18n::tr_ctx(crate::i18n::current(),"cameraRaw","Camera Raw Preferences"))).clicked() {*action=Some("preferences");ui.close();}
+        ui.separator();
         ui.checkbox(&mut scope.shadows, tl!("Shadow Clipping Warning (U)"));
         ui.checkbox(&mut scope.highlights, tl!("Highlight Clipping Warning (O)"));
         ui.checkbox(&mut scope.lab, tl!("Show Lab Color Readouts"));

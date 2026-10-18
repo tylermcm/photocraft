@@ -600,3 +600,41 @@ clipboard/Y/Escape ownership, Cancel rollback and actual720x900 wheel scrolling.
 No visible window, release build, push or new desktop promotion occurred. The
 PS1 default remains the validated acr-settings-menu editor. Missing individual
 matching-view audits remain7,13,14,15; every element across all19 remains in scope.
+
+
+### Preferences General source view (2026-10-17)
+
+The gear popup now opens the native Preferences modal. Its measured JSON defines
+53 comparison regions and dedicated dialog tokens. The modal uses a draft:
+OK persists panel mode, filmstrip filenames and default click zoom (50/100/200%)
+through the existing preference store; Cancel/Escape discard changes. These are
+view settings, so document pixels, recipes and history remain unchanged. Startup
+validates saved settings and reports malformed profiles without applying them.
+An unset profile retains the JSON filmstrip setting. The optional rating-row star
+and tooltip separator mojibake is also corrected.
+
+Other pages and unimplemented settings are visibly disabled. In particular,
+ratings/color labels, filmstrip orientation, rich tooltips, Lightroom-style
+navigation, legacy shortcuts/TAT, theme and compact-layout options have no fake
+bindings. The title omits Adobe's version number. The existing gear scope menu
+is retained. Transient dialogs are mutually exclusive and parent close clears
+their drafts. Main live layout/tokens and all desktop executables are unchanged.
+
+The Preferences auditor shares the Save Options full-dialog capture pipeline;
+its Save Options regression capture also passes. Reference7 is registered once
+at 2004x1530 pixels, scale2 at1440x1400, without per-control realignment. Its53
+regions have complete candidate coverage, with visible type, glyph, disabled
+capability and title differences retained. The matching-view audits still absent
+are13(Masking),14(Crop),15(Remove). Every-element parity across all19 remains
+incomplete. This source view is not promoted to the PS1's selected editor.
+
+Final evidence: preferences-v2/preferences-audit.json and overlay/comparison.png
+in this chat's acr-filmstrip artifacts. Snapshot SHA256
+55d537f8a8ed38568529c84f968f58ab63245963699d66c6895face8d9f2c326;
+private layout0b31d384e0b18a1779493b43295295f3a677d613d971f54d7df240fe4650c0f3;
+private tokens7f0ca6148704869c2c76932acc517479ca3327530c1e0f3787ef83a46de41853.
+3122 library tests (13ignored),58 Camera Raw integrations,6 auditor tests,
+all-target clippy, layers30 and wasm24 pass. Four new integrations cover actual
+pointer controls, OK/Cancel, click zoom, startup persistence, malformed profiles,
+atomic validation and modal Escape ownership. No visible app launch or focus
+preservation claim. Known-good desktop hashes remain unchanged.

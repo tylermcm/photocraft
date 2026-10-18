@@ -1305,6 +1305,7 @@ pub struct UiState {
     pub camera_raw_scope: CameraRawScopeState,
     #[serde(default)]
     pub camera_raw_menu: crate::camera_raw_ui::SettingsMenuState,
+    pub camera_raw_preferences: crate::camera_raw_ui::PreferencesState,
     pub camera_raw_save_options: crate::camera_raw_ui::SaveOptionsState,
     #[serde(default)]
     pub camera_raw_preview: CameraRawPreviewState,
@@ -1402,6 +1403,7 @@ impl Default for UiState {
             camera_raw_scope: Default::default(),
             camera_raw_menu: Default::default(),
             camera_raw_save_options: Default::default(),
+            camera_raw_preferences: Default::default(),
             camera_raw_preview: Default::default(),
             camera_raw_workspace: Default::default(),
         }

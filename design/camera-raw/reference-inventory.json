@@ -413,53 +413,57 @@
         1530
       ],
       "scope": "Preferences dialog: pages, appearance, panels, filmstrip, zoom and shortcuts",
-      "status": "incomplete; Matching Camera Raw Preferences dialog not implemented/captured.",
+      "status": "matching native General page captured; disabled capabilities and element differences remain; not a parity pass",
       "elements": [
         {
           "name": "Preferences title/version/window frame",
-          "status": "pending individual overlay verification"
+          "status": "uniform region overlay captured; remaining differences recorded, no parity pass"
         },
         {
           "name": "General/File Handling/Performance/Defaults/Workflow/Generative AI pages",
-          "status": "pending individual overlay verification"
+          "status": "uniform region overlay captured; remaining differences recorded, no parity pass"
         },
         {
           "name": "Appearance Color Theme selector",
-          "status": "pending individual overlay verification"
+          "status": "uniform region overlay captured; remaining differences recorded, no parity pass"
         },
         {
           "name": "Edit panel behavior selector",
-          "status": "pending individual overlay verification"
+          "status": "uniform region overlay captured; remaining differences recorded, no parity pass"
         },
         {
           "name": "Multiple fit panels/compact layout/rich tooltips/Legacy Target Adjustment Tool",
-          "status": "pending individual overlay verification"
+          "status": "uniform region overlay captured; remaining differences recorded, no parity pass"
         },
         {
           "name": "Filmstrip Orientation/filenames/ratings and color labels/contextual menu hover",
-          "status": "pending individual overlay verification"
+          "status": "uniform region overlay captured; remaining differences recorded, no parity pass"
         },
         {
           "name": "Default image click zoom/Lightroom style zoom and pan",
-          "status": "pending individual overlay verification"
+          "status": "uniform region overlay captured; remaining differences recorded, no parity pass"
         },
         {
           "name": "Use legacy undo shortcuts",
-          "status": "pending individual overlay verification"
+          "status": "uniform region overlay captured; remaining differences recorded, no parity pass"
         },
         {
           "name": "OK/Cancel buttons",
-          "status": "pending individual overlay verification"
+          "status": "uniform region overlay captured; remaining differences recorded, no parity pass"
         }
       ],
       "legacyImage": 9,
-      "nativeCaptureState": null,
-      "coverageAudit": "Matching Camera Raw Preferences dialog not implemented/captured.",
+      "nativeCaptureState": {
+        "workspace": {
+          "preferences": true
+        }
+      },
+      "coverageAudit": "preferences-v2: 53 named regions, uniform full-dialog registration, complete candidate coverage; inspected comparison.",
       "previousImage": 3,
       "elementRegionsFile": "preferences-element-regions.json",
       "plannedElementCount": 53,
-      "lastIndividualPixelAudit": "Planned individual region specification only; matching native screen missing.",
-      "currentValidation": "Pending matching native capture and individual audit; no parity pass."
+      "lastIndividualPixelAudit": "preferences-v2/preferences-audit.json; source [0,0,2004,1530], candidate [438,635,2442,2165], scale2 at1440x1400.",
+      "currentValidation": "3122 library tests (13 ignored),58 Camera Raw integrations,6 auditors,all-target clippy,layers30,wasm24 pass. All offscreen. Unsupported capabilities remain disabled; unpromoted source only."
     },
     {
       "image": 8,

@@ -3313,3 +3313,24 @@ cameraRaw	Storage method	Speichermethode
 cameraRaw	Use Lossy Compression	Verlustreiche Komprimierung verwenden
 cameraRaw	Space	Raum
 cameraRaw	Intent	Priorität
+cameraRaw	Camera Raw Preferences	Camera Raw-Voreinstellungen
+cameraRaw	Color Theme	Farbthema
+cameraRaw	Default image click zooms to	Standardzoom beim Bildklick
+cameraRaw	Defaults	Standardwerte
+cameraRaw	Edit panel behavior	Verhalten der Bearbeitungsbereiche
+cameraRaw	Filmstrip	Filmstreifen
+cameraRaw	Generative AI	Generative KI
+cameraRaw	Multiple	Mehrere
+cameraRaw	Multiple: Edit panels will stay open until you close them.	Mehrere: Bearbeitungsbereiche bleiben bis zum Schließen geöffnet.
+cameraRaw	Show contextual menu hints on hover	Kontextmenühinweise beim Darüberfahren anzeigen
+cameraRaw	Show filenames	Dateinamen anzeigen
+cameraRaw	Show ratings & color labels	Bewertungen und Farbmarkierungen anzeigen
+cameraRaw	Show rich tooltips	Erweiterte QuickInfos anzeigen
+cameraRaw	Single	Einzeln
+cameraRaw	Single: Opening an edit panel closes the others.	Einzeln: Beim Öffnen eines Bereichs werden die anderen geschlossen.
+cameraRaw	Use Lightroom style zoom and pan	Zoom und Schwenken wie in Lightroom verwenden
+cameraRaw	Use compact layout	Kompaktes Layout verwenden
+cameraRaw	Use legacy Target Adjustment Tool	Altes Werkzeug für gezielte Anpassungen verwenden
+cameraRaw	Use legacy undo shortcuts	Alte Tastenkürzel zum Rückgängigmachen verwenden
+cameraRaw	Workflow	Arbeitsablauf
+cameraRaw	Zoom and Pan	Zoom und Schwenken

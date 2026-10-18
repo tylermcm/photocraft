@@ -1,5 +1,5 @@
 {
-  "scope": "Reference3 Preferences dialog: pages, appearance, panels, filmstrip, zoom and shortcuts. Planned visible UI regions only: native screen not yet captured. Dynamic paths/account/file values are not copied into product code. No individual comparison or parity pass.",
+  "scope": "Reference7 Preferences General page. Uniform full-dialog registration; dynamic version title and disabled unavailable capabilities remain measured differences. No full parity claim.",
   "normalizedWidth": 2004,
   "sourceRect": [
     0,
@@ -8,7 +8,7 @@
     1530
   ],
   "sourceSha256": "dc74d34ebe97916f0c7aed4d81306bf80d26fac57f1aba2d7363237fd6c2d93a",
-  "sourceImage": 3,
+  "sourceImage": 7,
   "elements": [
     {
       "id": "window-frame",

@@ -76,6 +76,7 @@ pub struct WorkspaceState {
     pub info: bool,
     pub settings_menu: bool,
     pub save_options: bool,
+    pub preferences: bool,
     pub preset_groups: Vec<String>,
     pub grid: bool,
     pub grid_size: f32,
@@ -101,6 +102,7 @@ impl Default for WorkspaceState {
             info: false,
             settings_menu: false,
             save_options: false,
+            preferences: false,
             preset_groups: Vec::new(),
             grid: false,
             grid_size: 40.0,
@@ -268,6 +270,7 @@ pub(crate) fn prepare(current: &WorkspaceState, value: &Value) -> Result<Workspa
         }
     }
     let next: WorkspaceState = serde_json::from_value(merged).map_err(|e| format!("invalid Camera Raw workspace: {e}"))?;
+    if next.preferences && next.save_options {return Err("Camera Raw Preferences and Save Options must be opened separately".into());}
     if next.hsl_channel >= 3
         || next.band >= 8
         || !next.grid_size.is_finite()

@@ -3795,3 +3795,24 @@ cameraRaw	Space	Không gian
 cameraRaw	Storage method	Phương thức lưu trữ
 cameraRaw	Use Lossy Compression	Dùng nén có mất dữ liệu
 cameraRaw	Intent	Mục đích kết xuất
+cameraRaw	Camera Raw Preferences	Tùy chọn Camera Raw
+cameraRaw	Color Theme	Chủ đề màu
+cameraRaw	Default image click zooms to	Mức thu phóng mặc định khi nhấp ảnh
+cameraRaw	Defaults	Giá trị mặc định
+cameraRaw	Edit panel behavior	Hoạt động của bảng chỉnh sửa
+cameraRaw	Filmstrip	Dải phim
+cameraRaw	Generative AI	AI tạo sinh
+cameraRaw	Multiple	Nhiều
+cameraRaw	Multiple: Edit panels will stay open until you close them.	Nhiều: các bảng chỉnh sửa vẫn mở cho đến khi bạn đóng chúng.
+cameraRaw	Show contextual menu hints on hover	Hiện gợi ý menu ngữ cảnh khi di chuột
+cameraRaw	Show filenames	Hiện tên tệp
+cameraRaw	Show ratings & color labels	Hiện xếp hạng và nhãn màu
+cameraRaw	Show rich tooltips	Hiện chú giải công cụ chi tiết
+cameraRaw	Single	Một
+cameraRaw	Single: Opening an edit panel closes the others.	Một: mở một bảng chỉnh sửa sẽ đóng các bảng khác.
+cameraRaw	Use Lightroom style zoom and pan	Dùng thu phóng và di chuyển kiểu Lightroom
+cameraRaw	Use compact layout	Dùng bố cục gọn
+cameraRaw	Use legacy Target Adjustment Tool	Dùng công cụ điều chỉnh mục tiêu cũ
+cameraRaw	Use legacy undo shortcuts	Dùng phím tắt hoàn tác cũ
+cameraRaw	Workflow	Quy trình làm việc
+cameraRaw	Zoom and Pan	Thu phóng và di chuyển
