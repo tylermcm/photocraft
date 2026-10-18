@@ -247,6 +247,22 @@ fn render_in_background(app: &PhotocraftApp, document: DocId, targets: &Targets,
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn glow_and_point_color_survive_per_photo_recipe_reload() {
+        let mut p = CameraRaw::default();
+        p.glow.amount = 45.0;
+        p.glow.spread = 70.0;
+        p.point_colors.push(photocraft_algo::camera_raw::PointColor { color: [0.9, 0.2, 0.1], hue: 40.0, ..Default::default() });
+        let back = from_json(&to_json(&p)).unwrap();
+        assert_eq!(back, p);
+        let mut a = vec![[0.9, 0.2, 0.1, 1.0]; 64];
+        a[32] = [1.0; 4];
+        let mut b = a.clone();
+        apply(&mut a, 8, 8, &p, None, 1.0, false);
+        apply(&mut b, 8, 8, &back, None, 1.0, false);
+        assert_eq!(a, b);
+    }
+
     use super::*;
     use photocraft_color::{ColorMode, SampleType};
     use photocraft_doc::{Layer, LayerContent};

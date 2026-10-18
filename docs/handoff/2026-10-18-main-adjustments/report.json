@@ -1,0 +1,798 @@
+{
+  "original": {
+    "params": {
+      "blacks": 0.0,
+      "clarity": 0.0,
+      "contrast": 0.0,
+      "curveDarks": 0.0,
+      "curveHighlights": 0.0,
+      "curveLights": 0.0,
+      "curveShadows": 0.0,
+      "curveSplits": [
+        25.0,
+        50.0,
+        75.0
+      ],
+      "dehaze": 0.0,
+      "encodingGamma": 0.0,
+      "exposure": 0.0,
+      "glow": {
+        "amount": 0.0,
+        "range": 50.0,
+        "spread": 50.0,
+        "style": "diffusion",
+        "warmth": 0.0
+      },
+      "gradeBalance": 0.0,
+      "gradeBlending": 50.0,
+      "gradeGlobal": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "gradeHighlights": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "gradeMidtones": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "gradeShadows": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "grainAmount": 0.0,
+      "grainRoughness": 50.0,
+      "grainSize": 25.0,
+      "highlights": 0.0,
+      "hslHue": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hslLum": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hslSat": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "noiseColor": 0.0,
+      "noiseColorDetail": 50.0,
+      "noiseLuminance": 0.0,
+      "noiseLuminanceDetail": 50.0,
+      "pixelScale": 1.0,
+      "pointColors": [],
+      "pointCurve": [],
+      "pointCurveBlue": [],
+      "pointCurveGreen": [],
+      "pointCurveRed": [],
+      "saturation": 0.0,
+      "seed": 0,
+      "shadows": 0.0,
+      "sharpenAmount": 0.0,
+      "sharpenDetail": 25.0,
+      "sharpenMasking": 0.0,
+      "sharpenRadius": 1.0,
+      "temperature": 0.0,
+      "texture": 0.0,
+      "tint": 0.0,
+      "vibrance": 0.0,
+      "vignetteAmount": 0.0,
+      "vignetteFeather": 50.0,
+      "vignetteHighlights": 0.0,
+      "vignetteMidpoint": 50.0,
+      "vignetteRoundness": 0.0,
+      "vignetteStyle": "highlightPriority",
+      "whites": 0.0
+    },
+    "workspace": {
+      "band": 0,
+      "bypassSection": null,
+      "cropGroups": [
+        "Geometry"
+      ],
+      "curveChannel": "master",
+      "glowDetails": false,
+      "grading": "threeWay",
+      "grainDetails": false,
+      "grid": false,
+      "gridOpacity": 0.3499999940395355,
+      "gridSize": 40.0,
+      "hslChannel": 1,
+      "info": false,
+      "maskingHelp": false,
+      "maskingPeople": true,
+      "mixer": "color",
+      "mixerTools": {
+        "allColors": false,
+        "picker": false,
+        "pointColor": false,
+        "selected": 0,
+        "visualize": false
+      },
+      "noiseDetails": false,
+      "panels": {
+        "open": [
+          "Effects"
+        ],
+        "single": false
+      },
+      "preferences": false,
+      "presetGroups": [],
+      "removeGroups": [],
+      "removeHelp": false,
+      "saveOptions": false,
+      "settingsMenu": false,
+      "sharpeningDetails": false,
+      "tab": "edit",
+      "vignetteDetails": false,
+      "whiteBalanceTool": false
+    },
+    "imageSha256": "8ba8bffcf35c214e2048231aa910dd1645009ccda6172f0252e394760eb4202b"
+  },
+  "glow": {
+    "params": {
+      "blacks": 0.0,
+      "clarity": 0.0,
+      "contrast": 0.0,
+      "curveDarks": 0.0,
+      "curveHighlights": 0.0,
+      "curveLights": 0.0,
+      "curveShadows": 0.0,
+      "curveSplits": [
+        25.0,
+        50.0,
+        75.0
+      ],
+      "dehaze": 0.0,
+      "encodingGamma": 0.0,
+      "exposure": 0.0,
+      "glow": {
+        "amount": 80.0,
+        "range": 65.0,
+        "spread": 75.0,
+        "style": "bloom",
+        "warmth": 20.0
+      },
+      "gradeBalance": 0.0,
+      "gradeBlending": 50.0,
+      "gradeGlobal": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "gradeHighlights": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "gradeMidtones": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "gradeShadows": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "grainAmount": 0.0,
+      "grainRoughness": 50.0,
+      "grainSize": 25.0,
+      "highlights": 0.0,
+      "hslHue": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hslLum": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hslSat": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "noiseColor": 0.0,
+      "noiseColorDetail": 50.0,
+      "noiseLuminance": 0.0,
+      "noiseLuminanceDetail": 50.0,
+      "pixelScale": 1.0,
+      "pointColors": [],
+      "pointCurve": [],
+      "pointCurveBlue": [],
+      "pointCurveGreen": [],
+      "pointCurveRed": [],
+      "saturation": 0.0,
+      "seed": 0,
+      "shadows": 0.0,
+      "sharpenAmount": 0.0,
+      "sharpenDetail": 25.0,
+      "sharpenMasking": 0.0,
+      "sharpenRadius": 1.0,
+      "temperature": 0.0,
+      "texture": 0.0,
+      "tint": 0.0,
+      "vibrance": 0.0,
+      "vignetteAmount": 0.0,
+      "vignetteFeather": 50.0,
+      "vignetteHighlights": 0.0,
+      "vignetteMidpoint": 50.0,
+      "vignetteRoundness": 0.0,
+      "vignetteStyle": "highlightPriority",
+      "whites": 0.0
+    },
+    "workspace": {
+      "band": 0,
+      "bypassSection": null,
+      "cropGroups": [
+        "Geometry"
+      ],
+      "curveChannel": "master",
+      "glowDetails": true,
+      "grading": "threeWay",
+      "grainDetails": false,
+      "grid": false,
+      "gridOpacity": 0.3499999940395355,
+      "gridSize": 40.0,
+      "hslChannel": 1,
+      "info": false,
+      "maskingHelp": false,
+      "maskingPeople": true,
+      "mixer": "color",
+      "mixerTools": {
+        "allColors": false,
+        "picker": false,
+        "pointColor": false,
+        "selected": 0,
+        "visualize": false
+      },
+      "noiseDetails": false,
+      "panels": {
+        "open": [
+          "Effects"
+        ],
+        "single": false
+      },
+      "preferences": false,
+      "presetGroups": [],
+      "removeGroups": [],
+      "removeHelp": false,
+      "saveOptions": false,
+      "settingsMenu": false,
+      "sharpeningDetails": false,
+      "tab": "edit",
+      "vignetteDetails": false,
+      "whiteBalanceTool": false
+    },
+    "imageSha256": "3013143664107e8a853edd6cc65e64fbe0d13fcdae89c21022ae65a954ef2e9f"
+  },
+  "all-colors": {
+    "params": {
+      "blacks": 0.0,
+      "clarity": 0.0,
+      "contrast": 0.0,
+      "curveDarks": 0.0,
+      "curveHighlights": 0.0,
+      "curveLights": 0.0,
+      "curveShadows": 0.0,
+      "curveSplits": [
+        25.0,
+        50.0,
+        75.0
+      ],
+      "dehaze": 0.0,
+      "encodingGamma": 0.0,
+      "exposure": 0.0,
+      "glow": {
+        "amount": 0.0,
+        "range": 50.0,
+        "spread": 50.0,
+        "style": "diffusion",
+        "warmth": 0.0
+      },
+      "gradeBalance": 0.0,
+      "gradeBlending": 50.0,
+      "gradeGlobal": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "gradeHighlights": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "gradeMidtones": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "gradeShadows": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "grainAmount": 0.0,
+      "grainRoughness": 50.0,
+      "grainSize": 25.0,
+      "highlights": 0.0,
+      "hslHue": [
+        20.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hslLum": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hslSat": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "noiseColor": 0.0,
+      "noiseColorDetail": 50.0,
+      "noiseLuminance": 0.0,
+      "noiseLuminanceDetail": 50.0,
+      "pixelScale": 1.0,
+      "pointColors": [],
+      "pointCurve": [],
+      "pointCurveBlue": [],
+      "pointCurveGreen": [],
+      "pointCurveRed": [],
+      "saturation": 0.0,
+      "seed": 0,
+      "shadows": 0.0,
+      "sharpenAmount": 0.0,
+      "sharpenDetail": 25.0,
+      "sharpenMasking": 0.0,
+      "sharpenRadius": 1.0,
+      "temperature": 0.0,
+      "texture": 0.0,
+      "tint": 0.0,
+      "vibrance": 0.0,
+      "vignetteAmount": 0.0,
+      "vignetteFeather": 50.0,
+      "vignetteHighlights": 0.0,
+      "vignetteMidpoint": 50.0,
+      "vignetteRoundness": 0.0,
+      "vignetteStyle": "highlightPriority",
+      "whites": 0.0
+    },
+    "workspace": {
+      "band": 0,
+      "bypassSection": null,
+      "cropGroups": [
+        "Geometry"
+      ],
+      "curveChannel": "master",
+      "glowDetails": false,
+      "grading": "threeWay",
+      "grainDetails": false,
+      "grid": false,
+      "gridOpacity": 0.3499999940395355,
+      "gridSize": 40.0,
+      "hslChannel": 1,
+      "info": false,
+      "maskingHelp": false,
+      "maskingPeople": true,
+      "mixer": "color",
+      "mixerTools": {
+        "allColors": true,
+        "picker": false,
+        "pointColor": false,
+        "selected": 0,
+        "visualize": false
+      },
+      "noiseDetails": false,
+      "panels": {
+        "open": [
+          "Color Mixer"
+        ],
+        "single": false
+      },
+      "preferences": false,
+      "presetGroups": [],
+      "removeGroups": [],
+      "removeHelp": false,
+      "saveOptions": false,
+      "settingsMenu": false,
+      "sharpeningDetails": false,
+      "tab": "edit",
+      "vignetteDetails": false,
+      "whiteBalanceTool": false
+    },
+    "imageSha256": "4050a13b9d0a48e803d3071af58a8509e1f657ee6f8d6a05ecd19771f874928f"
+  },
+  "point-color": {
+    "params": {
+      "blacks": 0.0,
+      "clarity": 0.0,
+      "contrast": 0.0,
+      "curveDarks": 0.0,
+      "curveHighlights": 0.0,
+      "curveLights": 0.0,
+      "curveShadows": 0.0,
+      "curveSplits": [
+        25.0,
+        50.0,
+        75.0
+      ],
+      "dehaze": 0.0,
+      "encodingGamma": 0.0,
+      "exposure": 0.0,
+      "glow": {
+        "amount": 0.0,
+        "range": 50.0,
+        "spread": 50.0,
+        "style": "diffusion",
+        "warmth": 0.0
+      },
+      "gradeBalance": 0.0,
+      "gradeBlending": 50.0,
+      "gradeGlobal": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "gradeHighlights": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "gradeMidtones": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "gradeShadows": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "grainAmount": 0.0,
+      "grainRoughness": 50.0,
+      "grainSize": 25.0,
+      "highlights": 0.0,
+      "hslHue": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hslLum": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hslSat": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "noiseColor": 0.0,
+      "noiseColorDetail": 50.0,
+      "noiseLuminance": 0.0,
+      "noiseLuminanceDetail": 50.0,
+      "pixelScale": 1.0,
+      "pointColors": [
+        {
+          "color": [
+            0.8352941274642944,
+            0.25882354378700256,
+            0.21176470816135406
+          ],
+          "hue": 35.0,
+          "luminance": 5.0,
+          "range": 60.0,
+          "saturation": 10.0,
+          "variance": -15.0
+        }
+      ],
+      "pointCurve": [],
+      "pointCurveBlue": [],
+      "pointCurveGreen": [],
+      "pointCurveRed": [],
+      "saturation": 0.0,
+      "seed": 0,
+      "shadows": 0.0,
+      "sharpenAmount": 0.0,
+      "sharpenDetail": 25.0,
+      "sharpenMasking": 0.0,
+      "sharpenRadius": 1.0,
+      "temperature": 0.0,
+      "texture": 0.0,
+      "tint": 0.0,
+      "vibrance": 0.0,
+      "vignetteAmount": 0.0,
+      "vignetteFeather": 50.0,
+      "vignetteHighlights": 0.0,
+      "vignetteMidpoint": 50.0,
+      "vignetteRoundness": 0.0,
+      "vignetteStyle": "highlightPriority",
+      "whites": 0.0
+    },
+    "workspace": {
+      "band": 0,
+      "bypassSection": null,
+      "cropGroups": [
+        "Geometry"
+      ],
+      "curveChannel": "master",
+      "glowDetails": false,
+      "grading": "threeWay",
+      "grainDetails": false,
+      "grid": false,
+      "gridOpacity": 0.3499999940395355,
+      "gridSize": 40.0,
+      "hslChannel": 1,
+      "info": false,
+      "maskingHelp": false,
+      "maskingPeople": true,
+      "mixer": "color",
+      "mixerTools": {
+        "allColors": false,
+        "picker": false,
+        "pointColor": true,
+        "selected": 0,
+        "visualize": false
+      },
+      "noiseDetails": false,
+      "panels": {
+        "open": [
+          "Color Mixer"
+        ],
+        "single": false
+      },
+      "preferences": false,
+      "presetGroups": [],
+      "removeGroups": [],
+      "removeHelp": false,
+      "saveOptions": false,
+      "settingsMenu": false,
+      "sharpeningDetails": false,
+      "tab": "edit",
+      "vignetteDetails": false,
+      "whiteBalanceTool": false
+    },
+    "imageSha256": "8ec3dbf20425458c14ae6b21979f817d70afe1770793eeffcbd4204b12a641e1"
+  },
+  "point-range": {
+    "params": {
+      "blacks": 0.0,
+      "clarity": 0.0,
+      "contrast": 0.0,
+      "curveDarks": 0.0,
+      "curveHighlights": 0.0,
+      "curveLights": 0.0,
+      "curveShadows": 0.0,
+      "curveSplits": [
+        25.0,
+        50.0,
+        75.0
+      ],
+      "dehaze": 0.0,
+      "encodingGamma": 0.0,
+      "exposure": 0.0,
+      "glow": {
+        "amount": 0.0,
+        "range": 50.0,
+        "spread": 50.0,
+        "style": "diffusion",
+        "warmth": 0.0
+      },
+      "gradeBalance": 0.0,
+      "gradeBlending": 50.0,
+      "gradeGlobal": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "gradeHighlights": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "gradeMidtones": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "gradeShadows": {
+        "hue": 0.0,
+        "lum": 0.0,
+        "sat": 0.0
+      },
+      "grainAmount": 0.0,
+      "grainRoughness": 50.0,
+      "grainSize": 25.0,
+      "highlights": 0.0,
+      "hslHue": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hslLum": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "hslSat": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "noiseColor": 0.0,
+      "noiseColorDetail": 50.0,
+      "noiseLuminance": 0.0,
+      "noiseLuminanceDetail": 50.0,
+      "pixelScale": 1.0,
+      "pointColors": [
+        {
+          "color": [
+            0.8352941274642944,
+            0.25882354378700256,
+            0.21176470816135406
+          ],
+          "hue": 35.0,
+          "luminance": 5.0,
+          "range": 60.0,
+          "saturation": 10.0,
+          "variance": -15.0
+        }
+      ],
+      "pointCurve": [],
+      "pointCurveBlue": [],
+      "pointCurveGreen": [],
+      "pointCurveRed": [],
+      "saturation": 0.0,
+      "seed": 0,
+      "shadows": 0.0,
+      "sharpenAmount": 0.0,
+      "sharpenDetail": 25.0,
+      "sharpenMasking": 0.0,
+      "sharpenRadius": 1.0,
+      "temperature": 0.0,
+      "texture": 0.0,
+      "tint": 0.0,
+      "vibrance": 0.0,
+      "vignetteAmount": 0.0,
+      "vignetteFeather": 50.0,
+      "vignetteHighlights": 0.0,
+      "vignetteMidpoint": 50.0,
+      "vignetteRoundness": 0.0,
+      "vignetteStyle": "highlightPriority",
+      "whites": 0.0
+    },
+    "workspace": {
+      "band": 0,
+      "bypassSection": null,
+      "cropGroups": [
+        "Geometry"
+      ],
+      "curveChannel": "master",
+      "glowDetails": false,
+      "grading": "threeWay",
+      "grainDetails": false,
+      "grid": false,
+      "gridOpacity": 0.3499999940395355,
+      "gridSize": 40.0,
+      "hslChannel": 1,
+      "info": false,
+      "maskingHelp": false,
+      "maskingPeople": true,
+      "mixer": "color",
+      "mixerTools": {
+        "allColors": false,
+        "picker": false,
+        "pointColor": true,
+        "selected": 0,
+        "visualize": true
+      },
+      "noiseDetails": false,
+      "panels": {
+        "open": [
+          "Color Mixer"
+        ],
+        "single": false
+      },
+      "preferences": false,
+      "presetGroups": [],
+      "removeGroups": [],
+      "removeHelp": false,
+      "saveOptions": false,
+      "settingsMenu": false,
+      "sharpeningDetails": false,
+      "tab": "edit",
+      "vignetteDetails": false,
+      "whiteBalanceTool": false
+    },
+    "imageSha256": "8d8ed103ad10c4819e3c4a013273c0099bec4bbf5a28c864bad23d12a4b104be"
+  }
+}

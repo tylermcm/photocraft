@@ -5,7 +5,8 @@
 //! Loading applies only the settings the file holds, over the current ones, as Camera Raw's
 //! Load Settings does; settings PhotoCraft has no control for (lens corrections, calibration,
 //! geometry, defringe, …) are ignored and named in the report. Saving writes every supported
-//! control, so loading the file in Photoshop reproduces the dialog.
+//! Adobe-mapped control. Native Glow and Point Color settings round-trip in a private
+//! PhotoCraft namespace; Adobe applications do not interpret that extension.
 //!
 //! White balance: a Camera Raw Filter on a rendered image uses the relative
 //! `IncrementalTemperature` / `IncrementalTint` (−100..=100), which are PhotoCraft's Temperature
@@ -224,6 +225,23 @@ pub fn load(params: &mut CameraRaw, bytes: &[u8]) -> Result<LoadReport, String> 
     let mut report = LoadReport::default();
     let mut found = false;
     for desc in doc.descendants().filter(|n| n.is_element() && n.tag_name().namespace() == Some(RDF_NS) && n.tag_name().name() == "Description") {
+        if let Some(raw) = desc.attribute(("https://photocraft.app/camera-raw/1.0/", "Finishing")) {
+            let value: serde_json::Value = serde_json::from_str(raw).map_err(|e| format!("invalid PhotoCraft finishing settings: {e}"))?;
+            let obj = value.as_object().ok_or("PhotoCraft finishing settings must be an object")?;
+            if obj.keys().any(|k| k != "glow" && k != "pointColors") {
+                return Err("unknown PhotoCraft finishing setting".into());
+            }
+            if let Some(v) = obj.get("glow") {
+                next.glow = serde_json::from_value(v.clone()).map_err(|e| e.to_string())?;
+            }
+            if let Some(v) = obj.get("pointColors") {
+                next.point_colors = serde_json::from_value(v.clone()).map_err(|e| e.to_string())?;
+            }
+            next.validate_changes(params)?;
+            found = true;
+            report.applied += 1;
+        }
+
         for a in desc.attributes().filter(|a| a.namespace() == Some(CRS_NS)) {
             found = true;
             apply(&mut next, &mut report, a.name(), a.value());
@@ -272,6 +290,10 @@ pub fn save(params: &CameraRaw) -> String {
     let mut out = String::from(
         "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\" x:xmptk=\"PhotoCraft\">\n <rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n  <rdf:Description rdf:about=\"\"\n    xmlns:crs=\"http://ns.adobe.com/camera-raw-settings/1.0/\"\n",
     );
+    if params.glow != Default::default() || !params.point_colors.is_empty() {
+        let value = serde_json::json!({"glow":params.glow,"pointColors":params.point_colors});
+        out.push_str(&format!("   xmlns:pc=\"https://photocraft.app/camera-raw/1.0/\"\n   pc:Finishing=\"{}\"\n", escape(&value.to_string())));
+    }
     out.push_str("   crs:Version=\"18.4\"\n   crs:ProcessVersion=\"15.4\"\n");
     out.push_str(&format!("   crs:WhiteBalance=\"{wb}\"\n"));
     for (name, field, lo, _) in SCALARS {
@@ -304,6 +326,24 @@ pub fn save(params: &CameraRaw) -> String {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
+    #[test]
+    fn photocraft_finishing_round_trips_without_inventing_adobe_fields() {
+        let mut p = CameraRaw::default();
+        p.glow.amount = 63.0;
+        p.glow.style = photocraft_algo::camera_raw::GlowStyle::Halation;
+        p.point_colors.push(photocraft_algo::camera_raw::PointColor { color: [0.8, 0.1, 0.2], hue: 30.0, ..Default::default() });
+        let text = super::save(&p);
+        assert!(text.contains("pc:Finishing"));
+        let mut back = CameraRaw::default();
+        super::load(&mut back, text.as_bytes()).unwrap();
+        assert_eq!(back.glow, p.glow);
+        assert_eq!(back.point_colors, p.point_colors);
+        let original = back.clone();
+        let broken = text.replace("&quot;amount&quot;:63.0", "&quot;amount&quot;:999.0");
+        assert!(super::load(&mut back, broken.as_bytes()).is_err());
+        assert_eq!(back, original);
+    }
+
     use super::*;
 
     /// A hand-written settings file laid out as Photoshop 26's Camera Raw Filter saves one (the

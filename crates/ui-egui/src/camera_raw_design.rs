@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 pub struct Design {
     pub filmstrip: crate::camera_raw_filmstrip_ui::Design,
     pub footer: crate::camera_raw_footer_ui::Design,
+    pub color_mixer: crate::camera_raw_ui::mixer::Design,
     pub remove: crate::camera_raw_ui::remove::Design,
     pub masking: crate::camera_raw_ui::masking::Design,
     pub crop: crate::camera_raw_ui::crop::Design,
@@ -52,6 +53,7 @@ pub struct Design {
     pub settings_scrollbar_gutter: f32,
     pub section_vertical_padding: f32,
     pub section_bottom_padding: f32,
+    pub color_bottom_padding: f32,
     pub panel_font_size: f32,
     pub value_field_width: f32,
     pub value_font_size: f32,
@@ -146,6 +148,7 @@ impl Default for Design {
             settings_menu: Default::default(),
             save_options: Default::default(),
             preferences: crate::camera_raw_ui::preferences::default_design(),
+            color_mixer: Default::default(),
             remove: Default::default(),
             masking: Default::default(),
             crop: Default::default(),
@@ -186,6 +189,7 @@ impl Default for Design {
             settings_scrollbar_gutter: 15.0,
             section_vertical_padding: 0.0,
             section_bottom_padding: 24.0,
+            color_bottom_padding: 12.0,
             panel_font_size: 12.0,
             value_field_width: 45.0,
             value_font_size: 12.0,
@@ -306,6 +310,7 @@ impl Design {
         value.crop.validate()?;
         value.masking.validate()?;
         value.remove.validate()?;
+        value.color_mixer.validate()?;
         for (label, number, min, max) in [
             ("panelWidth", value.panel_width, 220.0, 600.0),
             ("railWidth", value.rail_width, 32.0, 64.0),
@@ -340,6 +345,7 @@ impl Design {
             ("sectionRightPadding", value.section_right_padding, 0.0, 40.0),
             ("sectionVerticalPadding", value.section_vertical_padding, 0.0, 32.0),
             ("sectionBottomPadding", value.section_bottom_padding, 0.0, 64.0),
+            ("colorBottomPadding", value.color_bottom_padding, 0.0, 64.0),
             ("panelFontSize", value.panel_font_size, 10.0, 24.0),
             ("valueFieldWidth", value.value_field_width, 40.0, 120.0),
             ("valueFontSize", value.value_font_size, 8.0, 24.0),
@@ -631,6 +637,7 @@ mod tests {
             r#"{"panelWidth":1e100}"#,
             r#"{"histogramHeight":0}"#,
             r#"{"curveSelectorSize":1e100}"#,
+            r#"{"colorBottomPadding":-1}"#,
             r#"{"whiteBalanceLabelWidth":-1}"#,
             r#"{"gradingLowerWheelOutset":1000}"#,
             r#"{"gradingLuminanceHeight":0}"#,

@@ -3381,3 +3381,17 @@ cameraRaw	Reset Distraction Removal	Ablenkungsentfernung zurücksetzen
 cameraRaw	Show Overlay on Hover	Überlagerung beim Darüberfahren anzeigen
 cameraRaw	Use Generative AI	Generative KI verwenden
 cameraRaw	Visualize Spots	Bereiche anzeigen
+cameraRaw	Mixer	Mischer
+cameraRaw	Point Color	Punktfarbe
+cameraRaw	All Colors	Alle Farben
+cameraRaw	Glow	Leuchten
+cameraRaw	Diffusion	Diffusion
+cameraRaw	Bloom	Lichtschein
+cameraRaw	Halation	Lichthof
+cameraRaw	Range	Bereich
+cameraRaw	Spread	Ausbreitung
+cameraRaw	Warmth	Wärme
+cameraRaw	Sample Color	Farbe aufnehmen
+cameraRaw	Delete Sample	Farbprobe löschen
+cameraRaw	Variance	Varianz
+cameraRaw	Visualize Range	Bereich visualisieren

@@ -808,3 +808,36 @@ estimate of element completeness. No data/unsupported capability differences are
 masked. All work remained offscreen; selected editor and live JSON are unchanged.
 A fresh full-source matrix after structural fixes and complete hosted gates are
 still required before promotion. The every-element/all19 goal remains active.
+
+
+## Functional main adjustments (2026-10-18 source)
+
+Glow now edits the saved `glow` settings: Amount, Style (Diffusion/Bloom/Halation),
+Range, Spread and Warmth. Zero Amount is an exact bypass. Diffusion is computed
+in linear light at a radius proportional to image dimensions; transparent hidden
+RGB does not emit light. Effects' preview bypass includes Glow.
+
+Color Mixer's All Colors selector shows the eight existing bands together. It
+is a view, not a ninth processing band or a second set of adjustments.
+
+Point Color supports up to eight sampled RGB colors. The picker samples the
+photo at the input to the Point Color stage, after the other adjustments. Hue,
+Saturation, Luminance, Variance and Range are saved per sample. Samples can be
+selected/deleted. Range visualization is temporary display state, not an edit.
+Color Mixer bypass neutralizes both HSL and Point Color. Native dialog undo and
+Cancel continue to operate on the complete shared CameraRaw parameter value.
+
+These are independent processing implementations guided by Adobe's public
+behavior documentation; no Adobe pixel-output equivalence has been established.
+References: [Glow](https://helpx.adobe.com/camera-raw/desktop/edit-and-enhance-images/tone-and-color/vignette-grain-effects-camera-raw.html),
+[Point Color](https://helpx.adobe.com/camera-raw/desktop/using/make-color-tonal-adjustments-camera.html).
+
+The native per-photo recipe and `.pcraft` settings retain these parameters. XMP
+Save/Load Settings retains them in a private PhotoCraft namespace; Adobe does not
+interpret that extension. There is no verified Adobe PSD descriptor mapping:
+exporting such a smart filter reports an unsupported setting rather than losing
+it. Existing neutral settings and legacy recipes retain their previous behavior.
+
+Source functionality does not imply that a launcher-selected executable has been
+rebuilt/promoted. Keep the previous hosted executable until native and Image Triage
+handoff validation pass. Visible launch/focus restrictions still apply.

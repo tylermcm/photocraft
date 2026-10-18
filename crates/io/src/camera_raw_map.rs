@@ -344,6 +344,16 @@ pub(super) fn export_item(params: &J) -> Result<Descriptor, String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn finishing_settings_cannot_silently_disappear_in_adobe_psd_mapping() {
+        for p in [
+            CameraRaw { glow: photocraft_algo::camera_raw::Glow { amount: 40.0, ..Default::default() }, ..Default::default() },
+            CameraRaw { point_colors: vec![photocraft_algo::camera_raw::PointColor { hue: 20.0, ..Default::default() }], ..Default::default() },
+        ] {
+            assert!(export_item(&serde_json::to_value(p).unwrap()).unwrap_err().contains("no verified PSD mapping"));
+        }
+    }
+
     use super::*;
     use crate::smart_map::{UNSUPPORTED_FILTER, filter_from_item, item_for_filter};
     use photocraft_color::BlendMode;

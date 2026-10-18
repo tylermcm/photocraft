@@ -74,6 +74,8 @@ pub struct WorkspaceState {
     pub hsl_channel: usize,
     pub vignette_details: bool,
     pub grain_details: bool,
+    pub glow_details: bool,
+    pub mixer_tools: crate::camera_raw_ui::finishing::MixerTools,
     pub sharpening_details: bool,
     pub noise_details: bool,
     pub info: bool,
@@ -105,6 +107,8 @@ impl Default for WorkspaceState {
             hsl_channel: 1,
             vignette_details: false,
             grain_details: false,
+            glow_details: false,
+            mixer_tools: Default::default(),
             sharpening_details: false,
             noise_details: false,
             info: false,
@@ -161,6 +165,7 @@ pub(crate) fn preview_without(parameters: &CameraRaw, title: Option<&str>) -> Ca
             p.dehaze = defaults.dehaze;
             p.vignette_amount = defaults.vignette_amount;
             p.grain_amount = defaults.grain_amount;
+            p.glow = defaults.glow;
         }
         Some("Curve") => {
             p.curve_highlights = defaults.curve_highlights;
@@ -177,6 +182,7 @@ pub(crate) fn preview_without(parameters: &CameraRaw, title: Option<&str>) -> Ca
             p.hsl_hue = defaults.hsl_hue;
             p.hsl_sat = defaults.hsl_sat;
             p.hsl_lum = defaults.hsl_lum;
+            p.point_colors = defaults.point_colors;
         }
         Some("Color Grading") => {
             p.grade_shadows = defaults.grade_shadows;
@@ -283,9 +289,12 @@ pub(crate) fn prepare(current: &WorkspaceState, value: &Value) -> Result<Workspa
         }
     }
     let next: WorkspaceState = serde_json::from_value(merged).map_err(|e| format!("invalid Camera Raw workspace: {e}"))?;
-    if next.preferences && next.save_options {return Err("Camera Raw Preferences and Save Options must be opened separately".into());}
+    if next.preferences && next.save_options {
+        return Err("Camera Raw Preferences and Save Options must be opened separately".into());
+    }
     if next.hsl_channel >= 3
         || next.band >= 8
+        || next.mixer_tools.selected >= 8
         || !next.grid_size.is_finite()
         || !(12.0..=200.0).contains(&next.grid_size)
         || !next.grid_opacity.is_finite()
@@ -300,16 +309,18 @@ pub(crate) fn prepare(current: &WorkspaceState, value: &Value) -> Result<Workspa
     {
         return Err("Camera Raw panels must be unique supported names (at most one in single-panel mode)".into());
     }
-    let remove_groups=&crate::camera_raw_ui::remove::GROUPS;
-    if next.remove_groups.len()>remove_groups.len()
-        || next.remove_groups.iter().any(|v|!remove_groups.contains(&v.as_str()))
-        || next.remove_groups.iter().enumerate().any(|(i,v)|next.remove_groups.iter().take(i).any(|old|old==v)) {
+    let remove_groups = &crate::camera_raw_ui::remove::GROUPS;
+    if next.remove_groups.len() > remove_groups.len()
+        || next.remove_groups.iter().any(|v| !remove_groups.contains(&v.as_str()))
+        || next.remove_groups.iter().enumerate().any(|(i, v)| next.remove_groups.iter().take(i).any(|old| old == v))
+    {
         return Err("Camera Raw removeGroups must contain unique observed group names".into());
     }
     let crop_groups = &crate::camera_raw_ui::crop::GROUPS;
     if next.crop_groups.len() > crop_groups.len()
         || next.crop_groups.iter().any(|v| !crop_groups.contains(&v.as_str()))
-        || next.crop_groups.iter().enumerate().any(|(i,v)| next.crop_groups.iter().take(i).any(|old|old==v)) {
+        || next.crop_groups.iter().enumerate().any(|(i, v)| next.crop_groups.iter().take(i).any(|old| old == v))
+    {
         return Err("Camera Raw cropGroups must contain unique observed group names".into());
     }
     let groups = &crate::camera_raw_ui::presets::GROUPS;
@@ -361,9 +372,11 @@ pub(crate) fn section(ui: &mut Ui, title: &str, state: &mut PanelState, body: im
                             right: if title == "Curve" { design.curve_right_padding as i8 } else { design.settings_body_right_padding as i8 },
                             top: design.section_vertical_padding as i8,
                             bottom: match title {
+                                "Color" => design.color_bottom_padding as i8,
                                 "Detail" => design.detail_bottom_padding as i8,
                                 "Color Grading" => design.grading_bottom_padding as i8,
                                 "Curve" => design.curve_bottom_padding as i8,
+                                "Color Mixer" => design.color_mixer.bottom_padding as i8,
                                 _ => design.section_bottom_padding as i8,
                             },
                         })
@@ -738,20 +751,47 @@ pub(crate) fn rail(ui: &mut Ui, rect: Rect, state: &mut WorkspaceState, navigati
         state.info = false;
         state.tab = WorkspaceTab::Edit;
     }
-    let crop_rect = Rect::from_center_size(pos2(rect.center().x, rect.top() + design.rail_top_inset + 50.0), vec2(28.0,28.0));
-    let mut crop_ui=ui.new_child(egui::UiBuilder::new().id_salt("camera-raw-crop-tab").max_rect(crop_rect));
-    if icons::button(&mut crop_ui,"crop",28.0,!state.info && state.tab==WorkspaceTab::Crop,crate::i18n::tr_ctx(crate::i18n::current(),"cameraRaw","Crop & Expand")).clicked() {
-        state.info=false; state.tab=WorkspaceTab::Crop;
+    let crop_rect = Rect::from_center_size(pos2(rect.center().x, rect.top() + design.rail_top_inset + 50.0), vec2(28.0, 28.0));
+    let mut crop_ui = ui.new_child(egui::UiBuilder::new().id_salt("camera-raw-crop-tab").max_rect(crop_rect));
+    if icons::button(
+        &mut crop_ui,
+        "crop",
+        28.0,
+        !state.info && state.tab == WorkspaceTab::Crop,
+        crate::i18n::tr_ctx(crate::i18n::current(), "cameraRaw", "Crop & Expand"),
+    )
+    .clicked()
+    {
+        state.info = false;
+        state.tab = WorkspaceTab::Crop;
     }
-    let remove_rect=Rect::from_center_size(pos2(rect.center().x,rect.top()+design.rail_top_inset+84.0),vec2(28.0,28.0));
-    let mut remove_ui=ui.new_child(egui::UiBuilder::new().id_salt("camera-raw-remove-tab").max_rect(remove_rect));
-    if icons::button(&mut remove_ui,"eraser",28.0,!state.info && state.tab==WorkspaceTab::Remove,crate::i18n::tr_ctx(crate::i18n::current(),"cameraRaw","Remove")).clicked() {
-        state.info=false;state.tab=WorkspaceTab::Remove;
+    let remove_rect = Rect::from_center_size(pos2(rect.center().x, rect.top() + design.rail_top_inset + 84.0), vec2(28.0, 28.0));
+    let mut remove_ui = ui.new_child(egui::UiBuilder::new().id_salt("camera-raw-remove-tab").max_rect(remove_rect));
+    if icons::button(
+        &mut remove_ui,
+        "eraser",
+        28.0,
+        !state.info && state.tab == WorkspaceTab::Remove,
+        crate::i18n::tr_ctx(crate::i18n::current(), "cameraRaw", "Remove"),
+    )
+    .clicked()
+    {
+        state.info = false;
+        state.tab = WorkspaceTab::Remove;
     }
-    let masking_rect=Rect::from_center_size(pos2(rect.center().x,rect.top()+design.rail_top_inset+118.0),vec2(28.0,28.0));
-    let mut masking_ui=ui.new_child(egui::UiBuilder::new().id_salt("camera-raw-masking-tab").max_rect(masking_rect));
-    if icons::button(&mut masking_ui,"circle-dashed",28.0,!state.info && state.tab==WorkspaceTab::Masking,crate::i18n::tr_ctx(crate::i18n::current(),"cameraRaw","Masking")).clicked() {
-        state.info=false;state.tab=WorkspaceTab::Masking;
+    let masking_rect = Rect::from_center_size(pos2(rect.center().x, rect.top() + design.rail_top_inset + 118.0), vec2(28.0, 28.0));
+    let mut masking_ui = ui.new_child(egui::UiBuilder::new().id_salt("camera-raw-masking-tab").max_rect(masking_rect));
+    if icons::button(
+        &mut masking_ui,
+        "circle-dashed",
+        28.0,
+        !state.info && state.tab == WorkspaceTab::Masking,
+        crate::i18n::tr_ctx(crate::i18n::current(), "cameraRaw", "Masking"),
+    )
+    .clicked()
+    {
+        state.info = false;
+        state.tab = WorkspaceTab::Masking;
     }
     let red_eye_rect = Rect::from_center_size(pos2(rect.center().x, rect.top() + design.snapshots_rail_offset - 36.0), vec2(28.0, 28.0));
     let mut red_eye_ui = ui.new_child(egui::UiBuilder::new().id_salt("camera-raw-red-eye-tab").max_rect(red_eye_rect));

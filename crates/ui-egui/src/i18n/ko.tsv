@@ -3557,3 +3557,17 @@ cameraRaw	Reset Distraction Removal	방해 요소 제거 재설정
 cameraRaw	Show Overlay on Hover	가리킬 때 오버레이 표시
 cameraRaw	Use Generative AI	생성형 AI 사용
 cameraRaw	Visualize Spots	반점 시각화
+cameraRaw	Mixer	혼합기
+cameraRaw	Point Color	포인트 색상
+cameraRaw	All Colors	모든 색상
+cameraRaw	Glow	광선
+cameraRaw	Diffusion	확산
+cameraRaw	Bloom	블룸
+cameraRaw	Halation	할레이션
+cameraRaw	Range	범위
+cameraRaw	Spread	퍼짐
+cameraRaw	Warmth	따뜻함
+cameraRaw	Sample Color	색상 샘플링
+cameraRaw	Delete Sample	샘플 삭제
+cameraRaw	Variance	분산
+cameraRaw	Visualize Range	범위 시각화

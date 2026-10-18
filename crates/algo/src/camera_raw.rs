@@ -105,6 +105,9 @@ impl Wheel {
     }
 }
 
+mod finishing;
+pub use finishing::{Glow, GlowStyle, PointColor};
+
 /// Camera Raw settings in Adobe Camera Raw's slider units.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -155,6 +158,8 @@ pub struct CameraRaw {
     pub noise_luminance_detail: f32,
     pub noise_color: f32,
     pub noise_color_detail: f32,
+    pub glow: Glow,
+    pub point_colors: Vec<PointColor>,
     // Effects
     pub grain_amount: f32,
     pub grain_size: f32,
@@ -216,6 +221,8 @@ impl Default for CameraRaw {
             noise_luminance_detail: 50.0,
             noise_color: 0.0,
             noise_color_detail: 50.0,
+            glow: Glow::default(),
+            point_colors: Vec::new(),
             grain_amount: 0.0,
             grain_size: 25.0,
             grain_roughness: 50.0,
@@ -497,8 +504,14 @@ pub fn band_weights(h: f32) -> [f32; 8] {
 }
 
 impl CameraRaw {
+    /// Validate native finishing controls independently of legacy stored point curves.
+    pub fn validate_finishing(&self) -> Result<(), String> {
+        finishing::validate(self)
+    }
+
     /// Rejects malformed point curves in new settings (see [`validate_curve`]).
     pub fn validate(&self) -> Result<(), String> {
+        finishing::validate(self)?;
         for (name, curve) in [
             ("pointCurve", &self.point_curve),
             ("pointCurveRed", &self.point_curve_red),
@@ -512,6 +525,7 @@ impl CameraRaw {
     /// [`validate`](Self::validate) for an edit of `stored` settings: a curve left as stored is
     /// accepted, so editing another control of an older Smart Filter still works.
     pub fn validate_changes(&self, stored: &CameraRaw) -> Result<(), String> {
+        finishing::validate(self)?;
         for (name, curve, kept) in [
             ("pointCurve", &self.point_curve, &stored.point_curve),
             ("pointCurveRed", &self.point_curve_red, &stored.point_curve_red),
@@ -557,6 +571,8 @@ impl CameraRaw {
             && self.sharpen_amount == 0.0
             && self.noise_luminance == 0.0
             && self.noise_color == 0.0
+            && self.glow.amount == 0.0
+            && self.point_colors.iter().all(PointColor::neutral)
             && self.grain_amount == 0.0
             && self.vignette_amount == 0.0
     }
@@ -734,6 +750,9 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bo
         detail(px, w, h, p, ps);
     }
     // 9. Effects.
+    if finishing::validate(p).is_ok() {
+        finishing::glow(px, w, h, p);
+    }
     if p.vignette_amount != 0.0 {
         vignette(px, w, h, p);
     }
@@ -755,6 +774,9 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bo
                 }
             }
         });
+    }
+    if finishing::validate(p).is_ok() {
+        finishing::points(px, &p.point_colors, float);
     }
     if !float {
         for q in px.iter_mut() {

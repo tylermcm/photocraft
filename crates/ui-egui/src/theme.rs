@@ -1040,6 +1040,13 @@ impl Tokens {
         if label == photocraft_doc::LabelColor::None { self.icon } else { Color32::from_gray(226) }
     }
 
+    /// Vibrance and Saturation share the muted spectrum observed in the ACR reference.
+    /// These are semantic track colours, independent of the application's accent.
+    pub fn camera_raw_color_track(&self) -> [Color32; 9] {
+        [[142, 138, 143], [138, 138, 147], [135, 144, 148], [131, 149, 141], [155, 166, 132], [195, 190, 126], [212, 183, 118], [201, 142, 101], [178, 73, 72]]
+            .map(|[r, g, b]| Color32::from_rgb(r, g, b))
+    }
+
     /// Analysis colours are semantic hues, independent of the application accent palette.
     pub fn scope_hue(&self, h: f32, s: f32) -> Color32 {
         let v = f32::from(self.histogram_level) / 255.0;

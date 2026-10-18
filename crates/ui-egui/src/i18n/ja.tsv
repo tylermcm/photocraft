@@ -4052,3 +4052,17 @@ cameraRaw	Reset Distraction Removal	不要な要素の削除をリセット
 cameraRaw	Show Overlay on Hover	マウスオーバー時にオーバーレイを表示
 cameraRaw	Use Generative AI	生成 AI を使用
 cameraRaw	Visualize Spots	スポットを可視化
+cameraRaw	Mixer	ミキサー
+cameraRaw	Point Color	ポイントカラー
+cameraRaw	All Colors	すべてのカラー
+cameraRaw	Glow	グロー
+cameraRaw	Diffusion	拡散
+cameraRaw	Bloom	ブルーム
+cameraRaw	Halation	ハレーション
+cameraRaw	Range	範囲
+cameraRaw	Spread	広がり
+cameraRaw	Warmth	暖かさ
+cameraRaw	Sample Color	カラーをサンプル
+cameraRaw	Delete Sample	サンプルを削除
+cameraRaw	Variance	分散
+cameraRaw	Visualize Range	範囲を表示

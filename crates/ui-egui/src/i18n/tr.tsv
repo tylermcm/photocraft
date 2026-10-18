@@ -4103,3 +4103,17 @@ cameraRaw	Reset Distraction Removal	Dikkat dağıtıcı öğe kaldırmayı sıf�
 cameraRaw	Show Overlay on Hover	Üzerine gelindiğinde kaplamayı göster
 cameraRaw	Use Generative AI	Üretken yapay zekâ kullan
 cameraRaw	Visualize Spots	Noktaları görselleştir
+cameraRaw	Mixer	Karıştırıcı
+cameraRaw	Point Color	Nokta rengi
+cameraRaw	All Colors	Tüm renkler
+cameraRaw	Glow	Parıltı
+cameraRaw	Diffusion	Difüzyon
+cameraRaw	Bloom	Işık parlaması
+cameraRaw	Halation	Hale
+cameraRaw	Range	Aralık
+cameraRaw	Spread	Yayılma
+cameraRaw	Warmth	Sıcaklık
+cameraRaw	Sample Color	Renk Örnekle
+cameraRaw	Delete Sample	Örneği Sil
+cameraRaw	Variance	Varyans
+cameraRaw	Visualize Range	Aralığı Görselleştir

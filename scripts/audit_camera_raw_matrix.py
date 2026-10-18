@@ -18,7 +18,7 @@ from PIL import Image
 from audit_camera_raw_reference_views import REGISTRATIONS
 from capture_camera_raw import STATES, ordered_panels, photo_identity
 
-FRAGMENTS = {"saveOptions": "save-options", "preferences": "preferences",
+FRAGMENTS = {"colorMixer": "mixer", "saveOptions": "save-options", "preferences": "preferences",
              "presets": "presets", "crop": "crop", "masking": "masking", "remove": "remove"}
 
 

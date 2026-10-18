@@ -259,7 +259,7 @@ fn validate_clipboard(p: &CameraRaw) -> Result<(), String> {
                     return Err("Unsupported Camera Raw clipboard vignette style".into());
                 }
             }
-            "seed" | "pixelScale" | "encodingGamma" => {}
+            "seed" | "pixelScale" | "encodingGamma" | "glow" | "pointColors" => {}
             _ => number(key, v, -100.0, 100.0)?,
         }
     }
@@ -407,7 +407,7 @@ pub(super) fn show(app: &mut PhotocraftApp, ctx: &egui::Context, screen: Rect, a
         Some(Action::ResetDefault) => *action = Some("reset-default"),
         Some(Action::Load) => *action = Some("load"),
         Some(Action::Save) => *action = Some("save"),
-        Some(Action::SaveOptions) => app.ui.camera_raw_workspace.save_options=true,
+        Some(Action::SaveOptions) => app.ui.camera_raw_workspace.save_options = true,
         Some(Action::Previous) => {
             if let Some(p) = app.ui.camera_raw_menu.previous.clone() {
                 error = apply(app, ctx, p).err();

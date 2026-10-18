@@ -26,28 +26,32 @@ use crate::widgets;
 
 #[path = "camera_raw_bars_ui.rs"]
 mod bars;
+#[path = "camera_raw_crop_ui.rs"]
+pub(crate) mod crop;
 #[path = "camera_raw_curve_regions_ui.rs"]
 mod curve_regions;
 #[path = "camera_raw_extra_panels_ui.rs"]
 mod extra_panels;
-#[path = "camera_raw_remove_ui.rs"]
-pub(crate) mod remove;
-#[path = "camera_raw_masking_ui.rs"]
-pub(crate) mod masking;
-#[path = "camera_raw_crop_ui.rs"]
-pub(crate) mod crop;
+#[path = "camera_raw_finishing_ui.rs"]
+pub(crate) mod finishing;
 #[path = "camera_raw_info_ui.rs"]
 mod info;
+#[path = "camera_raw_masking_ui.rs"]
+pub(crate) mod masking;
+#[path = "camera_raw_mixer_ui.rs"]
+pub(crate) mod mixer;
 #[path = "camera_raw_preferences_ui.rs"]
 pub(crate) mod preferences;
+#[path = "camera_raw_remove_ui.rs"]
+pub(crate) mod remove;
 pub use preferences::State as PreferencesState;
 #[path = "camera_raw_save_options_ui.rs"]
 mod save_options;
-pub use save_options::{Design as SaveOptionsDesign, State as SaveOptionsState, Settings as SaveOptionsSettings};
-#[path = "camera_raw_settings_menu_ui.rs"]
-mod settings_menu;
+pub use save_options::{Design as SaveOptionsDesign, Settings as SaveOptionsSettings, State as SaveOptionsState};
 #[path = "camera_raw_presets_ui.rs"]
 pub(crate) mod presets;
+#[path = "camera_raw_settings_menu_ui.rs"]
+mod settings_menu;
 pub use presets::Design as PresetsDesign;
 #[path = "camera_raw_snapshots_ui.rs"]
 mod snapshots;
@@ -196,6 +200,7 @@ pub struct CameraRawDialog {
     pub(crate) scope: super::camera_raw_scope_ui::ScopeView,
     pub(crate) after_histogram: RgbHistogram,
     pub(crate) preview_revision: u64,
+    mixer_preview: Option<finishing::RangePreview>,
     histogram_ms: f64,
     pub(crate) dirty: bool,
     pub show_before: bool,
@@ -795,6 +800,7 @@ fn open_pixels(
         scope: Default::default(),
         after_histogram: RgbHistogram::default(),
         preview_revision: 0,
+        mixer_preview: None,
         histogram_ms: 0.0,
         proxy,
         selection,
@@ -897,9 +903,11 @@ pub fn menu(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &Val
     if ui.get("commit").and_then(Value::as_bool) == Some(true) && ui.get("cancel").and_then(Value::as_bool) == Some(true) {
         return Some(Err("Camera Raw cannot commit and cancel together".into()));
     }
-    if ui.get("applyPreferences").and_then(Value::as_bool)==Some(true) {
-        if fields.len()!=1 { return Some(Err("applyPreferences must be sent on its own".into())); }
-        return Some(preferences::confirm(app,ctx).map(|_|json!({"applied":true})));
+    if ui.get("applyPreferences").and_then(Value::as_bool) == Some(true) {
+        if fields.len() != 1 {
+            return Some(Err("applyPreferences must be sent on its own".into()));
+        }
+        return Some(preferences::confirm(app, ctx).map(|_| json!({"applied":true})));
     }
     for (key, run) in [("saveSettings", save_settings as fn(&mut PhotocraftApp) -> Result<Value, String>), ("loadSettings", load_settings)] {
         if ui.get(key).and_then(Value::as_bool) == Some(true) {
@@ -946,12 +954,18 @@ fn menu_update(app: &mut PhotocraftApp, ctx: &egui::Context, ui: &Value) -> Opti
         None => None,
     };
     let save_options = match ui.get("saveOptions") {
-        Some(v)=>match save_options::prepare(app.ui.camera_raw_save_options.current(),v) {
-            Ok(next)=>Some(next),Err(e)=>return Some(Err(e)),
-        },None=>None,
+        Some(v) => match save_options::prepare(app.ui.camera_raw_save_options.current(), v) {
+            Ok(next) => Some(next),
+            Err(e) => return Some(Err(e)),
+        },
+        None => None,
     };
     let preferences = match ui.get("preferences") {
-        Some(v)=>match preferences::prepare(app.ui.camera_raw_preferences.current(),v) {Ok(next)=>Some(next),Err(e)=>return Some(Err(e))},None=>None,
+        Some(v) => match preferences::prepare(app.ui.camera_raw_preferences.current(), v) {
+            Ok(next) => Some(next),
+            Err(e) => return Some(Err(e)),
+        },
+        None => None,
     };
     if let Some(set) = ui.get("set") {
         if !set.is_object() {
@@ -993,11 +1007,18 @@ fn menu_update(app: &mut PhotocraftApp, ctx: &egui::Context, ui: &Value) -> Opti
         app.ui.camera_raw_workspace = next;
     }
     if let Some(next) = save_options {
-        if app.ui.camera_raw_workspace.save_options { app.ui.camera_raw_save_options.draft=Some(next); }
-        else { app.ui.camera_raw_save_options.settings=next; }
+        if app.ui.camera_raw_workspace.save_options {
+            app.ui.camera_raw_save_options.draft = Some(next);
+        } else {
+            app.ui.camera_raw_save_options.settings = next;
+        }
     }
-    if let Some(next)=preferences {
-        if app.ui.camera_raw_workspace.preferences {app.ui.camera_raw_preferences.draft=Some(next);} else {app.ui.camera_raw_preferences.settings=next;}
+    if let Some(next) = preferences {
+        if app.ui.camera_raw_workspace.preferences {
+            app.ui.camera_raw_preferences.draft = Some(next);
+        } else {
+            app.ui.camera_raw_preferences.settings = next;
+        }
     }
     if let Some(view) = navigation {
         app.ui.camera_raw_preview = view;
@@ -1607,14 +1628,19 @@ pub(crate) fn draw_shell(ctx: &egui::Context, name: &str) {
 fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
     let t = Tokens::get(ctx);
     let screen = ctx.content_rect();
-    preferences::sync(app,ctx);
+    preferences::sync(app, ctx);
     let design = super::camera_raw_design::get(ctx);
     super::camera_raw_design::apply_preview(ctx, &design, &mut app.ui.camera_raw_workspace);
     super::camera_raw_tool_bar_ui::sync(ctx, &app.ui.camera_raw_workspace, &app.ui.camera_raw_scope);
     let current_display = app.session.active().and_then(|st| app.session.color.canvas_display(&st.doc).ok());
     let mut action: Option<&str> = None;
-    let menu_was_open =
-        (app.ui.camera_raw_workspace.remove_help && app.ui.camera_raw_workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Remove) || (app.ui.camera_raw_workspace.masking_help && app.ui.camera_raw_workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Masking) || app.ui.camera_raw_workspace.settings_menu || app.ui.camera_raw_workspace.preferences || app.ui.camera_raw_workspace.save_options || app.ui.camera_raw_menu.snapshot_picker || app.camera_raw.as_ref().is_some_and(|d| d.snapshots.creating());
+    let menu_was_open = (app.ui.camera_raw_workspace.remove_help && app.ui.camera_raw_workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Remove)
+        || (app.ui.camera_raw_workspace.masking_help && app.ui.camera_raw_workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Masking)
+        || app.ui.camera_raw_workspace.settings_menu
+        || app.ui.camera_raw_workspace.preferences
+        || app.ui.camera_raw_workspace.save_options
+        || app.ui.camera_raw_menu.snapshot_picker
+        || app.camera_raw.as_ref().is_some_and(|d| d.snapshots.creating());
     // The photo was left for the next one, which has not taken the dialog over yet: nothing in the dialog may act
     // meanwhile, and if the swap takes more than a moment the controls dim to say so.
     let busy_since = app.camera_raw.as_ref().and_then(|d| d.busy_since);
@@ -1677,11 +1703,20 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
         let mut preview = ui.new_child(egui::UiBuilder::new().max_rect(view));
         preview.set_clip_rect(view.intersect(ui.clip_rect()));
         preview.painter().rect_filled(view, 0.0, t.canvas);
-        let mut preview_sampling = scope.sampler_tool || workspace.white_balance_tool;
+        let mixer_active =
+            workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Edit && workspace.panels.open.iter().any(|name| name == "Color Mixer");
+        if !mixer_active {
+            workspace.mixer_tools.picker = false;
+        }
+        if workspace.mixer_tools.picker {
+            d.show_before = false;
+        }
+        let mut preview_sampling = scope.sampler_tool || workspace.white_balance_tool || workspace.mixer_tools.picker;
         let (r, response, panning, zoom_box) = super::camera_raw_preview_ui::interact(&mut preview, navigation, view, size, &mut preview_sampling);
         if !preview_sampling {
             scope.sampler_tool = false;
             workspace.white_balance_tool = false;
+            workspace.mixer_tools.picker = false;
         }
         let tex = if d.show_before { d.before_tex.as_ref() } else { d.tex.as_ref() };
         if let Some(tex) = tex {
@@ -1707,6 +1742,9 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
             d.scope.preview_rect = Some(r);
             super::camera_raw_scope_ui::preview(&mut preview, d, scope, r, &response, panning);
             bars::pick_white_balance(&preview, d, r, &response, &mut workspace.white_balance_tool, panning);
+            if mixer_active {
+                finishing::preview(&preview, d, r, &response, &mut workspace.mixer_tools, panning);
+            }
         }
         super::camera_raw_workspace_ui::grid(&preview, r, view, workspace);
         ui.add_enabled_ui(!busy_visible, |ui| super::camera_raw_tool_bar_ui::draw(ui, lay.tool_bar, workspace, scope));
@@ -1756,234 +1794,189 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
         d.scope.alt_tone = None;
         let _ = ctx.data_mut(|data| data.remove_temp::<String>(super::camera_raw_workspace_ui::held_bypass_id()));
         let mut dirty = false;
-        egui::ScrollArea::vertical().id_salt(if show_presets { "camera-raw-presets" } else { "camera-raw-props" }).auto_shrink([false, false]).show(&mut props, |ui| {
-            if workspace.info {
-                ui.set_width(right.width());
-                info::show(ui, d);
-                return;
-            }
-            if show_presets {
+        egui::ScrollArea::vertical().id_salt(if show_presets { "camera-raw-presets" } else { "camera-raw-props" }).auto_shrink([false, false]).show(
+            &mut props,
+            |ui| {
+                if workspace.info {
+                    ui.set_width(right.width());
+                    info::show(ui, d);
+                    return;
+                }
+                if show_presets {
+                    ui.set_width((right.width() - design.settings_scrollbar_gutter).max(1.0));
+                    presets::list(ui, workspace);
+                    return;
+                }
+                if show_snapshots {
+                    ui.set_width(right.width());
+                    if let Some(parameters) = snapshots::list(ui, &mut d.snapshots) {
+                        d.params = parameters;
+                        dirty = true;
+                    }
+                    return;
+                }
+                if workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Remove {
+                    ui.set_width(right.width());
+                    remove::show(ui, &mut workspace.remove_groups, &mut workspace.remove_help);
+                    return;
+                }
+                if workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Masking {
+                    ui.set_width(right.width());
+                    masking::show(ui, &mut workspace.masking_people, &mut workspace.masking_help);
+                    return;
+                }
+                if workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Crop {
+                    ui.set_width(right.width());
+                    crop::show(ui, &mut workspace.crop_groups);
+                    return;
+                }
+                if workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::RedEye {
+                    ui.set_width(right.width());
+                    tool_panels::red_eye(ui);
+                    return;
+                }
+                // Reserve the same dock gutter with or without an active scrollbar. Otherwise
+                // a full-height overlay changes wheel/curve widths merely because it fits.
                 ui.set_width((right.width() - design.settings_scrollbar_gutter).max(1.0));
-                presets::list(ui, workspace);
-                return;
-            }
-            if show_snapshots {
-                ui.set_width(right.width());
-                if let Some(parameters) = snapshots::list(ui, &mut d.snapshots) {
-                    d.params = parameters;
-                    dirty = true;
-                }
-                return;
-            }
-            if workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Remove {
-                ui.set_width(right.width());
-                remove::show(ui, &mut workspace.remove_groups, &mut workspace.remove_help);
-                return;
-            }
-            if workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Masking {
-                ui.set_width(right.width());
-                masking::show(ui, &mut workspace.masking_people, &mut workspace.masking_help);
-                return;
-            }
-            if workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Crop {
-                ui.set_width(right.width());
-                crop::show(ui, &mut workspace.crop_groups);
-                return;
-            }
-            if workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::RedEye {
-                ui.set_width(right.width());
-                tool_panels::red_eye(ui);
-                return;
-            }
-            // Reserve the same dock gutter with or without an active scrollbar. Otherwise
-            // a full-height overlay changes wheel/curve widths merely because it fits.
-            ui.set_width((right.width() - design.settings_scrollbar_gutter).max(1.0));
-            ui.spacing_mut().item_spacing.y = design.row_gap;
-            let p = &mut d.params;
-            let alt = &mut d.scope.alt_tone;
-            let (ts, tn) = (temp_stops(), tint_stops());
-            for panel_name in &design.panel_order {
-                match panel_name.as_str() {
-                    "Light" => {
-                        super::camera_raw_workspace_ui::section(ui, "Light", &mut workspace.panels, |ui| {
-                            tone_row(ui, &mut dirty, alt, ToneZone::Exposure, &mut p.exposure);
-                            row(ui, &mut dirty, "Contrast", &mut p.contrast, -100.0..=100.0, None);
-                            tone_row(ui, &mut dirty, alt, ToneZone::Highlights, &mut p.highlights);
-                            tone_row(ui, &mut dirty, alt, ToneZone::Shadows, &mut p.shadows);
-                            tone_row(ui, &mut dirty, alt, ToneZone::Whites, &mut p.whites);
-                            tone_row(ui, &mut dirty, alt, ToneZone::Blacks, &mut p.blacks);
-                        });
-                    }
-                    "Color" => {
-                        super::camera_raw_workspace_ui::section(ui, "Color", &mut workspace.panels, |ui| {
-                            dirty |= bars::white_balance(ui, p, &mut workspace.white_balance_tool);
-                            if workspace.white_balance_tool {
-                                scope.sampler_tool = false;
-                            }
-                            row(ui, &mut dirty, "Temperature", &mut p.temperature, -100.0..=100.0, Some(&ts));
-                            row(ui, &mut dirty, "Tint", &mut p.tint, -100.0..=100.0, Some(&tn));
-                            row(ui, &mut dirty, "Vibrance", &mut p.vibrance, -100.0..=100.0, None);
-                            row(ui, &mut dirty, "Saturation", &mut p.saturation, -100.0..=100.0, None);
-                        });
-                    }
-                    "Effects" => {
-                        super::camera_raw_workspace_ui::section(ui, "Effects", &mut workspace.panels, |ui| {
-                            row(ui, &mut dirty, "Texture", &mut p.texture, -100.0..=100.0, None);
-                            row(ui, &mut dirty, "Clarity", &mut p.clarity, -100.0..=100.0, None);
-                            row(ui, &mut dirty, "Dehaze", &mut p.dehaze, -100.0..=100.0, None);
-                            dirty |= super::camera_raw_workspace_ui::disclosed_slider(
-                                ui,
-                                "Vignette",
-                                &mut p.vignette_amount,
-                                -100.0..=100.0,
-                                &mut workspace.vignette_details,
-                            );
-                            if workspace.vignette_details {
-                                let mut style = p.vignette_style.clone();
-                                if widgets::dropdown(
+                ui.spacing_mut().item_spacing.y = design.row_gap;
+                let p = &mut d.params;
+                let alt = &mut d.scope.alt_tone;
+                let (ts, tn) = (temp_stops(), tint_stops());
+                let color_track = t.camera_raw_color_track();
+                for panel_name in &design.panel_order {
+                    match panel_name.as_str() {
+                        "Light" => {
+                            super::camera_raw_workspace_ui::section(ui, "Light", &mut workspace.panels, |ui| {
+                                tone_row(ui, &mut dirty, alt, ToneZone::Exposure, &mut p.exposure);
+                                row(ui, &mut dirty, "Contrast", &mut p.contrast, -100.0..=100.0, None);
+                                tone_row(ui, &mut dirty, alt, ToneZone::Highlights, &mut p.highlights);
+                                tone_row(ui, &mut dirty, alt, ToneZone::Shadows, &mut p.shadows);
+                                tone_row(ui, &mut dirty, alt, ToneZone::Whites, &mut p.whites);
+                                tone_row(ui, &mut dirty, alt, ToneZone::Blacks, &mut p.blacks);
+                            });
+                        }
+                        "Color" => {
+                            super::camera_raw_workspace_ui::section(ui, "Color", &mut workspace.panels, |ui| {
+                                dirty |= bars::white_balance(ui, p, &mut workspace.white_balance_tool);
+                                if workspace.white_balance_tool {
+                                    scope.sampler_tool = false;
+                                    workspace.mixer_tools.picker = false;
+                                }
+                                row(ui, &mut dirty, "Temperature", &mut p.temperature, -100.0..=100.0, Some(&ts));
+                                row(ui, &mut dirty, "Tint", &mut p.tint, -100.0..=100.0, Some(&tn));
+                                row(ui, &mut dirty, "Vibrance", &mut p.vibrance, -100.0..=100.0, Some(&color_track));
+                                row(ui, &mut dirty, "Saturation", &mut p.saturation, -100.0..=100.0, Some(&color_track));
+                            });
+                        }
+                        "Effects" => {
+                            super::camera_raw_workspace_ui::section(ui, "Effects", &mut workspace.panels, |ui| {
+                                row(ui, &mut dirty, "Texture", &mut p.texture, -100.0..=100.0, None);
+                                row(ui, &mut dirty, "Clarity", &mut p.clarity, -100.0..=100.0, None);
+                                row(ui, &mut dirty, "Dehaze", &mut p.dehaze, -100.0..=100.0, None);
+                                dirty |= super::camera_raw_workspace_ui::disclosed_slider(
                                     ui,
-                                    "cr-vig-style",
-                                    &mut style,
-                                    &[
-                                        ("highlightPriority".to_string(), tl!("Highlight Priority")),
-                                        ("colorPriority".to_string(), tl!("Color Priority")),
-                                        ("paintOverlay".to_string(), tl!("Paint Overlay")),
-                                    ],
-                                    200.0,
-                                ) {
-                                    p.vignette_style = style;
-                                    dirty = true;
-                                }
-                                let _ = slider_default(ui, &mut dirty, "Midpoint", &mut p.vignette_midpoint, 0.0..=100.0, None, 50.0);
-                                row(ui, &mut dirty, "Roundness", &mut p.vignette_roundness, -100.0..=100.0, None);
-                                let _ = slider_default(ui, &mut dirty, "Feather", &mut p.vignette_feather, 0.0..=100.0, None, 50.0);
-                                row(ui, &mut dirty, "Highlights", &mut p.vignette_highlights, 0.0..=100.0, None);
-                            }
-                            dirty |=
-                                super::camera_raw_workspace_ui::disclosed_slider(ui, "Grain", &mut p.grain_amount, 0.0..=100.0, &mut workspace.grain_details);
-                            if workspace.grain_details {
-                                let _ = slider_default(ui, &mut dirty, "Size", &mut p.grain_size, 0.0..=100.0, None, 25.0);
-                                let _ = slider_default(ui, &mut dirty, "Roughness", &mut p.grain_roughness, 0.0..=100.0, None, 50.0);
-                            }
-                        });
-                    }
-                    "Curve" => {
-                        super::camera_raw_workspace_ui::section(ui, "Curve", &mut workspace.panels, |ui| {
-                            use super::camera_raw_workspace_ui::CurveChannel;
-                            let previous = workspace.curve_channel;
-                            bars::curve_selectors(ui, &mut workspace.curve_channel);
-                            if previous != workspace.curve_channel {
-                                d.curve_state = Default::default();
-                            }
-                            ui.add_space(design.curve_graph_top_gap);
-                            d.curve_rect = Some(curve_editor(ui, p, &mut dirty, &mut d.curve_state, workspace.curve_channel, &d.after_histogram));
-                            if workspace.curve_channel == CurveChannel::Parametric {
-                                dirty |= curve_regions::show(ui, &mut p.curve_splits);
-                                row(ui, &mut dirty, "Highlights", &mut p.curve_highlights, -100.0..=100.0, None);
-                                row(ui, &mut dirty, "Lights", &mut p.curve_lights, -100.0..=100.0, None);
-                                row(ui, &mut dirty, "Darks", &mut p.curve_darks, -100.0..=100.0, None);
-                                row(ui, &mut dirty, "Shadows", &mut p.curve_shadows, -100.0..=100.0, None);
-                            }
-                        });
-                    }
-                    "Color Mixer" => {
-                        super::camera_raw_workspace_ui::section(ui, "Color Mixer", &mut workspace.panels, |ui| {
-                            let mut mode = workspace.mixer;
-                            widgets::dropdown(
-                                ui,
-                                "cr-mixer-mode",
-                                &mut mode,
-                                &[(super::camera_raw_workspace_ui::MixerMode::Hsl, "HSL"), (super::camera_raw_workspace_ui::MixerMode::Color, tl!("Color"))],
-                                120.0,
-                            );
-                            workspace.mixer = mode;
-                            if mode == super::camera_raw_workspace_ui::MixerMode::Color {
-                                ui.horizontal(|ui| {
-                                    ui.spacing_mut().item_spacing.x = 3.0;
-                                    let side = ((ui.available_width() - 21.0) / 8.0).clamp(12.0, 28.0);
-                                    for (k, name) in BANDS.iter().enumerate() {
-                                        let (rect, response) = ui.allocate_exact_size(vec2(side, side), Sense::click());
-                                        let name = crate::i18n::tr_ctx(crate::i18n::current(), "cameraRaw", name);
-                                        response.widget_info(|| {
-                                            egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, ui.is_enabled(), workspace.band == k, name)
-                                        });
-                                        if response.clicked() {
-                                            workspace.band = k;
-                                        }
-                                        let color = hue_color(photocraft_algo::camera_raw::HSL_BANDS[k]);
-                                        ui.painter().circle_stroke(rect.center(), side * 0.35, Stroke::new(2.0, color));
-                                        if workspace.band == k {
-                                            ui.painter().circle_filled(rect.center(), side * 0.15, t.text);
-                                        }
-                                        response.on_hover_text(name);
+                                    "Vignette",
+                                    &mut p.vignette_amount,
+                                    -100.0..=100.0,
+                                    &mut workspace.vignette_details,
+                                );
+                                if workspace.vignette_details {
+                                    let mut style = p.vignette_style.clone();
+                                    if widgets::dropdown(
+                                        ui,
+                                        "cr-vig-style",
+                                        &mut style,
+                                        &[
+                                            ("highlightPriority".to_string(), tl!("Highlight Priority")),
+                                            ("colorPriority".to_string(), tl!("Color Priority")),
+                                            ("paintOverlay".to_string(), tl!("Paint Overlay")),
+                                        ],
+                                        200.0,
+                                    ) {
+                                        p.vignette_style = style;
+                                        dirty = true;
                                     }
-                                });
-                                let band = workspace.band.min(7);
-                                row(ui, &mut dirty, "Hue", &mut p.hsl_hue[band], -100.0..=100.0, Some(&widgets::hue_stops()));
-                                row(ui, &mut dirty, "Saturation", &mut p.hsl_sat[band], -100.0..=100.0, None);
-                                row(ui, &mut dirty, "Luminance", &mut p.hsl_lum[band], -100.0..=100.0, None);
-                            } else {
-                                ui.horizontal_wrapped(|ui| {
-                                    for (i, source) in ["Hue", "Saturation", "Luminance"].iter().enumerate() {
-                                        let name = crate::i18n::tr_ctx(crate::i18n::current(), "cameraRaw", source);
-                                        let response = widgets::pill_tab(ui, name, workspace.hsl_channel == i);
-                                        response.widget_info(|| {
-                                            egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, ui.is_enabled(), workspace.hsl_channel == i, name)
-                                        });
-                                        if response.clicked() {
-                                            workspace.hsl_channel = i;
-                                        }
-                                    }
-                                });
-                                let arr = match workspace.hsl_channel {
-                                    0 => &mut p.hsl_hue,
-                                    1 => &mut p.hsl_sat,
-                                    _ => &mut p.hsl_lum,
-                                };
-                                for (k, name) in BANDS.iter().enumerate() {
-                                    let grad = [Color32::from_gray(128), hue_color(photocraft_algo::camera_raw::HSL_BANDS[k])];
-                                    row(ui, &mut dirty, name, &mut arr[k], -100.0..=100.0, Some(&grad));
+                                    let _ = slider_default(ui, &mut dirty, "Midpoint", &mut p.vignette_midpoint, 0.0..=100.0, None, 50.0);
+                                    row(ui, &mut dirty, "Roundness", &mut p.vignette_roundness, -100.0..=100.0, None);
+                                    let _ = slider_default(ui, &mut dirty, "Feather", &mut p.vignette_feather, 0.0..=100.0, None, 50.0);
+                                    row(ui, &mut dirty, "Highlights", &mut p.vignette_highlights, 0.0..=100.0, None);
                                 }
-                            }
-                        });
+                                dirty |= super::camera_raw_workspace_ui::disclosed_slider(
+                                    ui,
+                                    "Grain",
+                                    &mut p.grain_amount,
+                                    0.0..=100.0,
+                                    &mut workspace.grain_details,
+                                );
+                                if workspace.grain_details {
+                                    let _ = slider_default(ui, &mut dirty, "Size", &mut p.grain_size, 0.0..=100.0, None, 25.0);
+                                    let _ = slider_default(ui, &mut dirty, "Roughness", &mut p.grain_roughness, 0.0..=100.0, None, 50.0);
+                                }
+                                dirty |= finishing::glow(ui, p, &mut workspace.glow_details);
+                            });
+                        }
+                        "Curve" => {
+                            super::camera_raw_workspace_ui::section(ui, "Curve", &mut workspace.panels, |ui| {
+                                use super::camera_raw_workspace_ui::CurveChannel;
+                                let previous = workspace.curve_channel;
+                                bars::curve_selectors(ui, &mut workspace.curve_channel);
+                                if previous != workspace.curve_channel {
+                                    d.curve_state = Default::default();
+                                }
+                                ui.add_space(design.curve_graph_top_gap);
+                                d.curve_rect = Some(curve_editor(ui, p, &mut dirty, &mut d.curve_state, workspace.curve_channel, &d.after_histogram));
+                                if workspace.curve_channel == CurveChannel::Parametric {
+                                    dirty |= curve_regions::show(ui, &mut p.curve_splits);
+                                    row(ui, &mut dirty, "Highlights", &mut p.curve_highlights, -100.0..=100.0, None);
+                                    row(ui, &mut dirty, "Lights", &mut p.curve_lights, -100.0..=100.0, None);
+                                    row(ui, &mut dirty, "Darks", &mut p.curve_darks, -100.0..=100.0, None);
+                                    row(ui, &mut dirty, "Shadows", &mut p.curve_shadows, -100.0..=100.0, None);
+                                }
+                            });
+                        }
+                        "Color Mixer" => {
+                            super::camera_raw_workspace_ui::section(ui, "Color Mixer", &mut workspace.panels, |ui| {
+                                dirty |= mixer::show(ui, p, &mut workspace.mixer, &mut workspace.band, &mut workspace.hsl_channel, &mut workspace.mixer_tools);
+                            });
+                        }
+                        "Color Grading" => {
+                            super::camera_raw_workspace_ui::section(ui, "Color Grading", &mut workspace.panels, |ui| {
+                                dirty |= super::camera_raw_workspace_ui::grading(ui, p, &mut workspace.grading);
+                            });
+                        }
+                        "Detail" => {
+                            super::camera_raw_workspace_ui::section(ui, "Detail", &mut workspace.panels, |ui| {
+                                extra_panels::detail_enhancements(ui);
+                                dirty |= super::camera_raw_workspace_ui::disclosed_slider(
+                                    ui,
+                                    "Sharpening",
+                                    &mut p.sharpen_amount,
+                                    0.0..=150.0,
+                                    &mut workspace.sharpening_details,
+                                );
+                                if workspace.sharpening_details {
+                                    let _ = slider_default(ui, &mut dirty, "Radius", &mut p.sharpen_radius, 0.5..=3.0, None, 1.0);
+                                    let _ = slider_default(ui, &mut dirty, "Detail", &mut p.sharpen_detail, 0.0..=100.0, None, 25.0);
+                                    row(ui, &mut dirty, "Masking", &mut p.sharpen_masking, 0.0..=100.0, None);
+                                }
+                                ui.add_space(design.detail_noise_gap);
+                                extra_panels::noise_disclosure(ui, &mut workspace.noise_details);
+                                if workspace.noise_details {
+                                    row(ui, &mut dirty, "Luminance", &mut p.noise_luminance, 0.0..=100.0, None);
+                                    let _ = slider_default(ui, &mut dirty, "Luminance Detail", &mut p.noise_luminance_detail, 0.0..=100.0, None, 50.0);
+                                    row(ui, &mut dirty, "Color", &mut p.noise_color, 0.0..=100.0, None);
+                                    let _ = slider_default(ui, &mut dirty, "Color Detail", &mut p.noise_color_detail, 0.0..=100.0, None, 50.0);
+                                }
+                            });
+                        }
+                        "Optics" | "Lens Blur" | "Calibration" => {
+                            super::camera_raw_workspace_ui::section(ui, panel_name, &mut workspace.panels, |ui| extra_panels::show(ui, panel_name));
+                        }
+                        _ => {}
                     }
-                    "Color Grading" => {
-                        super::camera_raw_workspace_ui::section(ui, "Color Grading", &mut workspace.panels, |ui| {
-                            dirty |= super::camera_raw_workspace_ui::grading(ui, p, &mut workspace.grading);
-                        });
-                    }
-                    "Detail" => {
-                        super::camera_raw_workspace_ui::section(ui, "Detail", &mut workspace.panels, |ui| {
-                            extra_panels::detail_enhancements(ui);
-                            dirty |= super::camera_raw_workspace_ui::disclosed_slider(
-                                ui,
-                                "Sharpening",
-                                &mut p.sharpen_amount,
-                                0.0..=150.0,
-                                &mut workspace.sharpening_details,
-                            );
-                            if workspace.sharpening_details {
-                                let _ = slider_default(ui, &mut dirty, "Radius", &mut p.sharpen_radius, 0.5..=3.0, None, 1.0);
-                                let _ = slider_default(ui, &mut dirty, "Detail", &mut p.sharpen_detail, 0.0..=100.0, None, 25.0);
-                                row(ui, &mut dirty, "Masking", &mut p.sharpen_masking, 0.0..=100.0, None);
-                            }
-                            ui.add_space(design.detail_noise_gap);
-                            extra_panels::noise_disclosure(ui, &mut workspace.noise_details);
-                            if workspace.noise_details {
-                                row(ui, &mut dirty, "Luminance", &mut p.noise_luminance, 0.0..=100.0, None);
-                                let _ = slider_default(ui, &mut dirty, "Luminance Detail", &mut p.noise_luminance_detail, 0.0..=100.0, None, 50.0);
-                                row(ui, &mut dirty, "Color", &mut p.noise_color, 0.0..=100.0, None);
-                                let _ = slider_default(ui, &mut dirty, "Color Detail", &mut p.noise_color_detail, 0.0..=100.0, None, 50.0);
-                            }
-                        });
-                    }
-                    "Optics" | "Lens Blur" | "Calibration" => {
-                        super::camera_raw_workspace_ui::section(ui, panel_name, &mut workspace.panels, |ui| extra_panels::show(ui, panel_name));
-                    }
-                    _ => {}
                 }
-            }
-        });
+            },
+        );
         let bypass =
             ctx.data_mut(|data| data.remove_temp::<String>(super::camera_raw_workspace_ui::held_bypass_id())).or_else(|| workspace.bypass_section.clone());
         if d.preview_bypass != bypass {
@@ -1996,6 +1989,11 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
             super::camera_raw_scope_ui::shortcuts(ctx, scope);
         }
         if scope.sampler_tool {
+            workspace.white_balance_tool = false;
+            workspace.mixer_tools.picker = false;
+        }
+        if workspace.mixer_tools.picker {
+            scope.sampler_tool = false;
             workspace.white_balance_tool = false;
         }
         d.dirty |= dirty;
@@ -2047,7 +2045,10 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
     if !busy && !app.ui.camera_raw_workspace.save_options && !app.ui.camera_raw_workspace.preferences {
         settings_menu::show(app, ctx, screen, &mut action);
     }
-    if !busy { save_options::show(app,ctx); preferences::show(app,ctx); }
+    if !busy {
+        save_options::show(app, ctx);
+        preferences::show(app, ctx);
+    }
     super::camera_raw_scope_ui::persist(app, ctx);
     if !menu_was_open
         && !ctx.text_edit_focused()
@@ -2063,7 +2064,7 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
         action = None;
     }
     match action {
-        Some("preferences")=>app.ui.camera_raw_workspace.preferences=true,
+        Some("preferences") => app.ui.camera_raw_workspace.preferences = true,
         Some("ok") => {
             if let Err(e) = commit(app) {
                 app.ui.status = e;

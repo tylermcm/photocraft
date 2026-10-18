@@ -1302,6 +1302,8 @@ mod tests {
             include_str!("../camera_raw_crop_ui.rs"),
             include_str!("../camera_raw_masking_ui.rs"),
             include_str!("../camera_raw_remove_ui.rs"),
+            include_str!("../camera_raw_mixer_ui.rs"),
+            include_str!("../camera_raw_finishing_ui.rs"),
             include_str!("../camera_raw_tool_panels_ui.rs"),
             include_str!("../camera_raw_curve_regions_ui.rs"),
         ];
@@ -1353,6 +1355,9 @@ mod tests {
                 labels.insert(key);
             }
         }
+        labels.insert("All Colors");
+        labels.insert("Glow");
+        labels.extend(["Diffusion", "Bloom", "Halation", "Range", "Spread", "Warmth", "Sample Color", "Delete Sample", "Variance", "Visualize Range"]);
         labels.insert("Full");
         labels.extend(["Single", "Multiple", "Single: Opening an edit panel closes the others.", "Default", "Horizontal"]);
         let bands = sources[0].split("const BANDS:").nth(1).unwrap().split(" = ").nth(1).unwrap().split(';').next().unwrap();

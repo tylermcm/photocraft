@@ -392,7 +392,7 @@ fn dispatch(app: &mut PhotocraftApp, ctx: &egui::Context, req: &ControlRequest) 
     let wait = p.get("wait").and_then(Value::as_bool).unwrap_or(true);
     match req.method.as_str() {
         "app.handoff" => ok(
-            json!({"version": 2, "replace": true, "hiddenStart": true, "cameraRaw": 1, "cameraRawPrefetch": 1, "cameraRawSwitch": 1, "stashWithoutPreview": 1, "renderManifest": 1, "fullRender": 1, "filmstrip": 1}),
+            json!({"version": 2, "replace": true, "hiddenStart": true, "cameraRaw": 1, "cameraRawPrefetch": 1, "cameraRawSwitch": 1, "cameraRawFinishing": 1, "stashWithoutPreview": 1, "renderManifest": 1, "fullRender": 1, "filmstrip": 1}),
         ),
         "ui.filmstrip" => wrap(crate::camera_raw_filmstrip_ui::control(ctx, p).map(|mut reply| {
             reply["cameraRawOpen"] = json!(app.camera_raw.is_some() || crate::raw_workspace::shell_active(app));

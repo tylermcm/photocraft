@@ -1,7 +1,7 @@
 param(
     [string]$Image,
     [switch]$Build,
-    [ValidateSet('acr18', 'acr-filmstrip', 'acr-glyphs', 'acr-settings-menu')]
+    [ValidateSet('acr18', 'acr-filmstrip', 'acr-glyphs', 'acr-settings-menu', 'acr-main-adjustments')]
     [string]$EditorBuild = 'acr-settings-menu'
 )
 $ErrorActionPreference = 'Stop'

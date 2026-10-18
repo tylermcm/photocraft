@@ -81,5 +81,14 @@
       "finding": "Named crop coverage is not every-element coverage. Partial sidebar references leave surrounding chrome/footer/empty or clipped areas unreviewed; full-client comparisons retain synthetic photo/EXIF/output differences. Live hosted behavior and secondary-monitor/no-activation preservation remain unverified.",
       "next": "Extend source element accounting/shared-client registration where needed, inspect source/native at useful scale, then run guarded native+hosted gates before promoting the development executable."
     }
-  ]
+  ],
+  "visualReviewDecision": {
+    "date": "2026-10-18",
+    "decision": "User accepts all gallery visuals except excess gap below Saturation and missing Glow row. Stop discretionary cosmetic refinement and prioritize tool functionality.",
+    "exceptions": [
+      "Reduce Color bottom padding",
+      "Restore unavailable Glow slider row"
+    ],
+    "remainingVisualItems": "Deferred by user acceptance, not claimed pixel-identical."
+  }
 }

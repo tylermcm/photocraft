@@ -1,0 +1,13 @@
+{
+  "sourceBaseCommit": "dcda93d8d4335cedc2b66263d710fee5a2c92563",
+  "workingTreeDirty": true,
+  "nativeExecutableSha256": "cac833711778b15699ccac589a30e1cb1ad2fbf3ad88ac0933b261b0fc0f1097",
+  "snapshotSha256": "54f283720d9ba0551713bdde1161ad5c7958077460175ae895b3a9bf9f9bcbf6",
+  "debugProfile": "adjustments-debug-profile.toml",
+  "profileOverrides": "Development/test: algorithm and engine opt-level0 to avoid optimized compiler stalls; no project profile changes.",
+  "hostedRuntimeVerified": false,
+  "realFileCorpusVerified": false,
+  "compiledSourceCopies": "main-adjustments-proof/build-source",
+  "proofCaptureExecutableSha256": "8051323f2f1e240d72b8e941da41f9a0893030c3db3c5a7d503f3e90a7c9e544",
+  "proofCaptureNote": "Captures precede final SDR point-selection clamp fix. Final fix verified by algorithm regression and six Mixer interaction tests."
+}

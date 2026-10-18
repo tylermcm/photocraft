@@ -289,3 +289,18 @@ fn left_aligned_camera_raw_numbers_keep_a_full_width_edit_target_and_accept_type
     h.run();
     assert_eq!(*h.state(), -1.25);
 }
+
+#[test]
+fn effects_glow_is_enabled_and_remains_a_non_destructive_dialog_edit() {
+    let mut h = fixture();
+    invoke(&mut h, json!({"workspace":{"panels":{"open":["Effects"]},"glowDetails":true}})).unwrap();
+    h.run_steps(4);
+    let history = h.state().session.active().unwrap().history.past_len();
+    assert!(!h.get_by_label("Glow Details").accesskit_node().is_disabled());
+    invoke(&mut h, json!({"set":{"glow":{"amount":65,"style":"bloom","range":40,"spread":70,"warmth":15}}})).unwrap();
+    h.run_steps(3);
+    assert_eq!(inspect(&h)["params"]["glow"]["amount"], 65.0);
+    assert_eq!(h.state().session.active().unwrap().history.past_len(), history);
+    invoke(&mut h, json!({"cancel":true})).unwrap();
+    assert_eq!(h.state().session.active().unwrap().history.past_len(), history);
+}

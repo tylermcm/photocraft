@@ -48,6 +48,7 @@
   "sliderLabelRowHeight": 21,
   "sliderTrackInset": 0,
   "sectionBottomPadding": 23,
+  "colorBottomPadding": 12,
   "sectionRightPadding": 30,
   "valueFontSize": 11,
   "valueMonospace": false,

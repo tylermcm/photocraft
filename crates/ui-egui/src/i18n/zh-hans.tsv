@@ -2998,3 +2998,17 @@ cameraRaw	Reset Distraction Removal	重置干扰元素移除
 cameraRaw	Show Overlay on Hover	悬停时显示叠加
 cameraRaw	Use Generative AI	使用生成式 AI
 cameraRaw	Visualize Spots	可视化污点
+cameraRaw	Mixer	混合器
+cameraRaw	Point Color	点颜色
+cameraRaw	All Colors	所有颜色
+cameraRaw	Glow	辉光
+cameraRaw	Diffusion	扩散
+cameraRaw	Bloom	柔光
+cameraRaw	Halation	光晕
+cameraRaw	Range	范围
+cameraRaw	Spread	扩展
+cameraRaw	Warmth	暖色
+cameraRaw	Sample Color	采样颜色
+cameraRaw	Delete Sample	删除样本
+cameraRaw	Variance	差异
+cameraRaw	Visualize Range	可视化范围

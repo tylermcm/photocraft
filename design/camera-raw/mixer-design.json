@@ -1,0 +1,39 @@
+{
+  "tabsHeight": 31,
+  "adjustTop": 34,
+  "adjustHeight": 22,
+  "adjustInset": 40,
+  "adjustWidth": 151,
+  "swatchesTop": 66.5,
+  "swatchSize": 20,
+  "swatchStep": 25,
+  "swatchInset": -5.5,
+  "swatchRadius": 7.5,
+  "slidersTop": 101,
+  "sliderInset": -2,
+  "sliderWidth": 217,
+  "rowHeight": 31,
+  "valueWidth": 45,
+  "colorHeight": 194,
+  "bottomPadding": 12,
+  "hues": [
+    0,
+    32,
+    60,
+    117,
+    174,
+    217,
+    270,
+    295
+  ],
+  "saturations": [
+    0.75,
+    0.7,
+    0.65,
+    0.65,
+    0.4,
+    0.8,
+    0.6,
+    0.6
+  ]
+}
