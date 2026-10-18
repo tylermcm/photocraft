@@ -1,0 +1,394 @@
+{
+  "width": 270,
+  "height": 530,
+  "fontSize": 12,
+  "headingSize": 14,
+  "peopleBodyHeight": 64,
+  "elements": [
+    {
+      "id": "heading",
+      "kind": "text",
+      "rect": [
+        17.0,
+        10.5,
+        182.5,
+        36.0
+      ],
+      "label": "Create New Mask"
+    },
+    {
+      "id": "subject-card",
+      "kind": "card",
+      "rect": [
+        29.0,
+        45,
+        85.0,
+        101
+      ],
+      "label": "Subject"
+    },
+    {
+      "id": "subject-glyph",
+      "kind": "icon",
+      "rect": [
+        41.0,
+        56.0,
+        73.5,
+        89.5
+      ],
+      "label": ""
+    },
+    {
+      "id": "subject-label",
+      "kind": "text",
+      "rect": [
+        34.0,
+        103.5,
+        84.5,
+        122.5
+      ],
+      "label": "Subject"
+    },
+    {
+      "id": "sky-card",
+      "kind": "card",
+      "rect": [
+        100.0,
+        45,
+        156.0,
+        101
+      ],
+      "label": "Sky"
+    },
+    {
+      "id": "sky-glyph",
+      "kind": "icon",
+      "rect": [
+        110.5,
+        55.0,
+        144.5,
+        90.0
+      ],
+      "label": ""
+    },
+    {
+      "id": "sky-label",
+      "kind": "text",
+      "rect": [
+        114.5,
+        103.0,
+        144.0,
+        122.5
+      ],
+      "label": "Sky"
+    },
+    {
+      "id": "background-card",
+      "kind": "card",
+      "rect": [
+        171.0,
+        45,
+        227.0,
+        101
+      ],
+      "label": "Background"
+    },
+    {
+      "id": "background-glyph",
+      "kind": "icon",
+      "rect": [
+        182.5,
+        55.5,
+        217.5,
+        89.5
+      ],
+      "label": ""
+    },
+    {
+      "id": "background-label",
+      "kind": "text",
+      "rect": [
+        165.0,
+        103.0,
+        234.5,
+        122.5
+      ],
+      "label": "Background"
+    },
+    {
+      "id": "cards-divider",
+      "kind": "divider",
+      "rect": [
+        18.0,
+        131.5,
+        239.0,
+        135.5
+      ],
+      "label": ""
+    },
+    {
+      "id": "landscape-glyph",
+      "kind": "icon",
+      "rect": [
+        14.0,
+        147.5,
+        39.0,
+        171.5
+      ],
+      "label": ""
+    },
+    {
+      "id": "landscape-label",
+      "kind": "text",
+      "rect": [
+        41.5,
+        147.5,
+        196.5,
+        171.5
+      ],
+      "label": "Landscape"
+    },
+    {
+      "id": "objects-glyph",
+      "kind": "icon",
+      "rect": [
+        14.0,
+        181.5,
+        39.0,
+        205.5
+      ],
+      "label": ""
+    },
+    {
+      "id": "objects-label",
+      "kind": "text",
+      "rect": [
+        41.5,
+        181.5,
+        196.5,
+        205.5
+      ],
+      "label": "Objects"
+    },
+    {
+      "id": "brush-glyph",
+      "kind": "icon",
+      "rect": [
+        14.0,
+        215.5,
+        39.0,
+        239.5
+      ],
+      "label": ""
+    },
+    {
+      "id": "brush-label",
+      "kind": "text",
+      "rect": [
+        41.5,
+        215.5,
+        196.5,
+        239.5
+      ],
+      "label": "Brush"
+    },
+    {
+      "id": "linear-gradient-glyph",
+      "kind": "icon",
+      "rect": [
+        14.0,
+        249.5,
+        39.0,
+        273.5
+      ],
+      "label": ""
+    },
+    {
+      "id": "linear-gradient-label",
+      "kind": "text",
+      "rect": [
+        41.5,
+        249.5,
+        196.5,
+        273.5
+      ],
+      "label": "Linear Gradient"
+    },
+    {
+      "id": "radial-gradient-glyph",
+      "kind": "icon",
+      "rect": [
+        14.0,
+        283.5,
+        39.0,
+        307.5
+      ],
+      "label": ""
+    },
+    {
+      "id": "radial-gradient-label",
+      "kind": "text",
+      "rect": [
+        41.5,
+        283.5,
+        196.5,
+        307.5
+      ],
+      "label": "Radial Gradient"
+    },
+    {
+      "id": "range-glyph",
+      "kind": "icon",
+      "rect": [
+        14.0,
+        317.5,
+        39.0,
+        341.5
+      ],
+      "label": ""
+    },
+    {
+      "id": "range-label",
+      "kind": "text",
+      "rect": [
+        41.5,
+        317.5,
+        196.5,
+        341.5
+      ],
+      "label": "Range"
+    },
+    {
+      "id": "brush-shortcut",
+      "kind": "key",
+      "rect": [
+        218.0,
+        217.0,
+        239.0,
+        238.0
+      ],
+      "label": "K"
+    },
+    {
+      "id": "linear-gradient-shortcut",
+      "kind": "key",
+      "rect": [
+        218.0,
+        251.0,
+        239.0,
+        272.0
+      ],
+      "label": "G"
+    },
+    {
+      "id": "radial-gradient-shortcut",
+      "kind": "key",
+      "rect": [
+        218.0,
+        285.0,
+        239.0,
+        306.0
+      ],
+      "label": "J"
+    },
+    {
+      "id": "range-menu-indicator",
+      "kind": "icon",
+      "rect": [
+        79.5,
+        333,
+        84.5,
+        338
+      ],
+      "label": ""
+    },
+    {
+      "id": "tools-divider",
+      "kind": "divider",
+      "rect": [
+        18.0,
+        350.0,
+        239.0,
+        354.0
+      ],
+      "label": ""
+    },
+    {
+      "id": "people-disclosure",
+      "kind": "disclosure",
+      "rect": [
+        29.0,
+        373.0,
+        44.5,
+        388.0
+      ],
+      "label": "People"
+    },
+    {
+      "id": "people-label",
+      "kind": "text",
+      "rect": [
+        50.0,
+        368.0,
+        121.5,
+        391.0
+      ],
+      "label": "People"
+    },
+    {
+      "id": "people-warning-icon",
+      "kind": "icon",
+      "rect": [
+        28.5,
+        398.5,
+        44.0,
+        416.5
+      ],
+      "label": ""
+    },
+    {
+      "id": "people-warning-text",
+      "kind": "text",
+      "rect": [
+        51.0,
+        396.5,
+        237.0,
+        427.5
+      ],
+      "label": "People masking is not available."
+    },
+    {
+      "id": "help-divider",
+      "kind": "divider",
+      "rect": [
+        18.0,
+        455.0,
+        239.0,
+        459.0
+      ],
+      "label": ""
+    },
+    {
+      "id": "help-icon",
+      "kind": "icon",
+      "rect": [
+        19.0,
+        474.5,
+        39.0,
+        496.5
+      ],
+      "label": ""
+    },
+    {
+      "id": "help-text",
+      "kind": "text",
+      "rect": [
+        49.5,
+        470.5,
+        237.0,
+        500.0
+      ],
+      "label": "Click here to learn more about Masking and keyboard shortcuts."
+    }
+  ]
+}

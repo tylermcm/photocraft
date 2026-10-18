@@ -681,3 +681,46 @@ desktop build/promotion, release or push. Protected executable hashes unchanged.
 Inventory correction:1280 is the current sum of all21 region specifications,
 including repeated/overlapping controls and unaudited Masking/Remove specs.
 Earlier1115/1062 totals counted subsets; none of these counts prove parity.
+
+
+### Masking creation source view (2026-10-17)
+
+The rail now exposes the native Masking creation view, using masking-design.json
+for measured cards, tools, keycaps, People status and help geometry. The card
+borders/fills use existing Tokens and original vector marks. No reference assets,
+fonts or detector data are copied. The People disclosure is serialized pure view
+state (maskingPeople), responds across its header, and supports pointer/Space/Enter.
+The native help modal (maskingHelp) explains actual availability; Escape/Y cannot
+act on the photo behind it, and closing Camera Raw clears the transient help flag.
+
+Camera Raw has no local-mask stack that can preview/replay on commit. Its existing
+whole-filter selection/filter-mask coverage is not this feature. Subject, Sky,
+Background, Landscape, Objects, Brush, Linear Gradient, Radial Gradient and Range
+creation actions remain disabled, including their shortcut affordances. The People
+message says masking is unavailable, rather than claiming a person detector ran.
+The source message is retained as an explicit measured difference in the overlay.
+Help opens local guidance; it does not claim the external Adobe help workflow.
+
+Reference13 uses35 named regions at one full-dock registration: source
+[34,432,574,1492],candidate[2260,374,2800,1434],1440x1000/scale2. The creation-card
+bounds were remeasured from the actual border pixels after the first render;
+the audit ROIs retain their common frame. No independent region alignment or
+capability/text masking. Main live layout/tokens and desktop executables are
+unchanged. Matching-view audit still absent for15(Remove). All19/every-element
+parity, processing bindings and hosted behavior validation remain unfinished.
+
+Final evidence: masking-v2/masking-audit.json and overlay/comparison.png in this
+chat's acr-filmstrip artifacts. Renderer SHA2562d3d6d44a2923e13f03315eb1fb18169fae538f37ac57fb427b8fe0930b165b7;
+private layoutea4059c724858cca5276fabedb5df67faef4f7d023e2b7d25186e9ba413cf280;
+private tokensd94d6de0cb20d7f0b00be2d2317af93b76f07a2498a841d7090fb1e8e917e896. All35 regions have complete
+candidate coverage. Mean of region RGB means19.873 to17.231; no parity pass.
+Captures preserve photo/document/recipe identity and the original synthetic image.
+Final PNG inspected.3124 library tests/13ignored,62 Camera Raw integrations,
+6 auditor tests,all-target ui+desktop clippy,layers30,wasm24 pass. After a test-only
+initializer lint fix, the affected unit test and final clippy pass. Two new native
+interaction tests cover disabled creation cards/tool rows, real People pointer/
+Space toggles, inactive K/G/J photo actions, help Escape/Y ownership, parent-close
+cleanup and atomic malformed mixed requests. Descriptor/help label lookup covered
+in20 catalogs. No visible GUI, new desktop executable/promotion, release or push;
+protected executable hashes unchanged and secondary-monitor/no-activation remains
+mandatory for any future agent-driven visible launch.

@@ -4046,3 +4046,10 @@ cameraRaw	Rotate Left	Περιστροφή αριστερά
 cameraRaw	Rotate Right	Περιστροφή δεξιά
 cameraRaw	Swap orientation	Εναλλαγή προσανατολισμού
 cameraRaw	Trim	Αποκοπή άκρων
+cameraRaw	Click here to learn more about Masking and keyboard shortcuts.	Κάντε κλικ εδώ για πληροφορίες σχετικά με τις μάσκες και τις συντομεύσεις πληκτρολογίου.
+cameraRaw	Create New Mask	Δημιουργία νέας μάσκας
+cameraRaw	K, G and J shortcuts are unavailable until local masks can preview and commit.	Οι συντομεύσεις K, G και J δεν είναι διαθέσιμες μέχρι να υποστηρίζονται η προεπισκόπηση και η εφαρμογή τοπικών μασκών.
+cameraRaw	Local masking is not available in Camera Raw yet.	Οι τοπικές μάσκες δεν είναι ακόμη διαθέσιμες στο Camera Raw.
+cameraRaw	Objects	Αντικείμενα
+cameraRaw	People	Άτομα
+cameraRaw	People masking is not available.	Οι μάσκες ατόμων δεν είναι διαθέσιμες.

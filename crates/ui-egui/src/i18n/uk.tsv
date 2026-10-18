@@ -4048,3 +4048,10 @@ cameraRaw	Rotate Left	Повернути ліворуч
 cameraRaw	Rotate Right	Повернути праворуч
 cameraRaw	Swap orientation	Змінити орієнтацію
 cameraRaw	Trim	Обрізати краї
+cameraRaw	Click here to learn more about Masking and keyboard shortcuts.	Натисніть тут, щоб дізнатися більше про маски та клавіатурні скорочення.
+cameraRaw	Create New Mask	Створити нову маску
+cameraRaw	K, G and J shortcuts are unavailable until local masks can preview and commit.	Клавіші K, G і J недоступні, доки локальні маски не можна переглядати й застосовувати.
+cameraRaw	Local masking is not available in Camera Raw yet.	Локальні маски поки недоступні в Camera Raw.
+cameraRaw	Objects	Об’єкти
+cameraRaw	People	Люди
+cameraRaw	People masking is not available.	Маскування людей недоступне.

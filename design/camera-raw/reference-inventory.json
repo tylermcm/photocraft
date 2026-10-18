@@ -761,31 +761,31 @@
         2674
       ],
       "scope": "Masking: subject, sky, background, tools and People",
-      "status": "incomplete; Masking tab and its observed controls missing in Camera Raw workspace.",
+      "status": "matching native Masking creation view captured; unavailable local masks and pixel differences remain; no parity pass",
       "elements": [
         {
           "name": "Create New Mask title",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; font/glyph/capability differences remain; no parity pass"
         },
         {
           "name": "Subject/Sky/Background tiles",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; font/glyph/capability differences remain; no parity pass"
         },
         {
           "name": "Landscape/Objects/Brush/Linear Gradient/Radial Gradient/Range rows",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; font/glyph/capability differences remain; no parity pass"
         },
         {
           "name": "K/G/J shortcut badges",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; font/glyph/capability differences remain; no parity pass"
         },
         {
           "name": "People disclosure and unavailable-message icon",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; font/glyph/capability differences remain; no parity pass"
         },
         {
           "name": "Masking help row/separators",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; font/glyph/capability differences remain; no parity pass"
         }
       ],
       "sharedElements": [
@@ -796,13 +796,17 @@
         "Footer buttons and split Open control"
       ],
       "legacyImage": 2,
-      "nativeCaptureState": null,
-      "coverageAudit": "Masking tab and its observed controls missing in Camera Raw workspace.",
+      "nativeCaptureState": {
+        "tab": "masking",
+        "maskingPeople": true,
+        "maskingHelp": false
+      },
+      "coverageAudit": "35 named regions, one full-dock registration; final report masking-v2/masking-audit.json.",
       "previousImage": 11,
       "elementRegionsFile": "masking-element-regions.json",
       "plannedElementCount": 35,
-      "lastIndividualPixelAudit": "Specification measured from reference; native view is not implemented/captured, so no individual comparison or parity pass.",
-      "currentValidation": "Pending matching native capture and individual audit; no parity pass."
+      "lastIndividualPixelAudit": "masking-v2: source[34,432,574,1492],candidate[2260,374,2800,1434],1440x1000/scale2. People capability text differs deliberately; no masking of differences.",
+      "currentValidation": "3124 library tests/13ignored and62 Camera Raw integrations pass. People disclosure/help work; local mask creation stays disabled. Source only; no desktop promotion."
     },
     {
       "image": 14,
@@ -1423,5 +1427,27 @@
     "regionsCompared": 81,
     "evidence": "crop-v3/crop-audit.json and overlay/comparison.png",
     "remaining": "Masking13 and Remove15 matching-view audits; all19 every-element verification, processing bindings and hosted validation remain incomplete."
+  },
+  "remainingMatchingViewAudits": [
+    15
+  ],
+  "maskingSourceValidation": {
+    "executableSha256": "2d3d6d44a2923e13f03315eb1fb18169fae538f37ac57fb427b8fe0930b165b7",
+    "layoutSha256": "ea4059c724858cca5276fabedb5df67faef4f7d023e2b7d25186e9ba413cf280",
+    "tokensSha256": "d94d6de0cb20d7f0b00be2d2317af93b76f07a2498a841d7090fb1e8e917e896",
+    "sourceImage": 13,
+    "candidateRect": [
+      2260,
+      374,
+      2800,
+      1434
+    ],
+    "originalUnchanged": true,
+    "fullEveryElementParityVerified": false,
+    "sourceBaseCommit": "c3938d48",
+    "status": "unpromoted native source; offscreen gates pass, local mask creation unavailable",
+    "regionsCompared": 35,
+    "evidence": "masking-v2/masking-audit.json and overlay/comparison.png",
+    "remaining": "Remove15 matching-view audit; all19 every-element verification, processing and hosted validation remain incomplete."
   }
 }

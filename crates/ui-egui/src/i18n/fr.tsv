@@ -3355,3 +3355,10 @@ cameraRaw	Rotate Left	Rotation à gauche
 cameraRaw	Rotate Right	Rotation à droite
 cameraRaw	Swap orientation	Permuter l’orientation
 cameraRaw	Trim	Rogner
+cameraRaw	Click here to learn more about Masking and keyboard shortcuts.	Cliquez ici pour en savoir plus sur le masquage et les raccourcis clavier.
+cameraRaw	Create New Mask	Créer un masque
+cameraRaw	K, G and J shortcuts are unavailable until local masks can preview and commit.	Les raccourcis K, G et J seront disponibles lorsque les masques locaux pourront être prévisualisés et appliqués.
+cameraRaw	Local masking is not available in Camera Raw yet.	Les masques locaux ne sont pas encore disponibles dans Camera Raw.
+cameraRaw	Objects	Objets
+cameraRaw	People	Personnes
+cameraRaw	People masking is not available.	Le masquage des personnes n’est pas disponible.

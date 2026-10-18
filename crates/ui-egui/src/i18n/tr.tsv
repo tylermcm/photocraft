@@ -4076,3 +4076,10 @@ cameraRaw	Rotate Left	Sola döndür
 cameraRaw	Rotate Right	Sağa döndür
 cameraRaw	Swap orientation	Yönü değiştir
 cameraRaw	Trim	Kenarları kırp
+cameraRaw	Click here to learn more about Masking and keyboard shortcuts.	Maskeleme ve klavye kısayolları hakkında bilgi edinmek için buraya tıklayın.
+cameraRaw	Create New Mask	Yeni maske oluştur
+cameraRaw	K, G and J shortcuts are unavailable until local masks can preview and commit.	Yerel maskeler önizlenip uygulanabilene kadar K, G ve J kısayolları kullanılamaz.
+cameraRaw	Local masking is not available in Camera Raw yet.	Camera Raw içinde yerel maskeler henüz kullanılamıyor.
+cameraRaw	Objects	Nesneler
+cameraRaw	People	Kişiler
+cameraRaw	People masking is not available.	Kişi maskelemesi kullanılamıyor.

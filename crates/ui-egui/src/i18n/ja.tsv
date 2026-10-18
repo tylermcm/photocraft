@@ -4025,3 +4025,10 @@ cameraRaw	Rotate Left	左に回転
 cameraRaw	Rotate Right	右に回転
 cameraRaw	Swap orientation	縦横を入れ替え
 cameraRaw	Trim	周辺をトリミング
+cameraRaw	Click here to learn more about Masking and keyboard shortcuts.	マスクとキーボードショートカットの詳細については、ここをクリックしてください。
+cameraRaw	Create New Mask	新しいマスクを作成
+cameraRaw	K, G and J shortcuts are unavailable until local masks can preview and commit.	ローカルマスクのプレビューと適用が可能になるまで、K、G、J ショートカットは使用できません。
+cameraRaw	Local masking is not available in Camera Raw yet.	Camera Raw ではローカルマスクをまだ使用できません。
+cameraRaw	Objects	オブジェクト
+cameraRaw	People	人物
+cameraRaw	People masking is not available.	人物マスクは使用できません。

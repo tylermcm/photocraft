@@ -46,6 +46,7 @@ pub enum WorkspaceTab {
     Presets,
     RedEye,
     Crop,
+    Masking,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -78,6 +79,8 @@ pub struct WorkspaceState {
     pub settings_menu: bool,
     pub save_options: bool,
     pub preferences: bool,
+    pub masking_help: bool,
+    pub masking_people: bool,
     pub crop_groups: Vec<String>,
     pub preset_groups: Vec<String>,
     pub grid: bool,
@@ -105,6 +108,8 @@ impl Default for WorkspaceState {
             settings_menu: false,
             save_options: false,
             preferences: false,
+            masking_help: false,
+            masking_people: true,
             crop_groups: vec!["Geometry".into()],
             preset_groups: Vec::new(),
             grid: false,
@@ -726,6 +731,11 @@ pub(crate) fn rail(ui: &mut Ui, rect: Rect, state: &mut WorkspaceState, navigati
     let mut crop_ui=ui.new_child(egui::UiBuilder::new().id_salt("camera-raw-crop-tab").max_rect(crop_rect));
     if icons::button(&mut crop_ui,"crop",28.0,!state.info && state.tab==WorkspaceTab::Crop,crate::i18n::tr_ctx(crate::i18n::current(),"cameraRaw","Crop & Expand")).clicked() {
         state.info=false; state.tab=WorkspaceTab::Crop;
+    }
+    let masking_rect=Rect::from_center_size(pos2(rect.center().x,rect.top()+design.rail_top_inset+118.0),vec2(28.0,28.0));
+    let mut masking_ui=ui.new_child(egui::UiBuilder::new().id_salt("camera-raw-masking-tab").max_rect(masking_rect));
+    if icons::button(&mut masking_ui,"circle-dashed",28.0,!state.info && state.tab==WorkspaceTab::Masking,crate::i18n::tr_ctx(crate::i18n::current(),"cameraRaw","Masking")).clicked() {
+        state.info=false;state.tab=WorkspaceTab::Masking;
     }
     let red_eye_rect = Rect::from_center_size(pos2(rect.center().x, rect.top() + design.snapshots_rail_offset - 36.0), vec2(28.0, 28.0));
     let mut red_eye_ui = ui.new_child(egui::UiBuilder::new().id_salt("camera-raw-red-eye-tab").max_rect(red_eye_rect));

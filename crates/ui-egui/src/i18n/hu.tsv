@@ -4265,3 +4265,10 @@ cameraRaw	Rotate Left	Forgatás balra
 cameraRaw	Rotate Right	Forgatás jobbra
 cameraRaw	Swap orientation	Tájolás felcserélése
 cameraRaw	Trim	Szegélyek levágása
+cameraRaw	Click here to learn more about Masking and keyboard shortcuts.	Kattintson ide a maszkolás és a gyorsbillentyűk ismertetőjéhez.
+cameraRaw	Create New Mask	Új maszk létrehozása
+cameraRaw	K, G and J shortcuts are unavailable until local masks can preview and commit.	A K, G és J gyorsbillentyűk nem érhetők el, amíg a helyi maszkok nem tekinthetők meg és nem alkalmazhatók.
+cameraRaw	Local masking is not available in Camera Raw yet.	A helyi maszkok még nem érhetők el a Camera Raw alkalmazásban.
+cameraRaw	Objects	Objektumok
+cameraRaw	People	Személyek
+cameraRaw	People masking is not available.	A személyek maszkolása nem érhető el.

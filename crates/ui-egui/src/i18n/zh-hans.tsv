@@ -2971,3 +2971,10 @@ cameraRaw	Rotate Left	向左旋转
 cameraRaw	Rotate Right	向右旋转
 cameraRaw	Swap orientation	切换方向
 cameraRaw	Trim	修剪
+cameraRaw	Click here to learn more about Masking and keyboard shortcuts.	单击此处了解更多有关蒙版和键盘快捷键的信息。
+cameraRaw	Create New Mask	创建新蒙版
+cameraRaw	K, G and J shortcuts are unavailable until local masks can preview and commit.	在支持预览和应用局部蒙版之前，K、G 和 J 快捷键不可用。
+cameraRaw	Local masking is not available in Camera Raw yet.	Camera Raw 尚不支持局部蒙版。
+cameraRaw	Objects	对象
+cameraRaw	People	人物
+cameraRaw	People masking is not available.	人物蒙版不可用。

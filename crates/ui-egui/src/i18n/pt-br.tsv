@@ -4136,3 +4136,10 @@ cameraRaw	Rotate Left	Girar à esquerda
 cameraRaw	Rotate Right	Girar à direita
 cameraRaw	Swap orientation	Trocar orientação
 cameraRaw	Trim	Aparar
+cameraRaw	Click here to learn more about Masking and keyboard shortcuts.	Clique aqui para saber mais sobre máscaras e atalhos de teclado.
+cameraRaw	Create New Mask	Criar nova máscara
+cameraRaw	K, G and J shortcuts are unavailable until local masks can preview and commit.	Os atalhos K, G e J não estão disponíveis até que as máscaras locais possam ser visualizadas e aplicadas.
+cameraRaw	Local masking is not available in Camera Raw yet.	As máscaras locais ainda não estão disponíveis no Camera Raw.
+cameraRaw	Objects	Objetos
+cameraRaw	People	Pessoas
+cameraRaw	People masking is not available.	As máscaras de pessoas não estão disponíveis.

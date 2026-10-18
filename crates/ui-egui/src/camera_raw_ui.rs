@@ -30,6 +30,8 @@ mod bars;
 mod curve_regions;
 #[path = "camera_raw_extra_panels_ui.rs"]
 mod extra_panels;
+#[path = "camera_raw_masking_ui.rs"]
+pub(crate) mod masking;
 #[path = "camera_raw_crop_ui.rs"]
 pub(crate) mod crop;
 #[path = "camera_raw_info_ui.rs"]
@@ -1610,7 +1612,7 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
     let current_display = app.session.active().and_then(|st| app.session.color.canvas_display(&st.doc).ok());
     let mut action: Option<&str> = None;
     let menu_was_open =
-        app.ui.camera_raw_workspace.settings_menu || app.ui.camera_raw_workspace.preferences || app.ui.camera_raw_workspace.save_options || app.ui.camera_raw_menu.snapshot_picker || app.camera_raw.as_ref().is_some_and(|d| d.snapshots.creating());
+        (app.ui.camera_raw_workspace.masking_help && app.ui.camera_raw_workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Masking) || app.ui.camera_raw_workspace.settings_menu || app.ui.camera_raw_workspace.preferences || app.ui.camera_raw_workspace.save_options || app.ui.camera_raw_menu.snapshot_picker || app.camera_raw.as_ref().is_some_and(|d| d.snapshots.creating());
     // The photo was left for the next one, which has not taken the dialog over yet: nothing in the dialog may act
     // meanwhile, and if the swap takes more than a moment the controls dim to say so.
     let busy_since = app.camera_raw.as_ref().and_then(|d| d.busy_since);
@@ -1769,6 +1771,11 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
                     d.params = parameters;
                     dirty = true;
                 }
+                return;
+            }
+            if workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Masking {
+                ui.set_width(right.width());
+                masking::show(ui, &mut workspace.masking_people, &mut workspace.masking_help);
                 return;
             }
             if workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Crop {

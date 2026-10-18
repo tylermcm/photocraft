@@ -3836,3 +3836,10 @@ cameraRaw	Rotate Left	Xoay trái
 cameraRaw	Rotate Right	Xoay phải
 cameraRaw	Swap orientation	Đổi hướng
 cameraRaw	Trim	Xén viền
+cameraRaw	Click here to learn more about Masking and keyboard shortcuts.	Nhấp vào đây để tìm hiểu về mặt nạ và phím tắt.
+cameraRaw	Create New Mask	Tạo mặt nạ mới
+cameraRaw	K, G and J shortcuts are unavailable until local masks can preview and commit.	Các phím tắt K, G và J chưa khả dụng cho đến khi có thể xem trước và áp dụng mặt nạ cục bộ.
+cameraRaw	Local masking is not available in Camera Raw yet.	Mặt nạ cục bộ chưa khả dụng trong Camera Raw.
+cameraRaw	Objects	Đối tượng
+cameraRaw	People	Người
+cameraRaw	People masking is not available.	Mặt nạ người chưa khả dụng.

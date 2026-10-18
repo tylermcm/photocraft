@@ -4419,3 +4419,10 @@ cameraRaw	Rotate Left	Rotiraj ulevo
 cameraRaw	Rotate Right	Rotiraj udesno
 cameraRaw	Swap orientation	Zameni orijentaciju
 cameraRaw	Trim	Odseci ivice
+cameraRaw	Click here to learn more about Masking and keyboard shortcuts.	Kliknite ovde za više informacija o maskiranju i prečicama na tastaturi.
+cameraRaw	Create New Mask	Napravi novu masku
+cameraRaw	K, G and J shortcuts are unavailable until local masks can preview and commit.	Prečice K, G i J nisu dostupne dok lokalne maske ne budu mogle da se pregledaju i primene.
+cameraRaw	Local masking is not available in Camera Raw yet.	Lokalne maske još nisu dostupne u Camera Raw.
+cameraRaw	Objects	Objekti
+cameraRaw	People	Ljudi
+cameraRaw	People masking is not available.	Maskiranje ljudi nije dostupno.

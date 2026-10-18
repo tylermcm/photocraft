@@ -3956,3 +3956,10 @@ cameraRaw	Rotate Left	Otočit doleva
 cameraRaw	Rotate Right	Otočit doprava
 cameraRaw	Swap orientation	Zaměnit orientaci
 cameraRaw	Trim	Oříznout okraje
+cameraRaw	Click here to learn more about Masking and keyboard shortcuts.	Kliknutím zobrazíte informace o maskování a klávesových zkratkách.
+cameraRaw	Create New Mask	Vytvořit novou masku
+cameraRaw	K, G and J shortcuts are unavailable until local masks can preview and commit.	Zkratky K, G a J nejsou dostupné, dokud nelze místní masky zobrazit v náhledu a použít.
+cameraRaw	Local masking is not available in Camera Raw yet.	Místní masky zatím nejsou v Camera Raw dostupné.
+cameraRaw	Objects	Objekty
+cameraRaw	People	Lidé
+cameraRaw	People masking is not available.	Maskování lidí není dostupné.

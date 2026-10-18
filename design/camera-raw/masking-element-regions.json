@@ -1,5 +1,5 @@
 {
-  "scope": "Reference11 Masking: visible creation cards, tools, shortcuts, People message and help. Native tab missing; no individual audit or processing parity.",
+  "scope": "Reference13 Masking creation panel. One uniform full-dock registration; unsupported mask creation and capability-dependent People text remain measured differences. No processing/all-element parity claim.",
   "normalizedWidth": 540,
   "sourceRect": [
     34,
@@ -8,7 +8,7 @@
     1492
   ],
   "sourceSha256": "e62a47b721983a5ebb1d378e832683fff74c2db28476840062926451a8e88798",
-  "sourceImage": 11,
+  "sourceImage": 13,
   "elements": [
     {
       "id": "heading",

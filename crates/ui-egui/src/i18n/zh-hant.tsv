@@ -2956,3 +2956,10 @@ cameraRaw	Rotate Left	向左旋轉
 cameraRaw	Rotate Right	向右旋轉
 cameraRaw	Swap orientation	切換方向
 cameraRaw	Trim	修剪
+cameraRaw	Click here to learn more about Masking and keyboard shortcuts.	按一下此處以深入瞭解遮色片與鍵盤快速鍵。
+cameraRaw	Create New Mask	建立新遮色片
+cameraRaw	K, G and J shortcuts are unavailable until local masks can preview and commit.	在支援預覽與套用局部遮色片之前，無法使用 K、G 與 J 快速鍵。
+cameraRaw	Local masking is not available in Camera Raw yet.	Camera Raw 尚不支援局部遮色片。
+cameraRaw	Objects	物件
+cameraRaw	People	人物
+cameraRaw	People masking is not available.	無法使用人物遮色片。

@@ -1300,6 +1300,7 @@ mod tests {
             include_str!("../camera_raw_save_options_ui.rs"),
             include_str!("../camera_raw_preferences_ui.rs"),
             include_str!("../camera_raw_crop_ui.rs"),
+            include_str!("../camera_raw_masking_ui.rs"),
             include_str!("../camera_raw_tool_panels_ui.rs"),
             include_str!("../camera_raw_curve_regions_ui.rs"),
         ];
@@ -1329,6 +1330,16 @@ mod tests {
         }
         let crop: serde_json::Value = serde_json::from_str(include_str!("../../../../design/camera-raw/crop-design.json")).unwrap();
         for e in crop["elements"].as_array().unwrap() {
+            let key = e["label"].as_str().unwrap_or("");
+            if !key.is_empty() {
+                labels.insert(key);
+            }
+        }
+        let masking: serde_json::Value = serde_json::from_str(include_str!("../../../../design/camera-raw/masking-design.json")).unwrap();
+        for e in masking["elements"].as_array().unwrap() {
+            if e["kind"] == "key" {
+                continue;
+            }
             let key = e["label"].as_str().unwrap_or("");
             if !key.is_empty() {
                 labels.insert(key);
