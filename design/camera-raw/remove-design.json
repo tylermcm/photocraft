@@ -1,0 +1,646 @@
+{
+  "width": 270,
+  "height": 545,
+  "fontSize": 12,
+  "headingSize": 14,
+  "unavailableHeight": 26,
+  "elements": [
+    {
+      "id": "heading",
+      "kind": "text",
+      "rect": [
+        17.5,
+        10.0,
+        122.5,
+        33.5
+      ],
+      "label": "Remove",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "reset",
+      "kind": "icon",
+      "rect": [
+        186.5,
+        10.0,
+        205.0,
+        32.5
+      ],
+      "label": "Reset",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "preview-eye",
+      "kind": "icon",
+      "rect": [
+        219.0,
+        12.0,
+        239.0,
+        30.5
+      ],
+      "label": "Preview",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "remove-selected-frame",
+      "kind": "frame",
+      "rect": [
+        18.5,
+        46.0,
+        47.5,
+        76.0
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "remove-mode",
+      "kind": "icon",
+      "rect": [
+        22.5,
+        50.0,
+        43.5,
+        72.0
+      ],
+      "label": "Remove",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "heal-mode",
+      "kind": "icon",
+      "rect": [
+        53.0,
+        48.0,
+        75.0,
+        74.0
+      ],
+      "label": "Heal",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "clone-mode",
+      "kind": "icon",
+      "rect": [
+        81.0,
+        47.0,
+        105.0,
+        74.0
+      ],
+      "label": "Clone",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "generative-checkbox",
+      "kind": "check",
+      "rect": [
+        18.0,
+        96.0,
+        34.0,
+        112.5
+      ],
+      "label": "Use Generative AI",
+      "display": "",
+      "checked": true
+    },
+    {
+      "id": "generative-label",
+      "kind": "text",
+      "rect": [
+        38.5,
+        94.5,
+        166.0,
+        114.5
+      ],
+      "label": "Use Generative AI",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "generative-info",
+      "kind": "icon",
+      "rect": [
+        219.5,
+        94.0,
+        237.5,
+        112.0
+      ],
+      "label": "About Remove",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "objects-checkbox",
+      "kind": "check",
+      "rect": [
+        18.0,
+        116.0,
+        34.0,
+        132.5
+      ],
+      "label": "Detect Objects",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "objects-label",
+      "kind": "text",
+      "rect": [
+        38.5,
+        114.5,
+        163.0,
+        135.0
+      ],
+      "label": "Detect Objects",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "size-label",
+      "kind": "text",
+      "rect": [
+        19.0,
+        135.5,
+        62.0,
+        155.0
+      ],
+      "label": "Size",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "size-value",
+      "kind": "field",
+      "rect": [
+        191.0,
+        134.5,
+        235.0,
+        155.0
+      ],
+      "label": "Size",
+      "display": "7",
+      "checked": false
+    },
+    {
+      "id": "size-track",
+      "kind": "track",
+      "rect": [
+        19.0,
+        156.0,
+        236.0,
+        162.5
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "size-handle",
+      "kind": "handle",
+      "rect": [
+        23.0,
+        152.0,
+        43.0,
+        170.5
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "feedback-divider-top",
+      "kind": "divider",
+      "rect": [
+        19.0,
+        184.5,
+        237.0,
+        188.0
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "feedback-glyph",
+      "kind": "icon",
+      "rect": [
+        18.0,
+        198.0,
+        40.5,
+        222.0
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "feedback-label",
+      "kind": "text",
+      "rect": [
+        46.5,
+        198.5,
+        173.5,
+        221.5
+      ],
+      "label": "Provide feedback",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "feedback-divider-bottom",
+      "kind": "divider",
+      "rect": [
+        18.0,
+        233.0,
+        237.0,
+        236.5
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "overlay-checkbox",
+      "kind": "check",
+      "rect": [
+        18.0,
+        252.0,
+        34.0,
+        270.0
+      ],
+      "label": "Show Overlay on Hover",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "overlay-label",
+      "kind": "text",
+      "rect": [
+        38.0,
+        251.5,
+        190.5,
+        271.0
+      ],
+      "label": "Show Overlay on Hover",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "spots-checkbox",
+      "kind": "check",
+      "rect": [
+        18.0,
+        278.5,
+        34.0,
+        296.0
+      ],
+      "label": "Visualize Spots",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "spots-label",
+      "kind": "text",
+      "rect": [
+        38.0,
+        277.5,
+        133.0,
+        298.0
+      ],
+      "label": "Visualize Spots",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "spots-threshold",
+      "kind": "track",
+      "rect": [
+        133.5,
+        284.5,
+        237.0,
+        291.5
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "distractions-divider",
+      "kind": "divider",
+      "rect": [
+        0.0,
+        313.5,
+        255.0,
+        317.5
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "distractions-heading",
+      "kind": "text",
+      "rect": [
+        17.5,
+        325.0,
+        173.5,
+        346.0
+      ],
+      "label": "Distraction Removal",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "distractions-reset",
+      "kind": "icon",
+      "rect": [
+        186.5,
+        325.5,
+        205.5,
+        347.5
+      ],
+      "label": "Reset Distraction Removal",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "distractions-eye",
+      "kind": "icon",
+      "rect": [
+        218.5,
+        327.0,
+        239.0,
+        346.5
+      ],
+      "label": "Preview Distraction Removal",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "reflections-panel",
+      "kind": "panel",
+      "rect": [
+        9.0,
+        359.0,
+        245.0,
+        392.0
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "reflections-glyph",
+      "kind": "icon",
+      "rect": [
+        14.0,
+        363.0,
+        38.0,
+        387.0
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "reflections-title",
+      "kind": "text",
+      "rect": [
+        44.0,
+        365.0,
+        170.0,
+        388.0
+      ],
+      "label": "Reflections",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "reflections-eye",
+      "kind": "icon",
+      "rect": [
+        192.5,
+        368.0,
+        213.5,
+        386.0
+      ],
+      "label": "Preview Reflections",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "reflections-disclosure",
+      "kind": "disclosure",
+      "rect": [
+        220.5,
+        366.5,
+        240.0,
+        388.5
+      ],
+      "label": "Reflections",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "people-panel",
+      "kind": "panel",
+      "rect": [
+        9.0,
+        401.0,
+        245.0,
+        434.0
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "people-glyph",
+      "kind": "icon",
+      "rect": [
+        14.0,
+        405.0,
+        38.0,
+        429.0
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "people-title",
+      "kind": "text",
+      "rect": [
+        44.0,
+        407.0,
+        170.0,
+        430.0
+      ],
+      "label": "People",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "people-eye",
+      "kind": "icon",
+      "rect": [
+        192.5,
+        410.0,
+        213.5,
+        428.0
+      ],
+      "label": "Preview People",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "people-disclosure",
+      "kind": "disclosure",
+      "rect": [
+        220.5,
+        408.5,
+        240.0,
+        430.5
+      ],
+      "label": "People",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "blemishes-panel",
+      "kind": "panel",
+      "rect": [
+        9.0,
+        443.0,
+        245.0,
+        476.0
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "blemishes-glyph",
+      "kind": "icon",
+      "rect": [
+        14.0,
+        447.0,
+        38.0,
+        471.0
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "blemishes-title",
+      "kind": "text",
+      "rect": [
+        44.0,
+        449.0,
+        170.0,
+        472.0
+      ],
+      "label": "Blemishes",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "blemishes-eye",
+      "kind": "icon",
+      "rect": [
+        192.5,
+        452.0,
+        213.5,
+        470.0
+      ],
+      "label": "Preview Blemishes",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "blemishes-disclosure",
+      "kind": "disclosure",
+      "rect": [
+        220.5,
+        450.5,
+        240.0,
+        472.5
+      ],
+      "label": "Blemishes",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "dust-panel",
+      "kind": "panel",
+      "rect": [
+        9.0,
+        485.0,
+        245.0,
+        518.0
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "dust-glyph",
+      "kind": "icon",
+      "rect": [
+        14.0,
+        489.0,
+        38.0,
+        513.0
+      ],
+      "label": "",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "dust-title",
+      "kind": "text",
+      "rect": [
+        44.0,
+        491.0,
+        170.0,
+        514.0
+      ],
+      "label": "Dust",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "dust-eye",
+      "kind": "icon",
+      "rect": [
+        192.5,
+        494.0,
+        213.5,
+        512.0
+      ],
+      "label": "Preview Dust",
+      "display": "",
+      "checked": false
+    },
+    {
+      "id": "dust-disclosure",
+      "kind": "disclosure",
+      "rect": [
+        220.5,
+        492.5,
+        240.0,
+        514.5
+      ],
+      "label": "Dust",
+      "display": "",
+      "checked": false
+    }
+  ]
+}

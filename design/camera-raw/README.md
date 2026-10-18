@@ -724,3 +724,48 @@ cleanup and atomic malformed mixed requests. Descriptor/help label lookup covere
 in20 catalogs. No visible GUI, new desktop executable/promotion, release or push;
 protected executable hashes unchanged and secondary-monitor/no-activation remains
 mandatory for any future agent-driven visible launch.
+
+
+### Remove source view (2026-10-17)
+
+The native rail exposes Remove with JSON-measured mode marks, settings, feedback,
+overlay/spots rows and the Reflections/People/Blemishes/Dust sections. State is
+serialized in workspace.removeGroups and workspace.removeHelp. Disclosures respond
+across their headers to pointer/Space/Enter and move later sections down. Expanded
+sections explicitly show Not available. Local help describes actual availability;
+Escape/Y do not act on the photo while it is open, and parent close clears help.
+
+Remove/Heal/Clone and automatic distraction operations cannot be stored/replayed
+by the current Camera Raw recipe. Those operations, reset/preview, size/detection/
+overlay/spots controls and feedback submission remain disabled. Checked Generative
+AI and Size7 are readonly observed presentation, not active processing or an
+editable brush draft. No remote processing or feedback submission is performed.
+No edits/detection success are simulated. Retouch processing and behavior parity
+remain unfinished. Native vector marks are original; no reference assets/fonts
+are copied. Labels have contextual/plain lookup coverage across20 catalogs.
+
+Reference15's49 regions use one full-dock registration: source[88,432,628,1522],
+candidate[2260,374,2800,1464],1440x1000/scale2. The first overlay exposed oversized
+selection/icon plates; the blue frame and icon-backplate bounds/colors were
+remeasured from reference pixels. Glyph audit ROIs were corrected to contain the
+full backplates, without independent alignment. Source images remain untouched.
+Main live layout/tokens, selected desktop editor and protected executables remain
+unchanged. All19 now have a recorded matching-view capture at some source revision;
+current-source matrix recapture, incomplete element coverage, shared chrome,
+processing, remaining visual differences and hosted validation are still pending.
+No complete every-element parity or promotion claim follows from this count.
+
+Final evidence: remove-v2/remove-audit.json and overlay/comparison.png in this
+chat's acr-filmstrip artifacts. Renderer SHA2566d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda;
+private layout2c43d2a4804893da80d014b3a45524c3a2cda34b5d74d2dc229f75ebb4c1926d;
+private tokensd94d6de0cb20d7f0b00be2d2317af93b76f07a2498a841d7090fb1e8e917e896. All49 regions have complete
+candidate coverage. Mean region RGB difference15.995 to13.947 using identical
+final ROIs (baseline re-audited in remove-v1/overlay-final-regions). No per-row
+registration, capability masking or parity pass. Final PNG inspected; photo/
+document/recipe identity and original fixture hash unchanged.3125 library tests,
+13ignored,64 Camera Raw integrations,6 auditors,all-target ui+desktop clippy,
+layers30,wasm24 pass. Two new interactions cover disabled operations, real header/
+Space disclosures and lower-row displacement, atomic invalid mixed requests,
+help Escape/Y ownership and parent-close cleanup. All work ran offscreen; no new
+desktop executable, visible launch, release, push or promotion. Protected debug,
+selected acr-settings-menu and release executable hashes remain unchanged.

@@ -13,6 +13,7 @@ from pathlib import Path
 
 
 STATES = {
+    "remove": (None, {"tab":"remove", "removeGroups":[], "removeHelp":False}),
     "masking": (None, {"tab":"masking", "maskingPeople":True}),
     "crop": (None, {"tab":"crop", "cropGroups":["Geometry"]}),
     "red-eye": (None, {"tab": "redEye"}),

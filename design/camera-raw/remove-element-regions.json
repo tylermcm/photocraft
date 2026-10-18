@@ -1,5 +1,5 @@
 {
-  "scope": "Reference10 Remove: all visible modes, settings, feedback and distraction rows. Native tab is missing; these planned regions are not comparison evidence.",
+  "scope": "Reference15 Remove: one uniform full-dock registration. Processing/feedback remain unavailable; readonly observed settings and native view disclosures are not a processing or all-element parity pass.",
   "normalizedWidth": 540,
   "sourceRect": [
     88,
@@ -8,7 +8,7 @@
     1522
   ],
   "sourceSha256": "978b9690eaa5085b25f681b2bf5ec2a69e59f69fc572f5fb8b6c10b7cab838a9",
-  "sourceImage": 10,
+  "sourceImage": 15,
   "elements": [
     {
       "id": "heading",
@@ -283,10 +283,10 @@
     {
       "id": "reflections-glyph",
       "rect": [
-        37,
-        730,
-        82,
-        776
+        28,
+        726,
+        76,
+        774
       ]
     },
     {
@@ -328,10 +328,10 @@
     {
       "id": "people-glyph",
       "rect": [
-        37,
-        814,
-        82,
-        860
+        28,
+        810,
+        76,
+        858
       ]
     },
     {
@@ -373,10 +373,10 @@
     {
       "id": "blemishes-glyph",
       "rect": [
-        37,
-        898,
-        82,
-        944
+        28,
+        894,
+        76,
+        942
       ]
     },
     {
@@ -418,10 +418,10 @@
     {
       "id": "dust-glyph",
       "rect": [
-        37,
-        982,
-        82,
-        1028
+        28,
+        978,
+        76,
+        1026
       ]
     },
     {

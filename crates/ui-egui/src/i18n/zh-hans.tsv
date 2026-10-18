@@ -2978,3 +2978,23 @@ cameraRaw	Local masking is not available in Camera Raw yet.	Camera Raw 尚不支
 cameraRaw	Objects	对象
 cameraRaw	People	人物
 cameraRaw	People masking is not available.	人物蒙版不可用。
+cameraRaw	About Remove	关于移除
+cameraRaw	Automatic distraction removal is not available in this build.	此版本尚不支持自动移除干扰元素。
+cameraRaw	Blemishes	瑕疵
+cameraRaw	Clone	仿制
+cameraRaw	Detect Objects	检测对象
+cameraRaw	Distraction Removal	干扰元素移除
+cameraRaw	Dust	灰尘
+cameraRaw	Heal	修复
+cameraRaw	Preview Blemishes	预览瑕疵
+cameraRaw	Preview Distraction Removal	预览干扰元素移除
+cameraRaw	Preview Dust	预览灰尘
+cameraRaw	Preview People	预览人物
+cameraRaw	Preview Reflections	预览反射
+cameraRaw	Provide feedback	提供反馈
+cameraRaw	Reflections	反射
+cameraRaw	Remove, Heal and Clone are not available in Camera Raw yet.	Camera Raw 尚不支持移除、修复和仿制。
+cameraRaw	Reset Distraction Removal	重置干扰元素移除
+cameraRaw	Show Overlay on Hover	悬停时显示叠加
+cameraRaw	Use Generative AI	使用生成式 AI
+cameraRaw	Visualize Spots	可视化污点

@@ -1301,6 +1301,7 @@ mod tests {
             include_str!("../camera_raw_preferences_ui.rs"),
             include_str!("../camera_raw_crop_ui.rs"),
             include_str!("../camera_raw_masking_ui.rs"),
+            include_str!("../camera_raw_remove_ui.rs"),
             include_str!("../camera_raw_tool_panels_ui.rs"),
             include_str!("../camera_raw_curve_regions_ui.rs"),
         ];
@@ -1340,6 +1341,13 @@ mod tests {
             if e["kind"] == "key" {
                 continue;
             }
+            let key = e["label"].as_str().unwrap_or("");
+            if !key.is_empty() {
+                labels.insert(key);
+            }
+        }
+        let remove: serde_json::Value = serde_json::from_str(include_str!("../../../../design/camera-raw/remove-design.json")).unwrap();
+        for e in remove["elements"].as_array().unwrap() {
             let key = e["label"].as_str().unwrap_or("");
             if !key.is_empty() {
                 labels.insert(key);

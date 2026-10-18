@@ -4032,3 +4032,23 @@ cameraRaw	Local masking is not available in Camera Raw yet.	Camera Raw ではロ
 cameraRaw	Objects	オブジェクト
 cameraRaw	People	人物
 cameraRaw	People masking is not available.	人物マスクは使用できません。
+cameraRaw	About Remove	削除について
+cameraRaw	Automatic distraction removal is not available in this build.	このビルドでは不要な要素の自動削除を使用できません。
+cameraRaw	Blemishes	肌の欠点
+cameraRaw	Clone	コピー
+cameraRaw	Detect Objects	オブジェクトを検出
+cameraRaw	Distraction Removal	不要な要素を削除
+cameraRaw	Dust	ほこり
+cameraRaw	Heal	修復
+cameraRaw	Preview Blemishes	肌の欠点をプレビュー
+cameraRaw	Preview Distraction Removal	不要な要素の削除をプレビュー
+cameraRaw	Preview Dust	ほこりをプレビュー
+cameraRaw	Preview People	人物をプレビュー
+cameraRaw	Preview Reflections	反射をプレビュー
+cameraRaw	Provide feedback	フィードバックを送信
+cameraRaw	Reflections	反射
+cameraRaw	Remove, Heal and Clone are not available in Camera Raw yet.	Camera Raw では削除、修復、コピーをまだ使用できません。
+cameraRaw	Reset Distraction Removal	不要な要素の削除をリセット
+cameraRaw	Show Overlay on Hover	マウスオーバー時にオーバーレイを表示
+cameraRaw	Use Generative AI	生成 AI を使用
+cameraRaw	Visualize Spots	スポットを可視化

@@ -4083,3 +4083,23 @@ cameraRaw	Local masking is not available in Camera Raw yet.	Camera Raw içinde y
 cameraRaw	Objects	Nesneler
 cameraRaw	People	Kişiler
 cameraRaw	People masking is not available.	Kişi maskelemesi kullanılamıyor.
+cameraRaw	About Remove	Kaldır hakkında
+cameraRaw	Automatic distraction removal is not available in this build.	Bu derlemede otomatik dikkat dağıtıcı öğe kaldırma kullanılamıyor.
+cameraRaw	Blemishes	Cilt kusurları
+cameraRaw	Clone	Klonla
+cameraRaw	Detect Objects	Nesneleri algıla
+cameraRaw	Distraction Removal	Dikkat dağıtıcı öğeleri kaldırma
+cameraRaw	Dust	Toz
+cameraRaw	Heal	İyileştir
+cameraRaw	Preview Blemishes	Cilt kusurlarını önizle
+cameraRaw	Preview Distraction Removal	Dikkat dağıtıcı öğe kaldırmayı önizle
+cameraRaw	Preview Dust	Tozu önizle
+cameraRaw	Preview People	Kişileri önizle
+cameraRaw	Preview Reflections	Yansımaları önizle
+cameraRaw	Provide feedback	Geri bildirim ver
+cameraRaw	Reflections	Yansımalar
+cameraRaw	Remove, Heal and Clone are not available in Camera Raw yet.	Camera Raw içinde Kaldır, İyileştir ve Klonla henüz kullanılamıyor.
+cameraRaw	Reset Distraction Removal	Dikkat dağıtıcı öğe kaldırmayı sıfırla
+cameraRaw	Show Overlay on Hover	Üzerine gelindiğinde kaplamayı göster
+cameraRaw	Use Generative AI	Üretken yapay zekâ kullan
+cameraRaw	Visualize Spots	Noktaları görselleştir

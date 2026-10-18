@@ -4272,3 +4272,23 @@ cameraRaw	Local masking is not available in Camera Raw yet.	A helyi maszkok még
 cameraRaw	Objects	Objektumok
 cameraRaw	People	Személyek
 cameraRaw	People masking is not available.	A személyek maszkolása nem érhető el.
+cameraRaw	About Remove	Az eltávolításról
+cameraRaw	Automatic distraction removal is not available in this build.	A zavaró elemek automatikus eltávolítása nem érhető el ebben a verzióban.
+cameraRaw	Blemishes	Bőrhibák
+cameraRaw	Clone	Klónozás
+cameraRaw	Detect Objects	Objektumok észlelése
+cameraRaw	Distraction Removal	Zavaró elemek eltávolítása
+cameraRaw	Dust	Por
+cameraRaw	Heal	Javítás
+cameraRaw	Preview Blemishes	Bőrhibák előnézete
+cameraRaw	Preview Distraction Removal	Zavaró elemek eltávolításának előnézete
+cameraRaw	Preview Dust	Por előnézete
+cameraRaw	Preview People	Személyek előnézete
+cameraRaw	Preview Reflections	Tükröződések előnézete
+cameraRaw	Provide feedback	Visszajelzés küldése
+cameraRaw	Reflections	Tükröződések
+cameraRaw	Remove, Heal and Clone are not available in Camera Raw yet.	Az Eltávolítás, Javítás és Klónozás még nem érhető el a Camera Raw alkalmazásban.
+cameraRaw	Reset Distraction Removal	Zavaró elemek eltávolításának visszaállítása
+cameraRaw	Show Overlay on Hover	Átfedés megjelenítése rámutatáskor
+cameraRaw	Use Generative AI	Generatív MI használata
+cameraRaw	Visualize Spots	Foltok megjelenítése

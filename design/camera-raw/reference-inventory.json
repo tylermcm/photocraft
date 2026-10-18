@@ -894,47 +894,47 @@
         2680
       ],
       "scope": "Remove: modes, Generative AI, object detection, brush, distractions",
-      "status": "incomplete; Remove tab and its observed controls missing in Camera Raw workspace.",
+      "status": "matching native Remove view captured; processing unavailable and pixel differences remain; no parity pass",
       "elements": [
         {
           "name": "Remove title/reset/bypass",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; type/glyph/capability differences remain; no parity pass"
         },
         {
           "name": "Remove/Heal/Clone selectors",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; type/glyph/capability differences remain; no parity pass"
         },
         {
           "name": "Use Generative AI/info",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; type/glyph/capability differences remain; no parity pass"
         },
         {
           "name": "Detect Objects",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; type/glyph/capability differences remain; no parity pass"
         },
         {
           "name": "Size label/value/track/handle",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; type/glyph/capability differences remain; no parity pass"
         },
         {
           "name": "Provide feedback/separators",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; type/glyph/capability differences remain; no parity pass"
         },
         {
           "name": "Show Overlay on Hover",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; type/glyph/capability differences remain; no parity pass"
         },
         {
           "name": "Visualize Spots/threshold",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; type/glyph/capability differences remain; no parity pass"
         },
         {
           "name": "Distraction Removal title/reset/bypass",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; type/glyph/capability differences remain; no parity pass"
         },
         {
           "name": "Reflections/People/Blemishes/Dust icons, eyes and disclosures",
-          "status": "pending individual overlay verification"
+          "status": "uniform overlay captured; type/glyph/capability differences remain; no parity pass"
         }
       ],
       "sharedElements": [
@@ -945,13 +945,17 @@
         "Footer buttons and split Open control"
       ],
       "legacyImage": 1,
-      "nativeCaptureState": null,
-      "coverageAudit": "Remove tab and its observed controls missing in Camera Raw workspace.",
+      "nativeCaptureState": {
+        "tab": "remove",
+        "removeGroups": [],
+        "removeHelp": false
+      },
+      "coverageAudit": "remove-v2:49 named regions, one full-dock registration, complete candidate coverage; not complete element parity.",
       "previousImage": 10,
       "elementRegionsFile": "remove-element-regions.json",
       "plannedElementCount": 49,
-      "lastIndividualPixelAudit": "Specification measured from reference; native view is not implemented/captured, so no individual comparison or parity pass.",
-      "currentValidation": "Pending matching native capture and individual audit; no parity pass."
+      "lastIndividualPixelAudit": "remove-v2/remove-audit.json; source[88,432,628,1522],candidate[2260,374,2800,1464],1440x1000/scale2.",
+      "currentValidation": "3125 library tests/13ignored,64 Camera Raw integrations,6 auditors,all-target clippy,layers30,wasm24 pass. Disclosures/help work; retouch/detector/feedback operations stay disabled. Unpromoted source only."
     },
     {
       "image": 16,
@@ -1428,9 +1432,7 @@
     "evidence": "crop-v3/crop-audit.json and overlay/comparison.png",
     "remaining": "Masking13 and Remove15 matching-view audits; all19 every-element verification, processing bindings and hosted validation remain incomplete."
   },
-  "remainingMatchingViewAudits": [
-    15
-  ],
+  "remainingMatchingViewAudits": [],
   "maskingSourceValidation": {
     "executableSha256": "2d3d6d44a2923e13f03315eb1fb18169fae538f37ac57fb427b8fe0930b165b7",
     "layoutSha256": "ea4059c724858cca5276fabedb5df67faef4f7d023e2b7d25186e9ba413cf280",
@@ -1449,5 +1451,25 @@
     "regionsCompared": 35,
     "evidence": "masking-v2/masking-audit.json and overlay/comparison.png",
     "remaining": "Remove15 matching-view audit; all19 every-element verification, processing and hosted validation remain incomplete."
+  },
+  "sourceCoverageAtRecordedRevisions": "All19 references now have recorded matching-view captures at recorded source revisions, including the accepted settings menu. This is not a current-build/full-element pass. Fresh current-source matrix, revised Red Eye capture, incomplete element/shared-chrome coverage, processing and hosted gates remain pending.",
+  "removeSourceValidation": {
+    "executableSha256": "6d8410b809036c6f7364e8a233407cf380cb20a0d6f715994a76c243de13bfda",
+    "layoutSha256": "2c43d2a4804893da80d014b3a45524c3a2cda34b5d74d2dc229f75ebb4c1926d",
+    "tokensSha256": "d94d6de0cb20d7f0b00be2d2317af93b76f07a2498a841d7090fb1e8e917e896",
+    "sourceImage": 15,
+    "candidateRect": [
+      2260,
+      374,
+      2800,
+      1464
+    ],
+    "originalUnchanged": true,
+    "fullEveryElementParityVerified": false,
+    "sourceBaseCommit": "074f8864",
+    "status": "unpromoted source; native offscreen gates pass; processing and feedback unavailable",
+    "regionsCompared": 49,
+    "evidence": "remove-v2/remove-audit.json and overlay/comparison.png",
+    "remaining": "All19 current-source matrix, incomplete element coverage/shared chrome, remaining type/glyph/capability differences, processing and hosted validation."
   }
 }

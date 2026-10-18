@@ -47,6 +47,7 @@ pub enum WorkspaceTab {
     RedEye,
     Crop,
     Masking,
+    Remove,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -79,6 +80,8 @@ pub struct WorkspaceState {
     pub settings_menu: bool,
     pub save_options: bool,
     pub preferences: bool,
+    pub remove_groups: Vec<String>,
+    pub remove_help: bool,
     pub masking_help: bool,
     pub masking_people: bool,
     pub crop_groups: Vec<String>,
@@ -108,6 +111,8 @@ impl Default for WorkspaceState {
             settings_menu: false,
             save_options: false,
             preferences: false,
+            remove_groups: Vec::new(),
+            remove_help: false,
             masking_help: false,
             masking_people: true,
             crop_groups: vec!["Geometry".into()],
@@ -294,6 +299,12 @@ pub(crate) fn prepare(current: &WorkspaceState, value: &Value) -> Result<Workspa
         || next.panels.single && next.panels.open.len() > 1
     {
         return Err("Camera Raw panels must be unique supported names (at most one in single-panel mode)".into());
+    }
+    let remove_groups=&crate::camera_raw_ui::remove::GROUPS;
+    if next.remove_groups.len()>remove_groups.len()
+        || next.remove_groups.iter().any(|v|!remove_groups.contains(&v.as_str()))
+        || next.remove_groups.iter().enumerate().any(|(i,v)|next.remove_groups.iter().take(i).any(|old|old==v)) {
+        return Err("Camera Raw removeGroups must contain unique observed group names".into());
     }
     let crop_groups = &crate::camera_raw_ui::crop::GROUPS;
     if next.crop_groups.len() > crop_groups.len()
@@ -731,6 +742,11 @@ pub(crate) fn rail(ui: &mut Ui, rect: Rect, state: &mut WorkspaceState, navigati
     let mut crop_ui=ui.new_child(egui::UiBuilder::new().id_salt("camera-raw-crop-tab").max_rect(crop_rect));
     if icons::button(&mut crop_ui,"crop",28.0,!state.info && state.tab==WorkspaceTab::Crop,crate::i18n::tr_ctx(crate::i18n::current(),"cameraRaw","Crop & Expand")).clicked() {
         state.info=false; state.tab=WorkspaceTab::Crop;
+    }
+    let remove_rect=Rect::from_center_size(pos2(rect.center().x,rect.top()+design.rail_top_inset+84.0),vec2(28.0,28.0));
+    let mut remove_ui=ui.new_child(egui::UiBuilder::new().id_salt("camera-raw-remove-tab").max_rect(remove_rect));
+    if icons::button(&mut remove_ui,"eraser",28.0,!state.info && state.tab==WorkspaceTab::Remove,crate::i18n::tr_ctx(crate::i18n::current(),"cameraRaw","Remove")).clicked() {
+        state.info=false;state.tab=WorkspaceTab::Remove;
     }
     let masking_rect=Rect::from_center_size(pos2(rect.center().x,rect.top()+design.rail_top_inset+118.0),vec2(28.0,28.0));
     let mut masking_ui=ui.new_child(egui::UiBuilder::new().id_salt("camera-raw-masking-tab").max_rect(masking_rect));
