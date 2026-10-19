@@ -3731,6 +3731,22 @@ cameraData	Lens	Φακός
 	Snap to Origin	Προσκόλληση στην αρχή
 	Search settings…	Αναζήτηση ρυθμίσεων…
 	No matching settings	Δεν βρέθηκαν ρυθμίσεις
+# Edit › Content-Aware Fill workspace
+	Sampling Brush Tool	Εργαλείο πινέλου δειγματοληψίας
+	Sampling Area Overlay	Επικάλυψη περιοχής δειγματοληψίας
+	Show Sampling Area	Εμφάνιση περιοχής δειγματοληψίας
+	Indicates	Υποδεικνύει
+	Sampling Area	Περιοχή δειγματοληψίας
+	Excluded Area	Εξαιρούμενη περιοχή
+	Sampling Area Options	Επιλογές περιοχής δειγματοληψίας
+	Rectangular	Ορθογώνια
+	Fill Settings	Ρυθμίσεις γεμίσματος
+	Rotation Adaptation	Προσαρμογή περιστροφής
+	Very High	Πολύ υψηλή
+	Full	Πλήρης
+	Mirror	Κατοπτρισμός
+	Output Settings	Ρυθμίσεις εξόδου
+	Output To	Έξοδος σε
 	Loading fonts…	Φόρτωση γραμματοσειρών…
 	Response curve	Καμπύλη απόκρισης
 	Simulate Pressure	Προσομοίωση πίεσης
@@ -4095,3 +4111,7 @@ cameraRaw	Visualize Range	Οπτικοποίηση εύρους
 	Copy Channel Settings	Αντιγραφή ρυθμίσεων καναλιού
 	Paste Channel Settings	Επικόλληση ρυθμίσεων καναλιού
 	Show All Curves	Εμφάνιση όλων των καμπυλών
+	Decrease Brush Size	Μείωση μεγέθους πινέλου
+	Increase Brush Size	Αύξηση μεγέθους πινέλου
+	Decrease Brush Hardness	Μείωση σκληρότητας πινέλου
+	Increase Brush Hardness	Αύξηση σκληρότητας πινέλου
