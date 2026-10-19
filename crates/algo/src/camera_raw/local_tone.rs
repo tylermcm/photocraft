@@ -21,7 +21,7 @@
 //! 3.7–14.3.
 
 use super::{Encoding, luma};
-use crate::photo_util::par_rows;
+use crate::photo_util::{par_map, par_rows};
 
 /// Spacing of the fast filter's reference values in stops. Its remapping changes within about
 /// half a stop, and coefficients interpolated across wider gaps show as contour lines on smooth
@@ -84,9 +84,28 @@ const TAPS: [f32; 5] = [1.0 / 16.0, 4.0 / 16.0, 6.0 / 16.0, 4.0 / 16.0, 1.0 / 16
 /// scheduling than the rows themselves (a fifth of a Shadows render on 36 MP, measured).
 const PAR_MIN: usize = 1 << 15;
 
-/// [`par_rows`] for a plane, on one thread when it is small (see [`PAR_MIN`]).
+thread_local! {
+    /// Set while a thread works on one reference of [`llf`]: the references already run in parallel with each other, so splitting the
+    /// rows of their large levels as well only added scheduling cost (the filter's 91 references used 3 of 32 cores' worth).
+    static ONE_THREAD: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Keeps [`rows`] on the calling thread until dropped.
+struct OneThread(bool);
+impl OneThread {
+    fn enter() -> Self {
+        OneThread(ONE_THREAD.with(|flag| flag.replace(true)))
+    }
+}
+impl Drop for OneThread {
+    fn drop(&mut self) {
+        ONE_THREAD.with(|flag| flag.set(self.0));
+    }
+}
+
+/// [`par_rows`] for a plane, on one thread when it is small (see [`PAR_MIN`]) or inside one of [`llf`]'s references.
 fn rows(buf: &mut [f32], w: usize, f: impl Fn(usize, &mut [f32]) + Sync + Send) {
-    if buf.len() < PAR_MIN {
+    if buf.len() < PAR_MIN || ONE_THREAD.with(std::cell::Cell::get) {
         buf.chunks_mut(w.max(1)).enumerate().for_each(|(y, row)| f(y, row));
     } else {
         par_rows(buf, w, 1, f);
@@ -173,6 +192,39 @@ fn up(p: &Plane, w: usize, h: usize) -> Plane {
     Plane { w, h, v: out }
 }
 
+/// The source rows of [`up`]`(p, w, h)` at output row `y`, one per tap (`None` where the
+/// zero-stuffed row is all zeros).
+fn up_rows(p: &Plane, h: usize, y: usize) -> [Option<usize>; 5] {
+    let lh = p.h.min(h.div_ceil(2));
+    std::array::from_fn(|k| {
+        let m = mirror(y as isize + k as isize - 2, h);
+        (m.is_multiple_of(2) && m / 2 < lh).then_some(m / 2)
+    })
+}
+
+/// One sample of [`up`]`(p, w, h)`: column `x` of the output row whose [`up_rows`] are `rows`.
+/// It adds the same terms in the same order as `up`, so it gives the same bits.
+fn up_at(p: &Plane, w: usize, rows: &[Option<usize>; 5], x: usize) -> f32 {
+    let lw = p.w.min(w.div_ceil(2));
+    let col = |j: usize| -> f32 { (0..5).filter_map(|k| rows[k].map(|r| TAPS[k] * (p.v[r * p.w + j] * 4.0))).sum() };
+    if x >= 2 && x + 2 < w {
+        // Away from the edges no tap mirrors.
+        (0..5)
+            .filter_map(|k| {
+                let i = x + k - 2;
+                (i.is_multiple_of(2) && i / 2 < lw).then(|| TAPS[k] * col(i / 2))
+            })
+            .sum()
+    } else {
+        (0..5)
+            .filter_map(|k| {
+                let m = mirror(x as isize + k as isize - 2, w);
+                (m.is_multiple_of(2) && m / 2 < lw).then(|| TAPS[k] * col(m / 2))
+            })
+            .sum()
+    }
+}
+
 /// Levels down to about 2 pixels on the short side.
 fn depth(w: usize, h: usize) -> usize {
     let mut s = w.min(h);
@@ -206,28 +258,41 @@ fn llf(u: &Plane, remap: impl Fn(f32, f32) -> f32 + Sync) -> Plane {
     }
     let refs = (((hi - lo) / REF_STEP).ceil() as usize + 1).clamp(2, 96);
     let step = (hi - lo) / (refs - 1) as f32;
-    let mut lap: Vec<Vec<f32>> = g[..n - 1].iter().map(|p| vec![0.0; p.v.len()]).collect();
-    for k in 0..refs {
+    // What reference `k` adds to each level of the result: the pixels it weighs (those within a step of it, about two references' worth
+    // per pixel) and by how much. The references are independent, so they are made in parallel, each on one thread.
+    let contributions = par_map(refs, |k| {
+        let _one_thread = OneThread::enter();
         let r = lo + step * k as f32;
         let mut m = Plane { w: u.w, h: u.h, v: u.v.clone() };
-        rows(&mut m.v, u.w, |_, row| {
-            for v in row.iter_mut() {
-                *v = remap(*v, r);
-            }
-        });
+        for v in m.v.iter_mut() {
+            *v = remap(*v, r);
+        }
         let gr = gaussian(m, n);
-        for l in 0..n - 1 {
-            let coarse = up(&gr[l + 1], gr[l].w, gr[l].h);
-            let (gl, fine, lw) = (&g[l].v, &gr[l].v, g[l].w);
-            rows(&mut lap[l], lw, |y, row| {
-                for (x, o) in row.iter_mut().enumerate() {
-                    let i = y * lw + x;
-                    let wgt = (1.0 - (gl[i].clamp(lo, hi) - r).abs() / step).max(0.0);
-                    if wgt > 0.0 {
-                        *o += wgt * (fine[i] - coarse.v[i]);
+        (0..n - 1)
+            .map(|l| {
+                let (gl, fine, lw, lh, coarse) = (&g[l].v, &gr[l].v, g[l].w, g[l].h, &gr[l + 1]);
+                let mut added: Vec<(u32, f32)> = Vec::new();
+                for y in 0..lh {
+                    let taps = up_rows(coarse, lh, y);
+                    for x in 0..lw {
+                        let i = y * lw + x;
+                        let wgt = (1.0 - (gl[i].clamp(lo, hi) - r).abs() / step).max(0.0);
+                        if wgt > 0.0 {
+                            added.push((i as u32, wgt * (fine[i] - up_at(coarse, lw, &taps, x))));
+                        }
                     }
                 }
-            });
+                added
+            })
+            .collect::<Vec<_>>()
+    });
+    // Added in reference order, so every pixel's sum is built exactly as the one-reference-at-a-time loop built it.
+    let mut lap: Vec<Vec<f32>> = g[..n - 1].iter().map(|p| vec![0.0; p.v.len()]).collect();
+    for per_level in &contributions {
+        for (level, added) in per_level.iter().enumerate() {
+            for &(i, value) in added {
+                lap[level][i as usize] += value;
+            }
         }
     }
     let mut o = Plane { w: g[n - 1].w, h: g[n - 1].h, v: g[n - 1].v.clone() };
@@ -244,8 +309,10 @@ fn llf(u: &Plane, remap: impl Fn(f32, f32) -> f32 + Sync) -> Plane {
 /// The `q` quantile (0 … 1) of `v`.
 fn quantile(v: &[f32], q: f32) -> f32 {
     let mut s = v.to_vec();
-    s.sort_by(f32::total_cmp);
-    s[((s.len() - 1) as f32 * q).round() as usize]
+    // Selecting the one element is linear, a full sort is not (5 sorts of the work copy were a
+    // fifteenth of a render). `total_cmp` ties are bit-identical, so it is the sorted element.
+    let i = ((s.len() - 1) as f32 * q).round() as usize;
+    *s.select_nth_unstable_by(i, f32::total_cmp).1
 }
 
 /// 1st and 99th percentiles of the log luminance on a copy at most 256 pixels across.
@@ -444,8 +511,30 @@ mod tests {
                 assert_eq!(blur_step(&p, step).v, blur_step_reference(&p, step).v, "blur {w}×{h} step {step}");
             }
             for (uw, uh) in [(w * 2, h * 2), (w * 2 - 1, h * 2 - 1), (w * 2, h * 2 - 1), (w.max(2) * 2 - 3, h * 2)] {
-                assert_eq!(up(&p, uw, uh).v, up_reference(&p, uw, uh).v, "up {w}×{h} → {uw}×{uh}");
+                let full = up(&p, uw, uh);
+                assert_eq!(full.v, up_reference(&p, uw, uh).v, "up {w}×{h} → {uw}×{uh}");
+                // The filter samples `up` one pixel at a time; every sample has the same bits.
+                for y in 0..uh {
+                    let taps = up_rows(&p, uh, y);
+                    for x in 0..uw {
+                        assert_eq!(up_at(&p, uw, &taps, x).to_bits(), full.v[y * uw + x].to_bits(), "up_at {w}×{h} → {uw}×{uh} at {x},{y}");
+                    }
+                }
             }
+        }
+    }
+
+    #[test]
+    fn quantile_is_the_sorted_element() {
+        let p = noise_plane(301, 211, 9);
+        let mut v = p.v.clone();
+        // Ties and signed zeros, which `total_cmp` orders by their bits.
+        v.extend([0.0, -0.0, 0.0, -0.0, 3.5, 3.5, f32::MIN_POSITIVE]);
+        let mut sorted = v.clone();
+        sorted.sort_by(f32::total_cmp);
+        for q in [0.0, 0.001, 0.01, 0.25, 0.5, 0.99, 1.0] {
+            let want = sorted[((sorted.len() - 1) as f32 * q).round() as usize];
+            assert_eq!(quantile(&v, q).to_bits(), want.to_bits(), "q {q}");
         }
     }
 

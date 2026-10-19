@@ -3,7 +3,7 @@
 //! `x:xmpmeta/rdf:RDF/rdf:Description`, as attributes or as child elements.
 //!
 //! Loading applies only the settings the file holds, over the current ones, as Camera Raw's
-//! Load Settings does; settings PhotoCraft has no control for (lens corrections, calibration,
+//! Load Settings does; settings PhotoCraft has no control for (lens corrections,
 //! geometry, defringe, …) are ignored and named in the report. Saving writes every supported
 //! Adobe-mapped control. Native Glow and Point Color settings round-trip in a private
 //! PhotoCraft namespace; Adobe applications do not interpret that extension.
@@ -96,6 +96,13 @@ const SCALARS: &[(&str, Field, f32, f32)] = &[
     ("GrainAmount", |p| &mut p.grain_amount, 0.0, 100.0),
     ("GrainSize", |p| &mut p.grain_size, 0.0, 100.0),
     ("GrainFrequency", |p| &mut p.grain_roughness, 0.0, 100.0),
+    ("ShadowTint", |p| &mut p.calib_shadow_tint, -100.0, 100.0),
+    ("RedHue", |p| &mut p.calib_hue[0], -100.0, 100.0),
+    ("RedSaturation", |p| &mut p.calib_sat[0], -100.0, 100.0),
+    ("GreenHue", |p| &mut p.calib_hue[1], -100.0, 100.0),
+    ("GreenSaturation", |p| &mut p.calib_sat[1], -100.0, 100.0),
+    ("BlueHue", |p| &mut p.calib_hue[2], -100.0, 100.0),
+    ("BlueSaturation", |p| &mut p.calib_sat[2], -100.0, 100.0),
     ("PostCropVignetteAmount", |p| &mut p.vignette_amount, -100.0, 100.0),
     ("PostCropVignetteMidpoint", |p| &mut p.vignette_midpoint, 0.0, 100.0),
     ("PostCropVignetteRoundness", |p| &mut p.vignette_roundness, -100.0, 100.0),
@@ -228,7 +235,7 @@ pub fn load(params: &mut CameraRaw, bytes: &[u8]) -> Result<LoadReport, String> 
         if let Some(raw) = desc.attribute(("https://photocraft.app/camera-raw/1.0/", "Finishing")) {
             let value: serde_json::Value = serde_json::from_str(raw).map_err(|e| format!("invalid PhotoCraft finishing settings: {e}"))?;
             let obj = value.as_object().ok_or("PhotoCraft finishing settings must be an object")?;
-            if obj.keys().any(|k| k != "glow" && k != "pointColors") {
+            if obj.keys().any(|k| k != "glow" && k != "pointColors" && k != "superResolution") {
                 return Err("unknown PhotoCraft finishing setting".into());
             }
             if let Some(v) = obj.get("glow") {
@@ -236,6 +243,9 @@ pub fn load(params: &mut CameraRaw, bytes: &[u8]) -> Result<LoadReport, String> 
             }
             if let Some(v) = obj.get("pointColors") {
                 next.point_colors = serde_json::from_value(v.clone()).map_err(|e| e.to_string())?;
+            }
+            if let Some(v) = obj.get("superResolution") {
+                next.super_resolution = v.as_bool().ok_or("superResolution must be true or false")?;
             }
             next.validate_changes(params)?;
             found = true;
@@ -290,8 +300,8 @@ pub fn save(params: &CameraRaw) -> String {
     let mut out = String::from(
         "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\" x:xmptk=\"PhotoCraft\">\n <rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n  <rdf:Description rdf:about=\"\"\n    xmlns:crs=\"http://ns.adobe.com/camera-raw-settings/1.0/\"\n",
     );
-    if params.glow != Default::default() || !params.point_colors.is_empty() {
-        let value = serde_json::json!({"glow":params.glow,"pointColors":params.point_colors});
+    if params.glow != Default::default() || !params.point_colors.is_empty() || params.super_resolution {
+        let value = serde_json::json!({"glow":params.glow,"pointColors":params.point_colors,"superResolution":params.super_resolution});
         out.push_str(&format!("   xmlns:pc=\"https://photocraft.app/camera-raw/1.0/\"\n   pc:Finishing=\"{}\"\n", escape(&value.to_string())));
     }
     out.push_str("   crs:Version=\"18.4\"\n   crs:ProcessVersion=\"15.4\"\n");
@@ -330,6 +340,7 @@ mod tests {
     fn photocraft_finishing_round_trips_without_inventing_adobe_fields() {
         let mut p = CameraRaw::default();
         p.glow.amount = 63.0;
+        p.super_resolution = true;
         p.glow.style = photocraft_algo::camera_raw::GlowStyle::Halation;
         p.point_colors.push(photocraft_algo::camera_raw::PointColor { color: [0.8, 0.1, 0.2], hue: 30.0, ..Default::default() });
         let text = super::save(&p);
@@ -338,6 +349,7 @@ mod tests {
         super::load(&mut back, text.as_bytes()).unwrap();
         assert_eq!(back.glow, p.glow);
         assert_eq!(back.point_colors, p.point_colors);
+        assert!(back.super_resolution);
         let original = back.clone();
         let broken = text.replace("&quot;amount&quot;:63.0", "&quot;amount&quot;:999.0");
         assert!(super::load(&mut back, broken.as_bytes()).is_err());
@@ -396,14 +408,18 @@ mod tests {
         assert!(p.point_curve.is_empty());
         assert_eq!(p.point_curve_red, vec![[0.0, 0.0], [128.0, 140.0], [255.0, 255.0]]);
         assert_eq!(p.dehaze, 12.0);
-        // Lens vignetting, calibration and geometry have no counterpart.
-        assert_eq!(r.ignored, vec!["VignetteAmount".to_string(), "RedHue".to_string()]);
+        assert_eq!(p.calib_hue[0], -5.0);
+        // Lens vignetting and geometry have no counterpart.
+        assert_eq!(r.ignored, vec!["VignetteAmount".to_string()]);
     }
 
     #[test]
     fn save_then_load_round_trips() {
         let mut p = CameraRaw {
             temperature: -12.0,
+            calib_shadow_tint: 15.0,
+            calib_hue: [-20.0, 0.0, 35.0],
+            calib_sat: [0.0, 40.0, -60.0],
             exposure: 1.25,
             contrast: 30.0,
             sharpen_radius: 1.4,

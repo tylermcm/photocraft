@@ -105,6 +105,7 @@ impl Wheel {
     }
 }
 
+mod calibration;
 mod finishing;
 pub use finishing::{Glow, GlowStyle, PointColor};
 
@@ -160,6 +161,12 @@ pub struct CameraRaw {
     pub noise_color_detail: f32,
     pub glow: Glow,
     pub point_colors: Vec<PointColor>,
+    // Calibration: Shadows Tint, then red, green and blue primary Hue / Saturation.
+    pub calib_shadow_tint: f32,
+    pub calib_hue: [f32; 3],
+    pub calib_sat: [f32; 3],
+    /// Detail > Super Resolution. Not a pixel operation of `develop`: the host upsizes the finished render.
+    pub super_resolution: bool,
     // Effects
     pub grain_amount: f32,
     pub grain_size: f32,
@@ -223,6 +230,10 @@ impl Default for CameraRaw {
             noise_color_detail: 50.0,
             glow: Glow::default(),
             point_colors: Vec::new(),
+            calib_shadow_tint: 0.0,
+            calib_hue: [0.0; 3],
+            calib_sat: [0.0; 3],
+            super_resolution: false,
             grain_amount: 0.0,
             grain_size: 25.0,
             grain_roughness: 50.0,
@@ -506,12 +517,14 @@ pub fn band_weights(h: f32) -> [f32; 8] {
 impl CameraRaw {
     /// Validate native finishing controls independently of legacy stored point curves.
     pub fn validate_finishing(&self) -> Result<(), String> {
-        finishing::validate(self)
+        finishing::validate(self)?;
+        calibration::validate(self)
     }
 
     /// Rejects malformed point curves in new settings (see [`validate_curve`]).
     pub fn validate(&self) -> Result<(), String> {
         finishing::validate(self)?;
+        calibration::validate(self)?;
         for (name, curve) in [
             ("pointCurve", &self.point_curve),
             ("pointCurveRed", &self.point_curve_red),
@@ -526,6 +539,7 @@ impl CameraRaw {
     /// accepted, so editing another control of an older Smart Filter still works.
     pub fn validate_changes(&self, stored: &CameraRaw) -> Result<(), String> {
         finishing::validate(self)?;
+        calibration::validate(self)?;
         for (name, curve, kept) in [
             ("pointCurve", &self.point_curve, &stored.point_curve),
             ("pointCurveRed", &self.point_curve_red, &stored.point_curve_red),
@@ -573,6 +587,8 @@ impl CameraRaw {
             && self.noise_color == 0.0
             && self.glow.amount == 0.0
             && self.point_colors.iter().all(PointColor::neutral)
+            && self.calibration_neutral()
+            && !self.super_resolution
             && self.grain_amount == 0.0
             && self.vignette_amount == 0.0
     }
@@ -601,6 +617,10 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bo
     }
     let ps = p.pixel_scale.clamp(0.01, 1.0);
     let long = w.max(h) as f32;
+    // 0. Calibration: the camera primaries come before every other adjustment.
+    if calibration::validate(p).is_ok() {
+        calibration::apply(px, p);
+    }
     // 1. White balance + exposure in linear light.
     if !p.wb_neutral() {
         let mut g = white_balance_gains(p.temperature, p.tint);
