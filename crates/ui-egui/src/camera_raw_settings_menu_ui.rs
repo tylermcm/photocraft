@@ -236,6 +236,12 @@ fn validate_clipboard(p: &CameraRaw) -> Result<(), String> {
                     number(key, n, -100.0, 100.0)?;
                 }
             }
+            "calibShadowTint" => number(key, v, -100.0, 100.0)?,
+            "calibHue" | "calibSat" => {
+                for n in v.as_array().ok_or("Calibration settings must be arrays")? {
+                    number(key, n, -100.0, 100.0)?;
+                }
+            }
             "gradeShadows" | "gradeMidtones" | "gradeHighlights" | "gradeGlobal" => {
                 for (k, n) in v.as_object().ok_or("Color grading settings must be objects")? {
                     let (lo, hi) = match k.as_str() {
@@ -259,7 +265,7 @@ fn validate_clipboard(p: &CameraRaw) -> Result<(), String> {
                     return Err("Unsupported Camera Raw clipboard vignette style".into());
                 }
             }
-            "seed" | "pixelScale" | "encodingGamma" | "glow" | "pointColors" => {}
+            "seed" | "pixelScale" | "encodingGamma" | "glow" | "pointColors" | "superResolution" => {}
             _ => number(key, v, -100.0, 100.0)?,
         }
     }

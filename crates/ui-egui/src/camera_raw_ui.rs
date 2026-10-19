@@ -34,6 +34,10 @@ mod curve_regions;
 mod extra_panels;
 #[path = "camera_raw_finishing_ui.rs"]
 pub(crate) mod finishing;
+#[path = "camera_raw_host_job_ui.rs"]
+pub(crate) mod host_job;
+#[path = "camera_raw_preview_worker.rs"]
+mod preview_worker;
 #[path = "camera_raw_info_ui.rs"]
 mod info;
 #[path = "camera_raw_masking_ui.rs"]
@@ -168,6 +172,13 @@ pub(crate) fn proxy_for(document: &photocraft_doc::Document) -> Option<ProxyData
 const BANDS: [&str; 8] = ["Red", "Orange", "Yellow", "Green", "Aqua", "Blue", "Purple", "Magenta"];
 
 pub struct CameraRawDialog {
+    /// Slider moves are previewed on a thread of their own (newest settings only); started with the first one.
+    preview_worker: Option<preview_worker::PreviewWorker>,
+    /// The last preview job submitted, and the newest one whose result is on screen. `render` (the exact, synchronous preview) sets both.
+    preview_sent: u64,
+    preview_shown: u64,
+    /// Super Resolution applied by Image Triage when Done is pressed, and its progress popup.
+    pub(crate) host_job: host_job::HostJob,
     snapshots: snapshots::Store,
     pub layer: LayerId,
     layer_name: String,
@@ -307,6 +318,55 @@ impl CameraRawDialog {
         })
     }
 
+    /// Slider path: hand the settings to the preview thread and return at once; the picture, histogram and scopes follow when it is done
+    /// (`collect_preview`). Settings that change again before it starts replace these, so a drag costs one preview at a time.
+    pub(crate) fn submit_preview(&mut self, ctx: &egui::Context) {
+        let worker = self
+            .preview_worker
+            .get_or_insert_with(|| preview_worker::PreviewWorker::new(ctx, &self.proxy, self.selection.as_deref(), self.pw, self.ph, self.float));
+        self.preview_sent += 1;
+        worker.submit(preview_worker::PreviewJob {
+            id: self.preview_sent,
+            params: super::camera_raw_workspace_ui::preview_without(&self.params, self.preview_bypass.as_deref()),
+            raw_curve: self.raw_curve.clone(),
+            scale: (self.pw as f32 / self.full_w.max(1) as f32).min(1.0),
+            display: self.display.clone(),
+        });
+        self.dirty = false;
+    }
+
+    /// Show the newest finished preview, if one has arrived since the last call.
+    pub(crate) fn collect_preview(&mut self, ctx: &egui::Context) {
+        let Some(result) = self.preview_worker.as_ref().and_then(|worker| worker.newest()) else { return };
+        if result.id <= self.preview_shown {
+            return; // a synchronous `render` has shown something newer since this was submitted
+        }
+        match &mut self.tex {
+            Some(t) => t.set(result.image, egui::TextureOptions::LINEAR),
+            None => self.tex = Some(ctx.load_texture("camera-raw-after", result.image, egui::TextureOptions::LINEAR)),
+        }
+        self.show_before_picture(ctx);
+        self.after_histogram = result.histogram;
+        self.histogram_ms = result.histogram_ms;
+        self.processed = result.pixels;
+        self.scope.cache = None;
+        self.render_ms = result.render_ms;
+        self.preview_shown = result.id;
+        self.preview_revision = self.preview_revision.saturating_add(1);
+    }
+
+    /// The untouched photo's texture, remade when the display it is shown on changed.
+    fn show_before_picture(&mut self, ctx: &egui::Context) {
+        if self.before_display_key != Some(self.display.key) {
+            let before = Self::image(&self.proxy, self.pw, self.ph, &self.display);
+            match &mut self.before_tex {
+                Some(t) => t.set(before, egui::TextureOptions::LINEAR),
+                None => self.before_tex = Some(ctx.load_texture("camera-raw-before", before, egui::TextureOptions::LINEAR)),
+            }
+            self.before_display_key = Some(self.display.key);
+        }
+    }
+
     pub(crate) fn render(&mut self, ctx: &egui::Context) {
         let t0 = crate::gpu_canvas::now_ms();
         let mut px = self.proxy.clone();
@@ -328,18 +388,13 @@ impl CameraRawDialog {
             Some(t) => t.set(img, egui::TextureOptions::LINEAR),
             None => self.tex = Some(ctx.load_texture("camera-raw-after", img, egui::TextureOptions::LINEAR)),
         }
-        if self.before_display_key != Some(self.display.key) {
-            let before = Self::image(&self.proxy, self.pw, self.ph, &self.display);
-            match &mut self.before_tex {
-                Some(t) => t.set(before, egui::TextureOptions::LINEAR),
-                None => self.before_tex = Some(ctx.load_texture("camera-raw-before", before, egui::TextureOptions::LINEAR)),
-            }
-            self.before_display_key = Some(self.display.key);
-        }
+        self.show_before_picture(ctx);
         self.processed = px;
         self.scope.cache = None;
         self.render_ms = crate::gpu_canvas::now_ms() - t0;
         self.preview_revision = self.preview_revision.saturating_add(1);
+        self.preview_sent += 1;
+        self.preview_shown = self.preview_sent; // anything the preview thread is still making is older than this
         self.dirty = false;
     }
 }
@@ -786,6 +841,10 @@ fn open_pixels(
     }
     let float = surf.format().sample == photocraft_color::SampleType::F32;
     let mut d = CameraRawDialog {
+        preview_worker: None,
+        preview_sent: 0,
+        preview_shown: 0,
+        host_job: Default::default(),
         snapshots: snapshots::Store::default(),
         layer,
         layer_name: name,
@@ -1345,7 +1404,134 @@ fn tone_row(ui: &mut egui::Ui, dirty: &mut bool, alt: &mut Option<ToneZone>, zon
 // The shared Curve editor must never produce a curve `CameraRaw::validate` rejects.
 const _: () = assert!(crate::point_curve::MAX_POINTS == photocraft_algo::camera_raw::MAX_CURVE_POINTS && crate::point_curve::MIN_GAP >= 1.0);
 
-/// Small point-curve editor (master channel): click to add, drag to move, right-click to delete.
+/// How near (pixels) a press must be to a stop to take it rather than add one.
+const CURVE_STOP_RADIUS: f32 = 9.0;
+/// How far (pixels) from the curve line a press still counts as being on the line.
+const CURVE_LINE_GRAB: f32 = 7.0;
+
+/// The four tonal regions of the parametric curve, darkest first.
+const REGION_NAMES: [&str; 4] = ["Shadows", "Darks", "Lights", "Highlights"];
+
+fn region_value(p: &CameraRaw, region: usize) -> f32 {
+    [p.curve_shadows, p.curve_darks, p.curve_lights, p.curve_highlights][region.min(3)]
+}
+
+fn set_region(p: &mut CameraRaw, region: usize, value: f32) {
+    match region {
+        0 => p.curve_shadows = value,
+        1 => p.curve_darks = value,
+        2 => p.curve_lights = value,
+        _ => p.curve_highlights = value,
+    }
+}
+
+/// The region whose part of the tone range holds input level `x` (0 … 255), given the splits in percent.
+fn region_at(splits: &[f32; 3], x: f32) -> usize {
+    let percent = x / 255.0 * 100.0;
+    splits.iter().take_while(|split| percent >= **split).count().min(3)
+}
+
+/// The parametric curve alone, as 256 output levels in 0 … 1.
+fn parametric_curve(p: &CameraRaw) -> Vec<f32> {
+    let curve = CameraRaw {
+        curve_highlights: p.curve_highlights,
+        curve_lights: p.curve_lights,
+        curve_darks: p.curve_darks,
+        curve_shadows: p.curve_shadows,
+        curve_splits: p.curve_splits,
+        ..Default::default()
+    };
+    let mut ramp: Vec<[f32; 4]> = (0..256)
+        .map(|i| {
+            let v = i as f32 / 255.0;
+            [v, v, v, 1.0]
+        })
+        .collect();
+    photocraft_algo::camera_raw::develop(&mut ramp, 256, 1, &curve, true);
+    ramp.into_iter().map(|pixel| pixel[0]).collect()
+}
+
+/// The slider value (-100 … 100, whole) of `region` that puts the curve at input `x` as near `target` (output, 0 … 255) as it can go.
+/// Raising a region's slider only raises the curve, so the answer is found by bisection.
+fn solve_region(p: &CameraRaw, region: usize, x: usize, target: f32) -> f32 {
+    let at = |value: f32| {
+        let mut q = p.clone();
+        set_region(&mut q, region, value);
+        parametric_curve(&q).get(x).copied().unwrap_or(0.0) * 255.0
+    };
+    let (mut lo, mut hi) = (-100.0f32, 100.0f32);
+    if target <= at(lo) {
+        return lo;
+    }
+    if target >= at(hi) {
+        return hi;
+    }
+    for _ in 0..14 {
+        let mid = (lo + hi) / 2.0;
+        if at(mid) < target {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    ((lo + hi) / 2.0).round()
+}
+
+/// A grab on the parametric graph: the region it started in, the input level it holds, and how far the curve was from the pointer.
+#[derive(Clone, Copy)]
+struct ParametricGrab {
+    region: usize,
+    x: f32,
+    grab: f32,
+}
+
+/// The parametric graph, as in Photoshop: a marker rides the curve under the pointer (following its height, wherever the pointer is in
+/// the box); dragging it up or down sets the slider of the region it is in. Returns the region and input level the marker shows.
+fn parametric_interact(ui: &egui::Ui, resp: &egui::Response, rect: ERect, p: &mut CameraRaw, dirty: &mut bool) -> Option<(usize, f32)> {
+    let side = rect.width();
+    let id = egui::Id::new("camera-raw-parametric-grab");
+    let to_value = |pos: Pos2| [((pos.x - rect.left()) / side * 255.0).clamp(0.0, 255.0), ((rect.bottom() - pos.y) / side * 255.0).clamp(0.0, 255.0)];
+    let held = ui.input(|i| i.pointer.primary_down());
+    let mut grab: Option<ParametricGrab> = ui.ctx().data(|d| d.get_temp(id));
+    if !held {
+        grab = None;
+    }
+    let pressed = (resp.is_pointer_button_down_on() || resp.clicked_by(egui::PointerButton::Primary)) && ui.input(|i| i.pointer.primary_pressed());
+    if pressed && let Some(pos) = ui.input(|i| i.pointer.press_origin()).or_else(|| resp.interact_pointer_pos()) {
+        let [x, y] = to_value(pos);
+        let on = parametric_curve(p).get(x.round() as usize).map_or(y, |v| v * 255.0);
+        grab = Some(ParametricGrab { region: region_at(&p.curve_splits, x), x, grab: on - y });
+    }
+    if let Some(g) = grab
+        && held
+        && let Some(pos) = ui.input(|i| i.pointer.interact_pos())
+    {
+        let target = to_value(pos)[1] + g.grab;
+        let value = solve_region(p, g.region, g.x.round() as usize, target);
+        if value != region_value(p, g.region) {
+            set_region(p, g.region, value);
+            *dirty = true;
+        }
+    }
+    ui.ctx().data_mut(|d| {
+        if let Some(g) = grab {
+            d.insert_temp(id, g);
+        } else {
+            d.remove::<ParametricGrab>(id);
+        }
+    });
+    if let Some(g) = grab {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeVertical);
+        return Some((g.region, g.x));
+    }
+    let pos = ui.input(|i| i.pointer.hover_pos()).filter(|pos| rect.contains(*pos))?;
+    ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeVertical);
+    let x = to_value(pos)[0];
+    Some((region_at(&p.curve_splits, x), x))
+}
+
+/// Small point-curve editor (master channel): click the curve or the graph to add a stop, click a stop to make it active, drag to
+/// move it, right-click (or Ctrl-click) to delete it.
 fn curve_editor(
     ui: &mut egui::Ui,
     p: &mut CameraRaw,
@@ -1383,6 +1569,7 @@ fn curve_editor(
         painter.line_segment([pos2(rect.left(), rect.top() + f * side), pos2(rect.right(), rect.top() + f * side)], Stroke::new(1.0, t.canvas));
     }
     let to_screen = |x: f32, y: f32| pos2(rect.left() + x / 255.0 * side, rect.bottom() - y / 255.0 * side);
+    let parametric_hover = if channel == CurveChannel::Parametric { parametric_interact(ui, &resp, rect, p, dirty) } else { None };
     let selected = match channel {
         CurveChannel::Red => &mut p.point_curve_red,
         CurveChannel::Green => &mut p.point_curve_green,
@@ -1391,28 +1578,39 @@ fn curve_editor(
     };
     // The identity handles are presentation until a gesture actually edits them.
     let mut points = if selected.is_empty() { vec![[0.0, 0.0], [255.0, 255.0]] } else { selected.clone() };
-    if channel != CurveChannel::Parametric && crate::point_curve::interact(ui, &resp, rect, &mut points, state).changed {
+    let mut edited = false;
+    if channel != CurveChannel::Parametric {
+        // A press on the curve itself adds a stop right there, on the line, so the shape does not jump and the new stop can be dragged at
+        // once; a press anywhere else in the graph adds one at the pointer (the shared editor's rule), and a press on a stop selects it.
+        let pressed = (resp.is_pointer_button_down_on() || resp.clicked_by(egui::PointerButton::Primary)) && ui.input(|i| i.pointer.primary_pressed());
+        if pressed
+            && let Some(pos) = ui.input(|i| i.pointer.press_origin()).or_else(|| resp.interact_pointer_pos())
+            && rect.contains(pos)
+            && !ui.input(|i| i.modifiers.command)
+            && crate::point_curve::hit(&points, |q| to_screen(q[0], q[1]), pos, CURVE_STOP_RADIUS).is_none()
+        {
+            let x = ((pos.x - rect.left()) / side * 255.0).clamp(0.0, 255.0);
+            let on_curve = curve_lut(&points, 256).get(x.round() as usize).map(|v| v * 255.0);
+            if let Some(y) = on_curve
+                && (to_screen(x, y).y - pos.y).abs() <= CURVE_LINE_GRAB
+            {
+                let before = points.len();
+                if crate::point_curve::insert(&mut points, [x, y]).is_some() && points.len() != before {
+                    edited = true;
+                }
+            }
+        }
+        if crate::point_curve::interact(ui, &resp, rect, &mut points, state).changed {
+            edited = true;
+        }
+    }
+    if edited {
         *selected = points.clone();
         *dirty = true;
     }
     // Curve (point curve after the parametric one).
     let lut = if channel == CurveChannel::Parametric {
-        let curve = CameraRaw {
-            curve_highlights: p.curve_highlights,
-            curve_lights: p.curve_lights,
-            curve_darks: p.curve_darks,
-            curve_shadows: p.curve_shadows,
-            curve_splits: p.curve_splits,
-            ..Default::default()
-        };
-        let mut ramp: Vec<[f32; 4]> = (0..256)
-            .map(|i| {
-                let v = i as f32 / 255.0;
-                [v, v, v, 1.0]
-            })
-            .collect();
-        photocraft_algo::camera_raw::develop(&mut ramp, 256, 1, &curve, true);
-        ramp.into_iter().map(|pixel| pixel[0]).collect()
+        parametric_curve(p)
     } else {
         curve_lut(&points, 256)
     };
@@ -1423,16 +1621,66 @@ fn curve_editor(
         CurveChannel::Blue => Color32::from_rgb(70, 130, 235),
         _ => t.text_faint,
     };
-    painter.add(egui::Shape::line(pts, Stroke::new(1.5, color)));
-    for (i, c) in points.iter().enumerate() {
-        if channel == CurveChannel::Parametric {
-            break;
+    if let Some((region, _)) = parametric_hover {
+        // How far this region's slider can bend the curve (its whole range, -100 to +100), as the translucent band around the line.
+        let edge = |value: f32| {
+            let mut q = p.clone();
+            set_region(&mut q, region, value);
+            parametric_curve(&q)
+        };
+        let (upper, lower) = (edge(100.0), edge(-100.0));
+        let mut band = egui::Mesh::default();
+        let shade = Color32::from_white_alpha(40);
+        for (i, (hi, lo)) in upper.iter().zip(&lower).enumerate() {
+            band.colored_vertex(to_screen(i as f32, hi * 255.0), shade);
+            band.colored_vertex(to_screen(i as f32, lo * 255.0), shade);
+            if i > 0 {
+                let k = (i * 2) as u32;
+                band.add_triangle(k - 2, k - 1, k);
+                band.add_triangle(k - 1, k, k + 1);
+            }
         }
-        let center = to_screen(c[0], c[1]);
-        if state.selected == Some(i) {
-            painter.circle_filled(center, 3.0, t.accent);
+        painter.add(egui::Shape::mesh(band));
+    }
+    let line = if channel == CurveChannel::Parametric { Stroke::new(2.0, t.text) } else { Stroke::new(1.5, color) };
+    painter.add(egui::Shape::line(pts, line));
+    if let Some((region, x)) = parametric_hover {
+        // The marker on the curve at the pointer's input level, and the region's name and value.
+        let height = lut.get(x.round() as usize).map_or(0.0, |v| v * 255.0);
+        let marker = to_screen(x, height);
+        ui.painter().circle_filled(marker, 4.5, Color32::BLACK);
+        ui.painter().circle_stroke(marker, 4.5, Stroke::new(1.5, Color32::WHITE));
+        painter.text(
+            pos2(rect.right() - 6.0, rect.bottom() - 6.0),
+            Align2::RIGHT_BOTTOM,
+            format!("{} {}", crate::i18n::tr_ctx(crate::i18n::current(), "cameraRaw", REGION_NAMES[region]), region_value(p, region).round() as i32),
+            FontId::proportional(11.0),
+            t.text_dim,
+        );
+    }
+    if channel != CurveChannel::Parametric {
+        // The stops, over the graph's edge so the corner ones show whole: the active one is a solid disc, the others hollow rings that
+        // light up under the pointer (click one to make it active and adjust it again).
+        let handles = ui.painter();
+        let pointer = ui.input(|i| i.pointer.hover_pos());
+        let hovered = pointer.filter(|pos| rect.expand(CURVE_STOP_RADIUS).contains(*pos)).and_then(|pos| crate::point_curve::hit(&points, |q| to_screen(q[0], q[1]), pos, CURVE_STOP_RADIUS));
+        let ink = if channel == CurveChannel::Master { t.text } else { color };
+        for (i, c) in points.iter().enumerate() {
+            let center = to_screen(c[0], c[1]);
+            if state.selected == Some(i) {
+                handles.circle_filled(center, 5.5, ink);
+                handles.circle_stroke(center, 5.5, Stroke::new(1.0, t.shadow.to_opaque()));
+            } else {
+                let radius = if hovered == Some(i) { 5.5 } else { 4.5 };
+                handles.circle_filled(center, radius, t.dock);
+                handles.circle_stroke(center, radius, Stroke::new(if hovered == Some(i) { 2.0 } else { 1.5 }, ink));
+            }
         }
-        painter.circle_stroke(center, 4.0, Stroke::new(1.5, t.accent));
+        if hovered.is_some() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+        } else if resp.hovered() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::Crosshair);
+        }
     }
     rect
 }
@@ -1670,8 +1918,9 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
         d.curve_rect = None;
         d.scope.vectorscope_rect = None;
         if d.dirty {
-            d.render(ctx);
+            d.submit_preview(ctx);
         }
+        d.collect_preview(ctx);
         super::camera_raw_filmstrip_ui::seed(ctx, &d.document_name, d.tex.as_ref());
         let (full, _) = ui.allocate_exact_size(screen.size(), Sense::click());
         let painter = ui.painter().clone();
@@ -1726,8 +1975,13 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
             let preview_parameters = super::camera_raw_workspace_ui::preview_without(&d.params, d.preview_bypass.as_deref());
             let raw_tone = d.raw_curve.is_some() && !raw_stage(&preview_parameters).is_neutral();
             // A stand-in made for browsing has no more detail to show: zoomed in, the photo is developed in full by Open.
-            let detail_needed =
-                !raw_tone && (r.width() * ctx.pixels_per_point() > d.pw as f32 || r.height() * ctx.pixels_per_point() > d.ph as f32) && !d.is_stand_in();
+            // While a setting is being dragged the proxy is shown and no full-resolution develop is started for each position the
+            // slider passes; the exact detail follows the release, for the final settings.
+            let adjusting = ctx.input(|i| i.pointer.primary_down()) && d.edit_origin.as_ref().is_some_and(|origin| *origin != d.params);
+            let detail_needed = !adjusting
+                && !raw_tone
+                && (r.width() * ctx.pixels_per_point() > d.pw as f32 || r.height() * ctx.pixels_per_point() > d.ph as f32)
+                && !d.is_stand_in();
             d.detail.paint(&preview, r, d.preview_revision, d.show_before, &preview_parameters, detail_needed, &d.display);
             if super::camera_raw_filmstrip_ui::comparison_split(ctx)
                 && let Some(before) = d.before_tex.as_ref()
@@ -1946,7 +2200,7 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
                         }
                         "Detail" => {
                             super::camera_raw_workspace_ui::section(ui, "Detail", &mut workspace.panels, |ui| {
-                                extra_panels::detail_enhancements(ui);
+                                dirty |= extra_panels::detail_enhancements(ui, &mut p.super_resolution);
                                 dirty |= super::camera_raw_workspace_ui::disclosed_slider(
                                     ui,
                                     "Sharpening",
@@ -1970,7 +2224,13 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
                             });
                         }
                         "Optics" | "Lens Blur" | "Calibration" => {
-                            super::camera_raw_workspace_ui::section(ui, panel_name, &mut workspace.panels, |ui| extra_panels::show(ui, panel_name));
+                            super::camera_raw_workspace_ui::section(ui, panel_name, &mut workspace.panels, |ui| {
+                                if panel_name == "Calibration" {
+                                    dirty |= extra_panels::calibration(ui, p);
+                                } else {
+                                    extra_panels::show(ui, panel_name);
+                                }
+                            });
                         }
                         _ => {}
                     }
@@ -1997,6 +2257,7 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
             workspace.white_balance_tool = false;
         }
         d.dirty |= dirty;
+        d.host_job.show(ctx);
         if d.dirty {
             ctx.request_repaint();
         }
@@ -2060,6 +2321,13 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
     if !menu_was_open && ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
         action = Some("cancel");
     }
+    // Super Resolution is being applied for a Done: the popup is modal, and when Image Triage is finished the Done completes.
+    let host_popup = app.camera_raw.as_ref().is_some_and(|d| d.host_job.is_open());
+    if app.camera_raw.as_mut().is_some_and(|d| d.host_job.take_done_ready()) {
+        action = Some("done-now");
+    } else if host_popup {
+        action = None;
+    }
     if busy {
         action = None;
     }
@@ -2072,6 +2340,17 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
         }
         Some("cancel") => cancel(app),
         Some("done") => {
+            // Super Resolution is applied by Image Triage when the photo is finished; with it on, Done waits for that (with a progress
+            // popup). Without Image Triage on the other end Done simply completes.
+            let now = ctx.input(|i| i.time);
+            let waiting = app.camera_raw.as_mut().is_some_and(|d| {
+                d.target == Target::OpenRaw && d.params.super_resolution && d.host_job.request_before_done(host_job::SUPER_RESOLUTION, now)
+            });
+            if !waiting && let Err(error) = done(app) {
+                app.ui.status = error;
+            }
+        }
+        Some("done-now") => {
             if let Err(error) = done(app) {
                 app.ui.status = error;
             }
@@ -2111,6 +2390,32 @@ fn hue_color(h: f32) -> Color32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_parametric_graph_finds_the_region_under_the_pointer() {
+        let splits = CameraRaw::default().curve_splits;
+        let regions: Vec<usize> = [0.0, 40.0, 100.0, 150.0, 200.0, 255.0].iter().map(|x| region_at(&splits, *x)).collect();
+        assert_eq!(regions, [0, 0, 1, 2, 3, 3], "shadows, darks, lights, highlights, darkest to lightest");
+        let moved = [30.0, 60.0, 90.0];
+        assert_eq!([region_at(&moved, 70.0), region_at(&moved, 100.0), region_at(&moved, 200.0), region_at(&moved, 240.0)], [0, 1, 2, 3]);
+    }
+
+    #[test]
+    fn dragging_on_the_parametric_graph_sets_the_slider_that_puts_the_curve_under_the_pointer() {
+        let base = CameraRaw::default();
+        for (region, value, x) in [(0, -41.0, 20), (1, 19.0, 80), (2, 56.0, 160), (3, -58.0, 230)] {
+            let mut moved = base.clone();
+            set_region(&mut moved, region, value);
+            let target = parametric_curve(&moved)[x] * 255.0;
+            let solved = solve_region(&base, region, x, target);
+            assert!((solved - value).abs() <= 1.0, "{}: asked for {value}, solved {solved}", REGION_NAMES[region]);
+        }
+        // Past what the slider can reach the value stops at its end.
+        assert_eq!(solve_region(&base, 2, 160, 255.0), 100.0);
+        assert_eq!(solve_region(&base, 2, 160, 0.0), -100.0);
+        // A pointer on the untouched curve leaves the slider at zero.
+        assert_eq!(solve_region(&base, 1, 80, parametric_curve(&base)[80] * 255.0), 0.0);
+    }
 
     #[test]
     fn both_entry_points_share_the_reference_shell_without_overlapping_controls() {
@@ -2499,7 +2804,7 @@ mod tests {
         let written: Written = Arc::default();
         let w = written.clone();
         let foreign = br#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-            <rdf:Description xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" crs:Clarity2012="+25" crs:RedHue="-5"/>
+            <rdf:Description xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" crs:Clarity2012="+25" crs:VignetteAmount="-20"/>
             </rdf:RDF></x:xmpmeta>"#;
         let answers = vec![
             Some(FileDialogAnswer::SaveTo("/out/Look.xmp".into())),

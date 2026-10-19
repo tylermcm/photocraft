@@ -392,13 +392,18 @@ fn dispatch(app: &mut PhotocraftApp, ctx: &egui::Context, req: &ControlRequest) 
     let wait = p.get("wait").and_then(Value::as_bool).unwrap_or(true);
     match req.method.as_str() {
         "app.handoff" => ok(
-            json!({"version": 2, "replace": true, "hiddenStart": true, "cameraRaw": 1, "cameraRawPrefetch": 1, "cameraRawSwitch": 1, "cameraRawFinishing": 1, "stashWithoutPreview": 1, "renderManifest": 1, "fullRender": 1, "filmstrip": 1}),
+            json!({"version": 2, "replace": true, "hiddenStart": true, "cameraRaw": 1, "cameraRawPrefetch": 1, "cameraRawSwitch": 1, "cameraRawFinishing": 1, "cameraRawCalibration": 1, "cameraRawSuperResolution": 1, "cameraRawHostJob": 1, "stashWithoutPreview": 1, "renderManifest": 1, "fullRender": 1, "filmstrip": 1}),
         ),
         "ui.filmstrip" => wrap(crate::camera_raw_filmstrip_ui::control(ctx, p).map(|mut reply| {
             reply["cameraRawOpen"] = json!(app.camera_raw.is_some() || crate::raw_workspace::shell_active(app));
             reply
         })),
         "ui.cameraRaw" => run_waiting(app, wait, |app| crate::raw_workspace::control(app, ctx, p)),
+        // The host polls this for a request made in the open Camera Raw dialog (Super Resolution on Done) and reports its progress.
+        "ui.hostJob" => wrap(match app.camera_raw.as_mut() {
+            Some(d) => d.host_job.control(p, ctx.input(|i| i.time)),
+            None => Ok(json!({"id": 0, "phase": "idle", "cancel": false, "pending": null, "open": false})),
+        }),
         "app.prefetch" => match (s("path"), s("signature")) {
             (Some(path), Some(signature)) => wrap(crate::raw_workspace::request_prefetch(app, path, signature)),
             _ => err("prefetch requires path and signature"),

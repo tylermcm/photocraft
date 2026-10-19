@@ -1,6 +1,6 @@
 //! Native layouts observed in ACR references 8–11. Unsupported processing is
 //! explicitly disabled; these controls cannot write fictitious recipe settings.
-use egui::{Align2, Color32, FontId, Rect, Sense, Stroke, Ui, pos2, vec2};
+use egui::{Align2, FontId, Rect, Sense, Stroke, Ui, pos2, vec2};
 
 use crate::{icons, theme::Tokens, widgets};
 
@@ -10,21 +10,33 @@ fn tr(text: &str) -> &str {
 
 /// The observed enhancement controls are unavailable without an enhancement
 /// backend. Their checkbox semantics and blank amount field remain explicit.
-pub(super) fn detail_enhancements(ui: &mut Ui) {
+pub(super) fn detail_enhancements(ui: &mut Ui, super_resolution: &mut bool) -> bool {
+    let mut changed = false;
     let design = crate::camera_raw_design::get(ui.ctx());
     let t = Tokens::get(ui.ctx());
     let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), design.detail_enhancements_height), Sense::hover());
     for (label, y) in [("Denoise", 15.0), ("Raw Details", 72.0), ("Super Resolution", 93.0)] {
         let row = Rect::from_min_size(rect.min + vec2(0.0, y - 8.0), vec2(rect.width(), 16.0));
-        let response = ui.interact(row, ui.id().with(("enhancement", label)), Sense::hover());
-        response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, false, false, tr(label)));
-        response.on_hover_text(tr("Not available"));
-        ui.painter().rect_stroke(
-            Rect::from_center_size(pos2(rect.left() + 7.0, rect.top() + y), vec2(12.0, 12.0)),
-            2.0,
-            Stroke::new(1.0, t.text_faint.gamma_multiply(0.65)),
-            egui::StrokeKind::Inside,
-        );
+        // Super Resolution is a setting like any other: Image Triage upsizes the finished photo when it is output.
+        let live = label == "Super Resolution";
+        let response = ui.interact(row, ui.id().with(("enhancement", label)), if live { Sense::click() } else { Sense::hover() });
+        let checked = live && *super_resolution;
+        response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, live, checked, tr(label)));
+        if live {
+            if response.clicked() {
+                *super_resolution = !*super_resolution;
+                changed = true;
+            }
+            response.on_hover_text(tr("Upsizes the finished photo 2x with AI when it is exported from Image Triage. The picture here stays as it is."));
+        } else {
+            response.on_hover_text(tr("Not available"));
+        }
+        let ink = if live { t.text_dim } else { t.text_faint.gamma_multiply(0.65) };
+        let box_rect = Rect::from_center_size(pos2(rect.left() + 7.0, rect.top() + y), vec2(12.0, 12.0));
+        ui.painter().rect_stroke(box_rect, 2.0, Stroke::new(1.0, ink), egui::StrokeKind::Inside);
+        if checked {
+            ui.painter().rect_filled(box_rect.shrink(3.0), 1.0, t.text);
+        }
         ui.painter().text(pos2(rect.left() + 20.0, rect.top() + y), Align2::LEFT_CENTER, tr(label), FontId::proportional(design.panel_font_size), t.text_dim);
     }
     let field =
@@ -34,6 +46,7 @@ pub(super) fn detail_enhancements(ui: &mut Ui) {
     ui.painter().line_segment([pos2(rect.left(), y), pos2(rect.right(), y)], Stroke::new(3.0, t.field_border));
     let y = rect.top() + 112.5;
     ui.painter().line_segment([pos2(rect.left(), y), pos2(rect.right(), y)], Stroke::new(1.0, t.separator));
+    changed
 }
 
 pub(super) fn noise_disclosure(ui: &mut Ui, expanded: &mut bool) {
@@ -97,15 +110,6 @@ fn disclosure(ui: &mut Ui, label: &str, icon: &str) {
         t.text_faint,
         Stroke::NONE,
     ));
-}
-
-fn slider(ui: &mut Ui, label: &str, gradient: &[Color32]) {
-    let style = crate::camera_raw_design::get(ui.ctx()).slider_style();
-    let width = crate::camera_raw_design::get(ui.ctx()).value_field_width;
-    unavailable(ui, |ui| {
-        let mut value = 0.0;
-        widgets::slider_row_prec_styled(ui, tr(label), &mut value, -100.0..=100.0, "", Some(gradient), Default::default(), Some(0), width, Some(style));
-    });
 }
 
 /// Lens Blur has empty disabled fields, not a fabricated zero-valued adjustment.
@@ -251,7 +255,8 @@ fn focus_icon(ui: &mut Ui, subject: bool) {
     }
 }
 
-fn calibration(ui: &mut Ui) {
+pub(super) fn calibration(ui: &mut Ui, p: &mut photocraft_algo::camera_raw::CameraRaw) -> bool {
+    let mut dirty = false;
     let t = Tokens::get(ui.ctx());
     let design = crate::camera_raw_design::get(ui.ctx());
     ui.horizontal(|ui| {
@@ -266,15 +271,18 @@ fn calibration(ui: &mut Ui) {
     ui.separator();
     space(ui);
     calibration_heading(ui, "Shadows");
-    slider(ui, "Tint", &[super::hue_color(120.0), super::hue_color(300.0)]);
-    for (label, hue, ends) in [("Red Primary", 0.0, [300.0, 30.0]), ("Green Primary", 120.0, [60.0, 160.0]), ("Blue Primary", 240.0, [180.0, 270.0])] {
+    super::row(ui, &mut dirty, "Tint", &mut p.calib_shadow_tint, -100.0..=100.0, Some(&[super::hue_color(120.0), super::hue_color(300.0)]));
+    for (i, (label, hue, ends)) in
+        [("Red Primary", 0.0, [300.0, 30.0]), ("Green Primary", 120.0, [60.0, 160.0]), ("Blue Primary", 240.0, [180.0, 270.0])].into_iter().enumerate()
+    {
         ui.add_space(design.calibration_section_gap);
         ui.separator();
         space(ui);
         calibration_heading(ui, label);
-        slider(ui, "Hue", &[super::hue_color(ends[0]), super::hue_color(ends[1])]);
-        slider(ui, "Saturation", &[t.text_faint, super::hue_color(hue)]);
+        super::row(ui, &mut dirty, "Hue", &mut p.calib_hue[i], -100.0..=100.0, Some(&[super::hue_color(ends[0]), super::hue_color(ends[1])]));
+        super::row(ui, &mut dirty, "Saturation", &mut p.calib_sat[i], -100.0..=100.0, Some(&[t.text_faint, super::hue_color(hue)]));
     }
+    dirty
 }
 
 fn calibration_heading(ui: &mut Ui, label: &str) {
@@ -289,7 +297,6 @@ pub(super) fn show(ui: &mut Ui, title: &str) {
     match title {
         "Optics" => optics(ui),
         "Lens Blur" => lens_blur(ui),
-        "Calibration" => calibration(ui),
         _ => {}
     }
 }

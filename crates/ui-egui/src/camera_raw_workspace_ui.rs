@@ -184,6 +184,11 @@ pub(crate) fn preview_without(parameters: &CameraRaw, title: Option<&str>) -> Ca
             p.hsl_lum = defaults.hsl_lum;
             p.point_colors = defaults.point_colors;
         }
+        Some("Calibration") => {
+            p.calib_shadow_tint = defaults.calib_shadow_tint;
+            p.calib_hue = defaults.calib_hue;
+            p.calib_sat = defaults.calib_sat;
+        }
         Some("Color Grading") => {
             p.grade_shadows = defaults.grade_shadows;
             p.grade_midtones = defaults.grade_midtones;
@@ -196,6 +201,7 @@ pub(crate) fn preview_without(parameters: &CameraRaw, title: Option<&str>) -> Ca
             p.sharpen_amount = defaults.sharpen_amount;
             p.noise_luminance = defaults.noise_luminance;
             p.noise_color = defaults.noise_color;
+            p.super_resolution = defaults.super_resolution;
         }
         _ => {}
     }
