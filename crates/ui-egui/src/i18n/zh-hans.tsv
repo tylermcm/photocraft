@@ -3012,3 +3012,11 @@ cameraRaw	Sample Color	采样颜色
 cameraRaw	Delete Sample	删除样本
 cameraRaw	Variance	差异
 cameraRaw	Visualize Range	可视化范围
+	Reset Regions	复位区域
+	Reset Splits	复位分割点
+	Reset Regions and Splits	复位区域和分割点
+	Reset Channel	复位通道
+	Reset All Channels	复位所有通道
+	Copy Channel Settings	复制通道设置
+	Paste Channel Settings	粘贴通道设置
+	Show All Curves	显示所有曲线

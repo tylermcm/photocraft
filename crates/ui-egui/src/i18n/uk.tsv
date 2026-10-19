@@ -4089,3 +4089,11 @@ cameraRaw	Sample Color	Зразок кольору
 cameraRaw	Delete Sample	Видалити зразок
 cameraRaw	Variance	Варіативність
 cameraRaw	Visualize Range	Показати діапазон
+	Reset Regions	Скинути області
+	Reset Splits	Скинути межі
+	Reset Regions and Splits	Скинути області та межі
+	Reset Channel	Скинути канал
+	Reset All Channels	Скинути всі канали
+	Copy Channel Settings	Копіювати налаштування каналу
+	Paste Channel Settings	Вставити налаштування каналу
+	Show All Curves	Показати всі криві

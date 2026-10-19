@@ -2997,3 +2997,11 @@ cameraRaw	Sample Color	取樣顏色
 cameraRaw	Delete Sample	刪除樣本
 cameraRaw	Variance	差異
 cameraRaw	Visualize Range	視覺化範圍
+	Reset Regions	重設區域
+	Reset Splits	重設分割點
+	Reset Regions and Splits	重設區域與分割點
+	Reset Channel	重設色版
+	Reset All Channels	重設所有色版
+	Copy Channel Settings	複製色版設定
+	Paste Channel Settings	貼上色版設定
+	Show All Curves	顯示所有曲線

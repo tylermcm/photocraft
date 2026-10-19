@@ -4066,3 +4066,11 @@ cameraRaw	Sample Color	カラーをサンプル
 cameraRaw	Delete Sample	サンプルを削除
 cameraRaw	Variance	分散
 cameraRaw	Visualize Range	範囲を表示
+	Reset Regions	領域を初期化
+	Reset Splits	分割位置を初期化
+	Reset Regions and Splits	領域と分割位置を初期化
+	Reset Channel	チャンネルを初期化
+	Reset All Channels	すべてのチャンネルを初期化
+	Copy Channel Settings	チャンネル設定をコピー
+	Paste Channel Settings	チャンネル設定を貼り付け
+	Show All Curves	すべてのカーブを表示

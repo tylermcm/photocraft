@@ -3396,3 +3396,11 @@ cameraRaw	Sample Color	Échantillonner une couleur
 cameraRaw	Delete Sample	Supprimer l’échantillon
 cameraRaw	Variance	Variance
 cameraRaw	Visualize Range	Visualiser la plage
+	Reset Regions	Réinitialiser les régions
+	Reset Splits	Réinitialiser les séparations
+	Reset Regions and Splits	Réinitialiser les régions et les séparations
+	Reset Channel	Réinitialiser le canal
+	Reset All Channels	Réinitialiser tous les canaux
+	Copy Channel Settings	Copier les paramètres du canal
+	Paste Channel Settings	Coller les paramètres du canal
+	Show All Curves	Afficher toutes les courbes

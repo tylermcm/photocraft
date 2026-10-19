@@ -3395,3 +3395,11 @@ cameraRaw	Sample Color	Farbe aufnehmen
 cameraRaw	Delete Sample	Farbprobe löschen
 cameraRaw	Variance	Varianz
 cameraRaw	Visualize Range	Bereich visualisieren
+	Reset Regions	Bereiche zurücksetzen
+	Reset Splits	Teilungen zurücksetzen
+	Reset Regions and Splits	Bereiche und Teilungen zurücksetzen
+	Reset Channel	Kanal zurücksetzen
+	Reset All Channels	Alle Kanäle zurücksetzen
+	Copy Channel Settings	Kanaleinstellungen kopieren
+	Paste Channel Settings	Kanaleinstellungen einfügen
+	Show All Curves	Alle Kurven anzeigen

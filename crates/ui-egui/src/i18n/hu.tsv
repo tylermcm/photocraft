@@ -4306,3 +4306,11 @@ cameraRaw	Sample Color	Színmintavétel
 cameraRaw	Delete Sample	Minta törlése
 cameraRaw	Variance	Variancia
 cameraRaw	Visualize Range	Tartomány megjelenítése
+	Reset Regions	Régiók visszaállítása
+	Reset Splits	Felosztások visszaállítása
+	Reset Regions and Splits	Régiók és felosztások visszaállítása
+	Reset Channel	Csatorna visszaállítása
+	Reset All Channels	Összes csatorna visszaállítása
+	Copy Channel Settings	Csatornabeállítások másolása
+	Paste Channel Settings	Csatornabeállítások beillesztése
+	Show All Curves	Összes görbe megjelenítése

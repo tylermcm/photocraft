@@ -4460,3 +4460,11 @@ cameraRaw	Sample Color	Uzorkuj boju
 cameraRaw	Delete Sample	Obriši uzorak
 cameraRaw	Variance	Varijansa
 cameraRaw	Visualize Range	Prikaži opseg
+	Reset Regions	Resetuj regione
+	Reset Splits	Resetuj podele
+	Reset Regions and Splits	Resetuj regione i podele
+	Reset Channel	Resetuj kanal
+	Reset All Channels	Resetuj sve kanale
+	Copy Channel Settings	Kopiraj podešavanja kanala
+	Paste Channel Settings	Nalepi podešavanja kanala
+	Show All Curves	Prikaži sve krive

@@ -4087,3 +4087,11 @@ cameraRaw	Sample Color	Δειγματοληψία χρώματος
 cameraRaw	Delete Sample	Διαγραφή δείγματος
 cameraRaw	Variance	Διακύμανση
 cameraRaw	Visualize Range	Οπτικοποίηση εύρους
+	Reset Regions	Επαναφορά περιοχών
+	Reset Splits	Επαναφορά διαχωρισμών
+	Reset Regions and Splits	Επαναφορά περιοχών και διαχωρισμών
+	Reset Channel	Επαναφορά καναλιού
+	Reset All Channels	Επαναφορά όλων των καναλιών
+	Copy Channel Settings	Αντιγραφή ρυθμίσεων καναλιού
+	Paste Channel Settings	Επικόλληση ρυθμίσεων καναλιού
+	Show All Curves	Εμφάνιση όλων των καμπυλών

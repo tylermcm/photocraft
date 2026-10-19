@@ -4177,3 +4177,11 @@ cameraRaw	Sample Color	Amostrar cor
 cameraRaw	Delete Sample	Excluir amostra
 cameraRaw	Variance	Variância
 cameraRaw	Visualize Range	Visualizar intervalo
+	Reset Regions	Redefinir regiões
+	Reset Splits	Redefinir divisões
+	Reset Regions and Splits	Redefinir regiões e divisões
+	Reset Channel	Redefinir canal
+	Reset All Channels	Redefinir todos os canais
+	Copy Channel Settings	Copiar configurações do canal
+	Paste Channel Settings	Colar configurações do canal
+	Show All Curves	Mostrar todas as curvas

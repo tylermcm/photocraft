@@ -1404,6 +1404,97 @@ fn tone_row(ui: &mut egui::Ui, dirty: &mut bool, alt: &mut Option<ToneZone>, zon
 // The shared Curve editor must never produce a curve `CameraRaw::validate` rejects.
 const _: () = assert!(crate::point_curve::MAX_POINTS == photocraft_algo::camera_raw::MAX_CURVE_POINTS && crate::point_curve::MIN_GAP >= 1.0);
 
+/// Replaces the stops of the point curve behind `channel` (the RGB curve for any channel that is not red, green or blue); empty is the
+/// untouched straight line.
+fn set_channel_stops(p: &mut CameraRaw, channel: super::camera_raw_workspace_ui::CurveChannel, stops: Vec<[f32; 2]>) {
+    use super::camera_raw_workspace_ui::CurveChannel;
+    match channel {
+        CurveChannel::Red => p.point_curve_red = stops,
+        CurveChannel::Green => p.point_curve_green = stops,
+        CurveChannel::Blue => p.point_curve_blue = stops,
+        _ => p.point_curve = stops,
+    }
+}
+
+/// Every point curve back to the straight line (the parametric curve is not one of them).
+fn reset_all_channels(p: &mut CameraRaw) {
+    for curve in [&mut p.point_curve, &mut p.point_curve_red, &mut p.point_curve_green, &mut p.point_curve_blue] {
+        curve.clear();
+    }
+}
+
+/// What pasting a copied curve stores: the straight line is kept as "no stops", as everywhere else.
+fn paste_stops(copied: Vec<[f32; 2]>) -> Vec<[f32; 2]> {
+    if copied.len() == 2 && copied[0] == [0.0, 0.0] && copied[1] == [255.0, 255.0] { Vec::new() } else { copied }
+}
+
+/// A curve copied with Copy Channel Settings, for Paste Channel Settings (kept for the session, any channel).
+const CURVE_CLIPBOARD: &str = "camera-raw-curve-clipboard";
+
+/// The graph's right-click menu: the parametric curve's resets, or the point curves' channel resets, copy/paste and Show All Curves.
+fn curve_context_menu(
+    resp: &egui::Response,
+    p: &mut CameraRaw,
+    channel: super::camera_raw_workspace_ui::CurveChannel,
+    shown: &[[f32; 2]],
+    show_all: &mut bool,
+    state: &mut crate::state::PointCurveState,
+    dirty: &mut bool,
+) {
+    use super::camera_raw_workspace_ui::CurveChannel;
+    let clipboard = egui::Id::new(CURVE_CLIPBOARD);
+    let mut changed = false;
+    egui::Popup::context_menu(resp).show(|ui| {
+        if channel == CurveChannel::Parametric {
+            let defaults = CameraRaw::default();
+            let regions = |p: &mut CameraRaw| {
+                (p.curve_highlights, p.curve_lights, p.curve_darks, p.curve_shadows) = (0.0, 0.0, 0.0, 0.0);
+            };
+            if ui.button(tl!("Reset Regions")).clicked() {
+                regions(p);
+                changed = true;
+            }
+            if ui.button(tl!("Reset Splits")).clicked() {
+                p.curve_splits = defaults.curve_splits;
+                changed = true;
+            }
+            if ui.button(tl!("Reset Regions and Splits")).clicked() {
+                regions(p);
+                p.curve_splits = defaults.curve_splits;
+                changed = true;
+            }
+        } else {
+            if ui.button(tl!("Reset Channel")).clicked() {
+                set_channel_stops(p, channel, Vec::new());
+                changed = true;
+            }
+            if ui.button(tl!("Reset All Channels")).clicked() {
+                reset_all_channels(p);
+                changed = true;
+            }
+            ui.separator();
+            if ui.button(tl!("Copy Channel Settings")).clicked() {
+                let copied: Vec<[f32; 2]> = shown.to_vec();
+                ui.ctx().data_mut(|d| d.insert_temp(clipboard, copied));
+            }
+            let copied: Option<Vec<[f32; 2]>> = ui.ctx().data(|d| d.get_temp(clipboard));
+            if ui.add_enabled(copied.is_some(), egui::Button::new(tl!("Paste Channel Settings"))).clicked()
+                && let Some(copied) = copied
+            {
+                set_channel_stops(p, channel, paste_stops(copied));
+                changed = true;
+            }
+            ui.separator();
+            widgets::checkbox(ui, show_all, tl!("Show All Curves"));
+        }
+    });
+    if changed {
+        *state = Default::default();
+        *dirty = true;
+        resp.ctx.request_repaint();
+    }
+}
+
 /// How near (pixels) a press must be to a stop to take it rather than add one.
 const CURVE_STOP_RADIUS: f32 = 9.0;
 /// How far (pixels) from the curve line a press still counts as being on the line.
@@ -1531,13 +1622,14 @@ fn parametric_interact(ui: &egui::Ui, resp: &egui::Response, rect: ERect, p: &mu
 }
 
 /// Small point-curve editor (master channel): click the curve or the graph to add a stop, click a stop to make it active, drag to
-/// move it, right-click (or Ctrl-click) to delete it.
+/// move it, Ctrl-click to delete it; right-click opens the curve's menu (resets, copy and paste, Show All Curves).
 fn curve_editor(
     ui: &mut egui::Ui,
     p: &mut CameraRaw,
     dirty: &mut bool,
     state: &mut crate::state::PointCurveState,
     channel: super::camera_raw_workspace_ui::CurveChannel,
+    show_all: &mut bool,
     histogram: &RgbHistogram,
 ) -> ERect {
     let t = Tokens::get(ui.ctx());
@@ -1600,7 +1692,8 @@ fn curve_editor(
                 }
             }
         }
-        if crate::point_curve::interact(ui, &resp, rect, &mut points, state).changed {
+        // Right-click belongs to the context menu below; Ctrl-click deletes a stop.
+        if crate::point_curve::interact_with(ui, &resp, rect, &mut points, state, false).changed {
             edited = true;
         }
     }
@@ -1608,6 +1701,7 @@ fn curve_editor(
         *selected = points.clone();
         *dirty = true;
     }
+    curve_context_menu(&resp, p, channel, &points, show_all, state, dirty);
     // Curve (point curve after the parametric one).
     let lut = if channel == CurveChannel::Parametric {
         parametric_curve(p)
@@ -1641,6 +1735,22 @@ fn curve_editor(
             }
         }
         painter.add(egui::Shape::mesh(band));
+    }
+    if *show_all && channel != CurveChannel::Parametric {
+        // Show All Curves: the other channels' curves, quietly, under the active one.
+        for (other, curve, tint) in [
+            (CurveChannel::Master, &p.point_curve, t.text_faint),
+            (CurveChannel::Red, &p.point_curve_red, Color32::from_rgb(220, 65, 65)),
+            (CurveChannel::Green, &p.point_curve_green, Color32::from_rgb(70, 185, 90)),
+            (CurveChannel::Blue, &p.point_curve_blue, Color32::from_rgb(70, 130, 235)),
+        ] {
+            if other == channel {
+                continue;
+            }
+            let stops = if curve.is_empty() { vec![[0.0, 0.0], [255.0, 255.0]] } else { curve.clone() };
+            let line: Vec<Pos2> = curve_lut(&stops, 256).iter().enumerate().map(|(i, value)| to_screen(i as f32, value * 255.0)).collect();
+            painter.add(egui::Shape::line(line, Stroke::new(1.0, tint.gamma_multiply(0.6))));
+        }
     }
     let line = if channel == CurveChannel::Parametric { Stroke::new(2.0, t.text) } else { Stroke::new(1.5, color) };
     painter.add(egui::Shape::line(pts, line));
@@ -2178,7 +2288,15 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
                                     d.curve_state = Default::default();
                                 }
                                 ui.add_space(design.curve_graph_top_gap);
-                                d.curve_rect = Some(curve_editor(ui, p, &mut dirty, &mut d.curve_state, workspace.curve_channel, &d.after_histogram));
+                                d.curve_rect = Some(curve_editor(
+                                    ui,
+                                    p,
+                                    &mut dirty,
+                                    &mut d.curve_state,
+                                    workspace.curve_channel,
+                                    &mut workspace.curve_show_all,
+                                    &d.after_histogram,
+                                ));
                                 if workspace.curve_channel == CurveChannel::Parametric {
                                     dirty |= curve_regions::show(ui, &mut p.curve_splits);
                                     row(ui, &mut dirty, "Highlights", &mut p.curve_highlights, -100.0..=100.0, None);
@@ -2390,6 +2508,31 @@ fn hue_color(h: f32) -> Color32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_curve_menu_resets_and_pastes_channels() {
+        use super::super::camera_raw_workspace_ui::CurveChannel;
+        let mut p = CameraRaw {
+            point_curve: vec![[0.0, 0.0], [90.0, 120.0], [255.0, 255.0]],
+            point_curve_red: vec![[0.0, 10.0], [255.0, 255.0]],
+            point_curve_blue: vec![[0.0, 0.0], [128.0, 100.0], [255.0, 255.0]],
+            curve_shadows: 20.0,
+            ..Default::default()
+        };
+        set_channel_stops(&mut p, CurveChannel::Red, Vec::new());
+        assert!(p.point_curve_red.is_empty() && !p.point_curve.is_empty() && !p.point_curve_blue.is_empty(), "only the red channel was reset");
+        // Copy the RGB curve and paste it onto green.
+        let copied = p.point_curve.clone();
+        set_channel_stops(&mut p, CurveChannel::Green, paste_stops(copied.clone()));
+        assert_eq!(p.point_curve_green, copied);
+        // Pasting the straight line leaves a channel untouched-looking (no stops).
+        set_channel_stops(&mut p, CurveChannel::Green, paste_stops(vec![[0.0, 0.0], [255.0, 255.0]]));
+        assert!(p.point_curve_green.is_empty());
+        reset_all_channels(&mut p);
+        assert!(p.point_curve.is_empty() && p.point_curve_red.is_empty() && p.point_curve_green.is_empty() && p.point_curve_blue.is_empty());
+        assert_eq!(p.curve_shadows, 20.0, "the parametric sliders are not channels");
+        assert!(p.validate().is_ok());
+    }
 
     #[test]
     fn the_parametric_graph_finds_the_region_under_the_pointer() {

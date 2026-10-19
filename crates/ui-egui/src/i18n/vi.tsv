@@ -3877,3 +3877,11 @@ cameraRaw	Sample Color	Lấy mẫu màu
 cameraRaw	Delete Sample	Xóa mẫu
 cameraRaw	Variance	Độ biến thiên
 cameraRaw	Visualize Range	Hiển thị phạm vi
+	Reset Regions	Đặt lại các vùng
+	Reset Splits	Đặt lại điểm chia
+	Reset Regions and Splits	Đặt lại các vùng và điểm chia
+	Reset Channel	Đặt lại kênh
+	Reset All Channels	Đặt lại tất cả các kênh
+	Copy Channel Settings	Sao chép cài đặt kênh
+	Paste Channel Settings	Dán cài đặt kênh
+	Show All Curves	Hiện tất cả đường cong

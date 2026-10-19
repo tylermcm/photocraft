@@ -69,6 +69,8 @@ pub struct WorkspaceState {
     pub panels: PanelState,
     pub grading: GradingView,
     pub curve_channel: CurveChannel,
+    /// Curve > right-click > Show All Curves: every channel's curve is drawn on the graph, the active one on top.
+    pub curve_show_all: bool,
     pub mixer: MixerMode,
     pub band: usize,
     pub hsl_channel: usize,
@@ -102,6 +104,7 @@ impl Default for WorkspaceState {
             panels: PanelState::default(),
             grading: GradingView::default(),
             curve_channel: CurveChannel::default(),
+            curve_show_all: false,
             mixer: MixerMode::Color,
             band: 0,
             hsl_channel: 1,

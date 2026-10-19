@@ -3988,3 +3988,11 @@ cameraRaw	Sample Color	Próbkuj kolor
 cameraRaw	Delete Sample	Usuń próbkę
 cameraRaw	Variance	Wariancja
 cameraRaw	Visualize Range	Wizualizuj zakres
+	Reset Regions	Resetuj regiony
+	Reset Splits	Resetuj podziały
+	Reset Regions and Splits	Resetuj regiony i podziały
+	Reset Channel	Resetuj kanał
+	Reset All Channels	Resetuj wszystkie kanały
+	Copy Channel Settings	Kopiuj ustawienia kanału
+	Paste Channel Settings	Wklej ustawienia kanału
+	Show All Curves	Pokaż wszystkie krzywe

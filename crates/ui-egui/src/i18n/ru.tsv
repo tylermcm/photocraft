@@ -3361,3 +3361,11 @@ cameraRaw	Sample Color	Образец цвета
 cameraRaw	Delete Sample	Удалить образец
 cameraRaw	Variance	Вариативность
 cameraRaw	Visualize Range	Показать диапазон
+	Reset Regions	Сбросить области
+	Reset Splits	Сбросить границы
+	Reset Regions and Splits	Сбросить области и границы
+	Reset Channel	Сбросить канал
+	Reset All Channels	Сбросить все каналы
+	Copy Channel Settings	Копировать параметры канала
+	Paste Channel Settings	Вставить параметры канала
+	Show All Curves	Показать все кривые

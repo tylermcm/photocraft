@@ -76,6 +76,19 @@ pub fn move_to(pts: &mut [[f32; 2]], i: usize, v: [f32; 2]) -> bool {
 /// Capture a point at button-down, preserve its grab offset, and keep it through release.
 /// `commit` ends a gesture; hosts decide how that becomes document history.
 pub fn interact(ui: &mut Ui, resp: &Response, graph: Rect, pts: &mut Vec<[f32; 2]>, state: &mut PointCurveState) -> Interaction {
+    interact_with(ui, resp, graph, pts, state, true)
+}
+
+/// [`interact`], where `right_click_deletes` says whether a right-click on a point deletes it (hosts whose right-click opens a
+/// context menu pass `false`; Ctrl-click still deletes).
+pub fn interact_with(
+    ui: &mut Ui,
+    resp: &Response,
+    graph: Rect,
+    pts: &mut Vec<[f32; 2]>,
+    state: &mut PointCurveState,
+    right_click_deletes: bool,
+) -> Interaction {
     if !graph.is_finite() || graph.width() <= 0.0 || graph.height() <= 0.0 {
         *state = PointCurveState::default();
         return Interaction::default();
@@ -88,7 +101,8 @@ pub fn interact(ui: &mut Ui, resp: &Response, graph: Rect, pts: &mut Vec<[f32; 2
     let to_val =
         |s: Pos2| [((s.x - graph.left()) / graph.width() * 255.0).clamp(0.0, 255.0), ((graph.bottom() - s.y) / graph.height() * 255.0).clamp(0.0, 255.0)];
     let mut e = Interaction::default();
-    if resp.secondary_clicked()
+    if right_click_deletes
+        && resp.secondary_clicked()
         && let Some(pos) = resp.interact_pointer_pos()
     {
         if let Some(i) = hit(pts, to_scr, pos, HIT_RADIUS)

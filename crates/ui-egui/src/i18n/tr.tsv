@@ -4117,3 +4117,11 @@ cameraRaw	Sample Color	Renk Örnekle
 cameraRaw	Delete Sample	Örneği Sil
 cameraRaw	Variance	Varyans
 cameraRaw	Visualize Range	Aralığı Görselleştir
+	Reset Regions	Bölgeleri Sıfırla
+	Reset Splits	Bölmeleri Sıfırla
+	Reset Regions and Splits	Bölgeleri ve Bölmeleri Sıfırla
+	Reset Channel	Kanalı Sıfırla
+	Reset All Channels	Tüm Kanalları Sıfırla
+	Copy Channel Settings	Kanal Ayarlarını Kopyala
+	Paste Channel Settings	Kanal Ayarlarını Yapıştır
+	Show All Curves	Tüm Eğrileri Göster

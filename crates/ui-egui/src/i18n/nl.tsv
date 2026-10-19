@@ -4147,3 +4147,11 @@ cameraRaw	Sample Color	Kleur bemonsteren
 cameraRaw	Delete Sample	Monster verwijderen
 cameraRaw	Variance	Variantie
 cameraRaw	Visualize Range	Bereik visualiseren
+	Reset Regions	Gebieden herstellen
+	Reset Splits	Splitsingen herstellen
+	Reset Regions and Splits	Gebieden en splitsingen herstellen
+	Reset Channel	Kanaal herstellen
+	Reset All Channels	Alle kanalen herstellen
+	Copy Channel Settings	Kanaalinstellingen kopiëren
+	Paste Channel Settings	Kanaalinstellingen plakken
+	Show All Curves	Alle curven tonen

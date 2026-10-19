@@ -3383,3 +3383,11 @@ cameraRaw	Sample Color	Ambil Sampel Warna
 cameraRaw	Delete Sample	Hapus Sampel
 cameraRaw	Variance	Variansi
 cameraRaw	Visualize Range	Visualisasikan Rentang
+	Reset Regions	Reset Wilayah
+	Reset Splits	Reset Pembagi
+	Reset Regions and Splits	Reset Wilayah dan Pembagi
+	Reset Channel	Reset Channel
+	Reset All Channels	Reset Semua Channel
+	Copy Channel Settings	Salin Pengaturan Channel
+	Paste Channel Settings	Tempel Pengaturan Channel
+	Show All Curves	Tampilkan Semua Kurva

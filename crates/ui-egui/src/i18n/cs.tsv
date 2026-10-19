@@ -3997,3 +3997,11 @@ cameraRaw	Sample Color	Vzorkovat barvu
 cameraRaw	Delete Sample	Odstranit vzorek
 cameraRaw	Variance	Variabilita
 cameraRaw	Visualize Range	Zobrazit rozsah
+	Reset Regions	Obnovit oblasti
+	Reset Splits	Obnovit dělení
+	Reset Regions and Splits	Obnovit oblasti a dělení
+	Reset Channel	Obnovit kanál
+	Reset All Channels	Obnovit všechny kanály
+	Copy Channel Settings	Kopírovat nastavení kanálu
+	Paste Channel Settings	Vložit nastavení kanálu
+	Show All Curves	Zobrazit všechny křivky

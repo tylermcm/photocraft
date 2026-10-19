@@ -3571,3 +3571,11 @@ cameraRaw	Sample Color	색상 샘플링
 cameraRaw	Delete Sample	샘플 삭제
 cameraRaw	Variance	분산
 cameraRaw	Visualize Range	범위 시각화
+	Reset Regions	영역 재설정
+	Reset Splits	분할 재설정
+	Reset Regions and Splits	영역 및 분할 재설정
+	Reset Channel	채널 재설정
+	Reset All Channels	모든 채널 재설정
+	Copy Channel Settings	채널 설정 복사
+	Paste Channel Settings	채널 설정 붙여넣기
+	Show All Curves	모든 곡선 표시

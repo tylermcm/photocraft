@@ -4508,3 +4508,11 @@ cameraRaw	Sample Color	Campiona colore
 cameraRaw	Delete Sample	Elimina campione
 cameraRaw	Variance	Varianza
 cameraRaw	Visualize Range	Visualizza intervallo
+	Reset Regions	Ripristina regioni
+	Reset Splits	Ripristina divisioni
+	Reset Regions and Splits	Ripristina regioni e divisioni
+	Reset Channel	Ripristina canale
+	Reset All Channels	Ripristina tutti i canali
+	Copy Channel Settings	Copia impostazioni canale
+	Paste Channel Settings	Incolla impostazioni canale
+	Show All Curves	Mostra tutte le curve
