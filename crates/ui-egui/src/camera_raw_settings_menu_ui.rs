@@ -265,7 +265,7 @@ fn validate_clipboard(p: &CameraRaw) -> Result<(), String> {
                     return Err("Unsupported Camera Raw clipboard vignette style".into());
                 }
             }
-            "seed" | "pixelScale" | "encodingGamma" | "glow" | "pointColors" | "superResolution" => {}
+            "seed" | "pixelScale" | "encodingGamma" | "glow" | "pointColors" | "superResolution" | "masks" => {}
             _ => number(key, v, -100.0, 100.0)?,
         }
     }

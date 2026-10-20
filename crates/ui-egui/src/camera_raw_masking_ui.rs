@@ -181,7 +181,8 @@ fn icon(ui: &Ui, r: Rect, id: &str) {
         _ => {}
     }
 }
-pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool) {
+pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut Option<super::mask_edit::MaskTool>) {
+    use super::mask_edit::MaskTool;
     let design = crate::camera_raw_design::get(ui.ctx());
     let d = &design.masking;
     let t = Tokens::get(ui.ctx());
@@ -225,9 +226,29 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool) {
                     }
                 }
                 if e.id.ends_with("-label") && !matches!(e.id.as_str(), "subject-label" | "sky-label" | "background-label" | "people-label") {
-                    let response = ui.interact(r, ui.id().with(&e.id), Sense::hover());
-                    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, false, tr(&e.label)));
-                    response.on_hover_text(tr("Not available"));
+                    // The gradients work: a click arms the tool and the next drag on the photo makes the mask. The rest are not built yet.
+                    let tool = match e.id.as_str() {
+                        "linear-gradient-label" => Some(MaskTool::Linear),
+                        "radial-gradient-label" => Some(MaskTool::Radial),
+                        _ => None,
+                    };
+                    if let Some(tool) = tool {
+                        let glyph = d.elements.iter().find(|v| v.id == e.id.replace("-label", "-glyph"));
+                        let hit = glyph.map_or(r, |v| r.union(Rect::from_min_max(panel.min + vec2(v.rect[0], v.rect[1]), panel.min + vec2(v.rect[2], v.rect[3]))));
+                        let response = ui.interact(hit.expand2(vec2(4.0, 2.0)), ui.id().with(&e.id), Sense::click());
+                        response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, *armed == Some(tool), tr(&e.label)));
+                        if *armed == Some(tool) {
+                            ui.painter().rect_stroke(hit.expand2(vec2(4.0, 2.0)), t.radius_sm, Stroke::new(1.5, t.accent), egui::StrokeKind::Inside);
+                        }
+                        if response.clicked() {
+                            *armed = Some(tool);
+                        }
+                        response.on_hover_text(tr("Click here, then drag on the photo."));
+                    } else {
+                        let response = ui.interact(r, ui.id().with(&e.id), Sense::hover());
+                        response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, false, tr(&e.label)));
+                        response.on_hover_text(tr("Not available"));
+                    }
                 }
             }
             Kind::Card => {

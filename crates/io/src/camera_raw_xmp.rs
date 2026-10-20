@@ -235,7 +235,7 @@ pub fn load(params: &mut CameraRaw, bytes: &[u8]) -> Result<LoadReport, String> 
         if let Some(raw) = desc.attribute(("https://photocraft.app/camera-raw/1.0/", "Finishing")) {
             let value: serde_json::Value = serde_json::from_str(raw).map_err(|e| format!("invalid PhotoCraft finishing settings: {e}"))?;
             let obj = value.as_object().ok_or("PhotoCraft finishing settings must be an object")?;
-            if obj.keys().any(|k| k != "glow" && k != "pointColors" && k != "superResolution") {
+            if obj.keys().any(|k| !["glow", "pointColors", "superResolution", "masks"].contains(&k.as_str())) {
                 return Err("unknown PhotoCraft finishing setting".into());
             }
             if let Some(v) = obj.get("glow") {
@@ -243,6 +243,9 @@ pub fn load(params: &mut CameraRaw, bytes: &[u8]) -> Result<LoadReport, String> 
             }
             if let Some(v) = obj.get("pointColors") {
                 next.point_colors = serde_json::from_value(v.clone()).map_err(|e| e.to_string())?;
+            }
+            if let Some(v) = obj.get("masks") {
+                next.masks = serde_json::from_value(v.clone()).map_err(|e| e.to_string())?;
             }
             if let Some(v) = obj.get("superResolution") {
                 next.super_resolution = v.as_bool().ok_or("superResolution must be true or false")?;
@@ -300,8 +303,8 @@ pub fn save(params: &CameraRaw) -> String {
     let mut out = String::from(
         "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\" x:xmptk=\"PhotoCraft\">\n <rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n  <rdf:Description rdf:about=\"\"\n    xmlns:crs=\"http://ns.adobe.com/camera-raw-settings/1.0/\"\n",
     );
-    if params.glow != Default::default() || !params.point_colors.is_empty() || params.super_resolution {
-        let value = serde_json::json!({"glow":params.glow,"pointColors":params.point_colors,"superResolution":params.super_resolution});
+    if params.glow != Default::default() || !params.point_colors.is_empty() || params.super_resolution || !params.masks.is_empty() {
+        let value = serde_json::json!({"glow":params.glow,"pointColors":params.point_colors,"superResolution":params.super_resolution,"masks":params.masks});
         out.push_str(&format!("   xmlns:pc=\"https://photocraft.app/camera-raw/1.0/\"\n   pc:Finishing=\"{}\"\n", escape(&value.to_string())));
     }
     out.push_str("   crs:Version=\"18.4\"\n   crs:ProcessVersion=\"15.4\"\n");
@@ -350,6 +353,7 @@ mod tests {
         assert_eq!(back.glow, p.glow);
         assert_eq!(back.point_colors, p.point_colors);
         assert!(back.super_resolution);
+        assert!(back.masks.is_empty());
         let original = back.clone();
         let broken = text.replace("&quot;amount&quot;:63.0", "&quot;amount&quot;:999.0");
         assert!(super::load(&mut back, broken.as_bytes()).is_err());
@@ -357,6 +361,28 @@ mod tests {
     }
 
     use super::*;
+
+    #[test]
+    fn local_masks_round_trip_through_the_private_extension() {
+        use photocraft_algo::camera_raw::{LocalAdjust, LocalMask, MaskShape};
+        let mut p = CameraRaw::default();
+        p.masks = vec![
+            LocalMask { name: "Sky".into(), shape: MaskShape::raster(3, 2, &[0.0, 0.5, 1.0, 1.0, 0.5, 0.0]), invert: true, adjust: LocalAdjust { exposure: -0.7, ..Default::default() }, ..Default::default() },
+            LocalMask { shape: MaskShape::Radial { cx: 0.4, cy: 0.5, rx: 0.2, ry: 0.3, angle: 15.0, feather: 40.0 }, adjust: LocalAdjust { saturation: 25.0, ..Default::default() }, ..Default::default() },
+            LocalMask { shape: MaskShape::Linear { x0: 0.5, y0: 0.1, x1: 0.5, y1: 0.6 }, adjust: LocalAdjust { highlights: -30.0, ..Default::default() }, amount: 70.0, ..Default::default() },
+        ];
+        let text = save(&p);
+        assert!(text.contains("pc:Finishing"));
+        let mut back = CameraRaw::default();
+        load(&mut back, text.as_bytes()).unwrap();
+        assert_eq!(back.masks, p.masks);
+        // A damaged mask is refused and leaves the settings as they were.
+        let mut kept = CameraRaw::default();
+        let broken = text.replace("&quot;exposure&quot;:-0.699999988079071", "&quot;exposure&quot;:-70.0");
+        assert_ne!(broken, text, "the damage was applied");
+        assert!(load(&mut kept, broken.as_bytes()).is_err());
+        assert!(kept.masks.is_empty());
+    }
 
     /// A hand-written settings file laid out as Photoshop 26's Camera Raw Filter saves one (the
     /// field set and order follow Camera Raw 18; the values are synthetic), plus element-form

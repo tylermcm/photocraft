@@ -40,6 +40,8 @@ pub(crate) mod host_job;
 mod preview_worker;
 #[path = "camera_raw_info_ui.rs"]
 mod info;
+#[path = "camera_raw_mask_edit_ui.rs"]
+pub(crate) mod mask_edit;
 #[path = "camera_raw_masking_ui.rs"]
 pub(crate) mod masking;
 #[path = "camera_raw_mixer_ui.rs"]
@@ -2070,7 +2072,9 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
         if workspace.mixer_tools.picker {
             d.show_before = false;
         }
-        let mut preview_sampling = scope.sampler_tool || workspace.white_balance_tool || workspace.mixer_tools.picker;
+        let masking_tab = workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Masking;
+        let mut preview_sampling =
+            scope.sampler_tool || workspace.white_balance_tool || workspace.mixer_tools.picker || workspace.mask_ui.takes_drags(masking_tab);
         let (r, response, panning, zoom_box) = super::camera_raw_preview_ui::interact(&mut preview, navigation, view, size, &mut preview_sampling);
         if !preview_sampling {
             scope.sampler_tool = false;
@@ -2106,6 +2110,9 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
             d.scope.preview_rect = Some(r);
             super::camera_raw_scope_ui::preview(&mut preview, d, scope, r, &response, panning);
             bars::pick_white_balance(&preview, d, r, &response, &mut workspace.white_balance_tool, panning);
+            if masking_tab {
+                mask_edit::canvas(&preview, d, r, &response, &mut workspace.mask_ui, panning);
+            }
             if mixer_active {
                 finishing::preview(&preview, d, r, &response, &mut workspace.mixer_tools, panning);
             }
@@ -2186,7 +2193,12 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
                 }
                 if workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Masking {
                     ui.set_width(right.width());
-                    masking::show(ui, &mut workspace.masking_people, &mut workspace.masking_help);
+                    // The creation panel until there is a mask (or Create New Mask is pressed), then the list and its settings.
+                    if d.params.masks.is_empty() || workspace.mask_ui.creating {
+                        masking::show(ui, &mut workspace.masking_people, &mut workspace.masking_help, &mut workspace.mask_ui.tool);
+                    } else {
+                        dirty |= mask_edit::panel(ui, &mut d.params, &mut workspace.mask_ui);
+                    }
                     return;
                 }
                 if workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Crop {
@@ -2363,6 +2375,10 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
             ctx.request_repaint();
         }
         super::camera_raw_scope_ui::floating(ctx, d, scope, right);
+        if !menu_was_open && workspace.tab == super::camera_raw_workspace_ui::WorkspaceTab::Masking {
+            // Before the scope's own keys: with a mask selected O is the overlay.
+            mask_edit::keys(ctx, &mut workspace.mask_ui, &mut d.params, &mut d.dirty);
+        }
         if !menu_was_open {
             super::camera_raw_scope_ui::shortcuts(ctx, scope);
         }

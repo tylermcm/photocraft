@@ -71,6 +71,8 @@ pub struct WorkspaceState {
     pub curve_channel: CurveChannel,
     /// Curve > right-click > Show All Curves: every channel's curve is drawn on the graph, the active one on top.
     pub curve_show_all: bool,
+    /// Masking tab: the selected mask, the armed tool and the overlay (view state only).
+    pub mask_ui: crate::camera_raw_ui::mask_edit::MaskUiState,
     pub mixer: MixerMode,
     pub band: usize,
     pub hsl_channel: usize,
@@ -105,6 +107,7 @@ impl Default for WorkspaceState {
             grading: GradingView::default(),
             curve_channel: CurveChannel::default(),
             curve_show_all: false,
+            mask_ui: Default::default(),
             mixer: MixerMode::Color,
             band: 0,
             hsl_channel: 1,

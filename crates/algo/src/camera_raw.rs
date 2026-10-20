@@ -107,7 +107,9 @@ impl Wheel {
 
 mod calibration;
 mod finishing;
+mod masks;
 pub use finishing::{Glow, GlowStyle, PointColor};
+pub use masks::{LocalAdjust, LocalMask, MaskShape, MAX_MASKS};
 
 /// Camera Raw settings in Adobe Camera Raw's slider units.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -165,6 +167,8 @@ pub struct CameraRaw {
     pub calib_shadow_tint: f32,
     pub calib_hue: [f32; 3],
     pub calib_sat: [f32; 3],
+    /// Local masks, each with its own adjustments (Masking).
+    pub masks: Vec<LocalMask>,
     /// Detail > Super Resolution. Not a pixel operation of `develop`: the host upsizes the finished render.
     pub super_resolution: bool,
     // Effects
@@ -233,6 +237,7 @@ impl Default for CameraRaw {
             calib_shadow_tint: 0.0,
             calib_hue: [0.0; 3],
             calib_sat: [0.0; 3],
+            masks: Vec::new(),
             super_resolution: false,
             grain_amount: 0.0,
             grain_size: 25.0,
@@ -518,13 +523,15 @@ impl CameraRaw {
     /// Validate native finishing controls independently of legacy stored point curves.
     pub fn validate_finishing(&self) -> Result<(), String> {
         finishing::validate(self)?;
-        calibration::validate(self)
+        calibration::validate(self)?;
+        masks::validate(self)
     }
 
     /// Rejects malformed point curves in new settings (see [`validate_curve`]).
     pub fn validate(&self) -> Result<(), String> {
         finishing::validate(self)?;
         calibration::validate(self)?;
+        masks::validate(self)?;
         for (name, curve) in [
             ("pointCurve", &self.point_curve),
             ("pointCurveRed", &self.point_curve_red),
@@ -540,6 +547,7 @@ impl CameraRaw {
     pub fn validate_changes(&self, stored: &CameraRaw) -> Result<(), String> {
         finishing::validate(self)?;
         calibration::validate(self)?;
+        masks::validate(self)?;
         for (name, curve, kept) in [
             ("pointCurve", &self.point_curve, &stored.point_curve),
             ("pointCurveRed", &self.point_curve_red, &stored.point_curve_red),
@@ -588,6 +596,7 @@ impl CameraRaw {
             && self.glow.amount == 0.0
             && self.point_colors.iter().all(PointColor::neutral)
             && self.calibration_neutral()
+            && !self.masks.iter().any(LocalMask::active)
             && !self.super_resolution
             && self.grain_amount == 0.0
             && self.vignette_amount == 0.0
@@ -797,6 +806,10 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bo
     }
     if finishing::validate(p).is_ok() {
         finishing::points(px, &p.point_colors, float);
+    }
+    // Local masks come last: they adjust the finished global result.
+    if !p.masks.is_empty() && masks::validate(p).is_ok() {
+        masks::apply(px, w, h, p, float);
     }
     if !float {
         for q in px.iter_mut() {
