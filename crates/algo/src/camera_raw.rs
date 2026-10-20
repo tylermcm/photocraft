@@ -109,7 +109,7 @@ mod calibration;
 mod finishing;
 mod masks;
 pub use finishing::{Glow, GlowStyle, PointColor};
-pub use masks::{LocalAdjust, LocalMask, MaskShape, MAX_MASKS, MAX_RASTER_SIDE};
+pub use masks::{LocalAdjust, LocalMask, MaskOp, MaskPart, MaskShape, MAX_MASKS, MAX_PARTS, MAX_RASTER_SIDE};
 
 /// Camera Raw settings in Adobe Camera Raw's slider units.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

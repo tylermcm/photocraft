@@ -196,12 +196,26 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
         if !*people && e.id.starts_with("people-warning-") {
             continue;
         }
+        if e.id == "people-warning-icon" && host_ready {
+            continue;
+        }
         let shift = if !*people && e.id.starts_with("help-") { -d.people_body_height } else { 0.0 };
         let r = Rect::from_min_max(panel.min + vec2(e.rect[0], e.rect[1] + shift), panel.min + vec2(e.rect[2], e.rect[3] + shift));
         let font = FontId::proportional(if e.id == "heading" || e.id == "people-label" { d.heading_size } else { d.font_size });
         match e.kind {
             Kind::Text => {
                 let color = if e.id == "help-text" { t.text_faint } else { t.text };
+                if e.id == "people-warning-text" && host_ready {
+                    // People are found by Image Triage (OneFormer, SAM and BiRefNet): offer to look instead of saying it cannot.
+                    let galley = ui.painter().layout_job(egui::text::LayoutJob::simple(tr("Find the people in this photo").into(), font, t.accent, r.width()));
+                    let response = ui.interact(r, ui.id().with("people-find"), Sense::click());
+                    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, tr("Find the people in this photo")));
+                    ui.painter().galley(r.left_top(), galley, t.accent);
+                    if response.clicked() {
+                        *request = Some(AutoMask::People);
+                    }
+                    continue;
+                }
                 if matches!(e.id.as_str(), "people-warning-text" | "help-text") {
                     let galley = ui.painter().layout_job(egui::text::LayoutJob::simple(tr(&e.label).into(), font, color, r.width()));
                     ui.painter().galley(r.left_top(), galley, color);
@@ -226,7 +240,23 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
                     }
                 }
                 if e.id.ends_with("-label") && !matches!(e.id.as_str(), "subject-label" | "sky-label" | "background-label" | "people-label") {
-                    // The gradients work: a click arms the tool and the next drag on the photo makes the mask. The rest are not built yet.
+                    // The gradients work: a click arms the tool and the next drag on the photo makes the mask. Landscape is found by
+                    // Image Triage (OneFormer) and offered as a list of what is in the picture.
+                    if e.id == "landscape-label" {
+                        let glyph = d.elements.iter().find(|v| v.id == "landscape-glyph");
+                        let hit = glyph.map_or(r, |v| r.union(Rect::from_min_max(panel.min + vec2(v.rect[0], v.rect[1]), panel.min + vec2(v.rect[2], v.rect[3]))));
+                        let response = ui.interact(hit.expand2(vec2(4.0, 2.0)), ui.id().with(&e.id), if host_ready { Sense::click() } else { Sense::hover() });
+                        response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, host_ready, tr(&e.label)));
+                        if host_ready {
+                            if response.clicked() {
+                                *request = Some(AutoMask::Landscape);
+                            }
+                            response.on_hover_text(tr("Find sky, water, mountains, vegetation and buildings."));
+                        } else {
+                            response.on_hover_text(tr("Needs Image Triage. Open Camera Raw from Image Triage to use it."));
+                        }
+                        continue;
+                    }
                     let tool = match e.id.as_str() {
                         "linear-gradient-label" => Some(MaskTool::Linear),
                         "radial-gradient-label" => Some(MaskTool::Radial),

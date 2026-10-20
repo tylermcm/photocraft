@@ -12,6 +12,15 @@ use crate::theme::Tokens;
 pub const SUPER_RESOLUTION: &str = "superResolution";
 /// BiRefNet in Image Triage finds the subject in a picture the editor wrote (`input`) and writes its coverage map (`output`).
 pub const SUBJECT_MASK: &str = "subjectMask";
+/// OneFormer labels the picture (sky, water, mountains, vegetation, buildings...); each category comes back as a coverage map.
+pub const SCENE_MASKS: &str = "sceneMasks";
+/// OneFormer finds the people, SAM splits them into individuals and BiRefNet polishes each one's edge.
+pub const PEOPLE_MASKS: &str = "peopleMasks";
+
+/// Requests whose answer is one or more coverage maps for the Masking tab (the host writes them, the popup closes quietly).
+fn is_mask_kind(kind: &str) -> bool {
+    matches!(kind, SUBJECT_MASK | SCENE_MASKS | PEOPLE_MASKS)
+}
 /// A request the host never picks up (not running, or an older build) is given up on after this long.
 const CLAIM_TIMEOUT_S: f64 = 20.0;
 /// The host polls on its autosave tick (about every 1.5 s): one that has not asked for this long is not connected.
@@ -135,7 +144,7 @@ impl HostJob {
 
     /// Once, when the host has finished a mask request: its tag and the file the coverage map is in. The popup closes quietly.
     pub fn take_mask_ready(&mut self) -> Option<(String, String)> {
-        if self.phase == Phase::Finished && !self.then_done && self.kind == SUBJECT_MASK {
+        if self.phase == Phase::Finished && !self.then_done && is_mask_kind(self.kind) {
             let answer = (self.tag.clone(), self.extra.get("output").and_then(Value::as_str).unwrap_or("").to_string());
             self.reset();
             return Some(answer);
@@ -156,8 +165,8 @@ impl HostJob {
     pub fn tick(&mut self, now: f64) {
         if self.phase == Phase::Requested && now - self.requested_at > CLAIM_TIMEOUT_S {
             self.phase = Phase::Failed;
-            self.message = if self.kind == SUBJECT_MASK {
-                tr("Image Triage did not respond. Subject masks are made by Image Triage when Camera Raw is opened from it.").to_string()
+            self.message = if is_mask_kind(self.kind) {
+                tr("Image Triage did not respond. Masks that need AI are made by Image Triage when Camera Raw is opened from it.").to_string()
             } else {
                 tr("Image Triage did not respond. Super Resolution is applied by Image Triage when Camera Raw is opened from it.").to_string()
             };
@@ -252,6 +261,8 @@ impl HostJob {
         match self.kind {
             SUPER_RESOLUTION => tr("Applying Super Resolution…"),
             SUBJECT_MASK => tr("Finding the subject…"),
+            SCENE_MASKS => tr("Analyzing the photo…"),
+            PEOPLE_MASKS => tr("Finding people…"),
             _ => tr("Working…"),
         }
     }
@@ -319,6 +330,7 @@ impl HostJob {
                         let (heading, colour) = match (self.phase, self.kind) {
                             (Phase::Finished, _) => (tr("Super Resolution finished"), t.text),
                             (_, SUBJECT_MASK) => (tr("The subject could not be found"), t.danger),
+                            (_, SCENE_MASKS | PEOPLE_MASKS) => (tr("The photo could not be analyzed"), t.danger),
                             _ => (tr("Super Resolution could not finish"), t.danger),
                         };
                         ui.label(egui::RichText::new(heading).color(colour));

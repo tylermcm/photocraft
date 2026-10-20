@@ -2201,6 +2201,10 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
                         let mut asked = None;
                         let tool_before = workspace.mask_ui.tool;
                         let host_ready = d.host_job.host_present(now) && !d.host_job.is_open();
+                        if workspace.mask_ui.combine.is_some() {
+                            ui.label(egui::RichText::new(crate::i18n::tr_ctx(crate::i18n::current(), "cameraRaw", "The next shape you make is combined into the selected mask.")).color(Tokens::get(ui.ctx()).text_dim));
+                            ui.add_space(4.0);
+                        }
                         masking::show(ui, &mut workspace.masking_people, &mut workspace.masking_help, &mut workspace.mask_ui.tool, &mut asked, host_ready);
                         if let Some(kind) = asked {
                             workspace.mask_ui.notice = match kind {
@@ -2209,7 +2213,7 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
                                     mask_edit::add_luminance_range(d, &mut workspace.mask_ui);
                                     Ok(())
                                 }
-                                _ => mask_edit::request_auto(d, kind, now),
+                                _ => mask_edit::request_auto(d, &workspace.mask_ui, kind, now),
                             }
                             .err();
                         }
@@ -2217,6 +2221,7 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
                         if workspace.mask_ui.tool != tool_before && workspace.mask_ui.tool.is_some() {
                             workspace.mask_ui.selected = None;
                         }
+                        dirty |= mask_edit::candidates_panel(ui, d, &mut workspace.mask_ui);
                         if let Some(notice) = &workspace.mask_ui.notice {
                             ui.add_space(6.0);
                             ui.label(egui::RichText::new(notice).color(Tokens::get(ui.ctx()).danger));

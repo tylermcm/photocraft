@@ -250,3 +250,87 @@ fn a_raster_mask_can_be_read_back_and_rewritten() {
     assert_eq!(shape.raster_bytes(), Some((4, 2, vec![0, 255, 0, 255, 10, 20, 30, 40])));
     assert_eq!(MaskShape::default().raster_bytes(), None);
 }
+
+// --- combining shapes -------------------------------------------------------------------------------------------------------------
+
+use photocraft_algo::camera_raw::{MaskOp, MaskPart};
+
+fn top_half() -> MaskShape {
+    MaskShape::Linear { x0: 0.5, y0: 0.5, x1: 0.5, y1: 0.5001 } // full above the middle, none below
+}
+
+fn left_half_map() -> MaskShape {
+    let bytes: Vec<u8> = (0..W * H).map(|i| if i % W < W / 2 { 255 } else { 0 }).collect();
+    MaskShape::raster_from_bytes(W as u32, H as u32, &bytes)
+}
+
+fn with_part(base: MaskShape, op: MaskOp, part: MaskShape) -> CameraRaw {
+    let mut p = brighten(base);
+    p.masks[0].parts.push(MaskPart { op, shape: part, invert: false });
+    p
+}
+
+#[test]
+fn add_subtract_and_intersect_join_shapes_the_way_the_old_masks_did() {
+    let lift = lifted(0.3) - 0.3;
+    let value = |p: &CameraRaw, x: usize, y: usize| at(&run(p, 0.3), x, y) - 0.3;
+    // Add: covered where either covers.
+    let add = with_part(top_half(), MaskOp::Add, left_half_map());
+    assert!(value(&add, 10, 40) > lift * 0.9, "bottom-left: only the map covers it");
+    assert!(value(&add, 50, 10) > lift * 0.9, "top-right: only the gradient covers it");
+    assert!(value(&add, 50, 40) < lift * 0.05, "bottom-right: neither");
+    // Intersect: covered only where both do.
+    let both = with_part(top_half(), MaskOp::Intersect, left_half_map());
+    assert!(value(&both, 10, 10) > lift * 0.9);
+    assert!(value(&both, 10, 40) < lift * 0.05 && value(&both, 50, 10) < lift * 0.05);
+    // Subtract: the gradient with the left half taken out.
+    let minus = with_part(top_half(), MaskOp::Subtract, left_half_map());
+    assert!(value(&minus, 50, 10) > lift * 0.9, "top-right stays");
+    assert!(value(&minus, 10, 10) < lift * 0.05, "top-left is carved out");
+}
+
+#[test]
+fn a_part_can_be_inverted_and_parts_apply_in_order() {
+    let lift = lifted(0.3) - 0.3;
+    let value = |p: &CameraRaw, x: usize, y: usize| at(&run(p, 0.3), x, y) - 0.3;
+    let mut p = with_part(MaskShape::Linear { x0: 0.5, y0: 2.5, x1: 0.5, y1: 3.0 }, MaskOp::Subtract, left_half_map());
+    p.masks[0].parts[0].invert = true; // take out everything that is NOT the left half = keep only the left half
+    assert!(value(&p, 10, 20) > lift * 0.9 && value(&p, 50, 20) < lift * 0.05);
+    // Order matters: subtract the left half, then add it back.
+    let mut q = with_part(MaskShape::Linear { x0: 0.5, y0: 2.5, x1: 0.5, y1: 3.0 }, MaskOp::Subtract, left_half_map());
+    q.masks[0].parts.push(MaskPart { op: MaskOp::Add, shape: left_half_map(), invert: false });
+    assert!(value(&q, 10, 20) > lift * 0.9, "added back");
+}
+
+#[test]
+fn a_range_part_looks_at_the_picture() {
+    // The whole picture, intersected with "bright pixels": only the bright half is lifted.
+    let mut p = with_part(MaskShape::Linear { x0: 0.5, y0: 2.5, x1: 0.5, y1: 3.0 }, MaskOp::Intersect, MaskShape::LuminanceRange { low: 0.5, high: 1.0, smooth: 0.0 });
+    let mut px = two_tone();
+    let before = px.clone();
+    develop(&mut px, W, H, &p, false);
+    assert!(px[20 * W + 50][0] > before[20 * W + 50][0] + 0.02 && (px[20 * W + 20][0] - before[20 * W + 20][0]).abs() < 1e-6);
+    p.masks[0].parts[0].invert = true;
+    let mut px = two_tone();
+    develop(&mut px, W, H, &p, false);
+    assert!(px[20 * W + 20][0] > before[20 * W + 20][0] + 0.05, "inverted: the dark half instead");
+}
+
+#[test]
+fn parts_are_validated_saved_and_cost_nothing_when_absent() {
+    let mut p = with_part(top_half(), MaskOp::Add, left_half_map());
+    assert!(p.validate().is_ok());
+    let back: CameraRaw = serde_json::from_value(serde_json::to_value(&p).unwrap()).unwrap();
+    assert_eq!(back.masks, p.masks);
+    // A mask without parts writes no `parts` key, so older files and settings are unchanged.
+    let plain = serde_json::to_value(&brighten(top_half())).unwrap();
+    assert!(plain["masks"][0].get("parts").is_none());
+    // A damaged part is refused, and so is a mask with too many.
+    p.masks[0].parts[0].shape = MaskShape::Raster { w: 2, h: 2, data: "AAAA".into() };
+    assert!(p.validate().is_err());
+    let mut many = brighten(top_half());
+    for _ in 0..=photocraft_algo::camera_raw::MAX_PARTS {
+        many.masks[0].parts.push(MaskPart::default());
+    }
+    assert!(many.validate().is_err());
+}

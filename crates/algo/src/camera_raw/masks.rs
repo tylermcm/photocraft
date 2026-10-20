@@ -14,6 +14,8 @@ use super::CameraRaw;
 pub const MAX_MASKS: usize = 16;
 /// Longest side (pixels) of a raster mask's coverage map.
 pub const MAX_RASTER_SIDE: u32 = 1536;
+/// Most shapes added to (or taken from) one mask.
+pub const MAX_PARTS: usize = 8;
 /// Longest encoded raster mask (characters): a worst case, noisy 1536 x 1024 map still has to fit.
 const MAX_RASTER_TEXT: usize = 6 * 1024 * 1024;
 
@@ -143,6 +145,35 @@ impl MaskShape {
     }
 }
 
+/// How a part joins what the mask covers so far.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MaskOp {
+    /// Cover this too (the larger of the two at each pixel).
+    #[default]
+    Add,
+    /// Take this out of what is covered.
+    Subtract,
+    /// Cover only where both do.
+    Intersect,
+}
+
+/// A shape combined into a mask after its first one: Add, Subtract or Intersect.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default, deny_unknown_fields)]
+pub struct MaskPart {
+    pub op: MaskOp,
+    pub shape: MaskShape,
+    /// Use what the shape does not cover.
+    pub invert: bool,
+}
+
+impl Default for MaskPart {
+    fn default() -> Self {
+        Self { op: MaskOp::Add, shape: MaskShape::default(), invert: false }
+    }
+}
+
 /// One local mask and what it does.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default, deny_unknown_fields)]
@@ -153,6 +184,9 @@ pub struct LocalMask {
     pub shape: MaskShape,
     /// Cover everything the shape does not.
     pub invert: bool,
+    /// Shapes combined with `shape`, in order (Add, Subtract, Intersect).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub parts: Vec<MaskPart>,
     /// How much of the adjustments show, 0 … 100.
     pub amount: f32,
     pub adjust: LocalAdjust,
@@ -160,7 +194,7 @@ pub struct LocalMask {
 
 impl Default for LocalMask {
     fn default() -> Self {
-        Self { name: String::new(), enabled: true, shape: MaskShape::default(), invert: false, amount: 100.0, adjust: LocalAdjust::default() }
+        Self { name: String::new(), enabled: true, shape: MaskShape::default(), invert: false, parts: Vec::new(), amount: 100.0, adjust: LocalAdjust::default() }
     }
 }
 
@@ -176,8 +210,44 @@ impl LocalMask {
     }
 }
 
-/// A mask prepared to be asked about pixels of one picture size.
+/// A mask prepared to be asked about pixels of one picture size: its first shape, then each part combined in.
 pub struct Coverage {
+    base: Layer,
+    parts: Vec<(MaskOp, Layer)>,
+}
+
+impl Coverage {
+    fn new(mask: &LocalMask, w: usize, h: usize) -> Self {
+        Coverage { base: Layer::new(&mask.shape, mask.invert, w, h), parts: mask.parts.iter().map(|p| (p.op, Layer::new(&p.shape, p.invert, w, h))).collect() }
+    }
+
+    /// Whether coverage depends on the picture's pixels (a Range shape somewhere), so that [`Coverage::at_px`] must be used.
+    pub fn needs_pixels(&self) -> bool {
+        self.base.needs_pixels() || self.parts.iter().any(|(_, l)| l.needs_pixels())
+    }
+
+    /// Coverage (0 … 1) at pixel `(x, y)` whose colour is `rgb`.
+    pub fn at_px(&self, x: usize, y: usize, rgb: [f32; 3]) -> f32 {
+        self.parts.iter().fold(self.base.at_px(x, y, rgb), |v, (op, layer)| combine(v, layer.at_px(x, y, rgb), *op))
+    }
+
+    /// Coverage (0 … 1) at pixel `(x, y)`. A Range shape has no answer without the picture: use [`Coverage::at_px`].
+    pub fn at(&self, x: usize, y: usize) -> f32 {
+        self.parts.iter().fold(self.base.at(x, y), |v, (op, layer)| combine(v, layer.at(x, y), *op))
+    }
+}
+
+/// The three ways of joining a shape in (the same rules Image Triage's masks used: add is the larger, subtract is multiplicative so a
+/// soft edge stays soft, intersect multiplies).
+fn combine(so_far: f32, part: f32, op: MaskOp) -> f32 {
+    match op {
+        MaskOp::Add => so_far.max(part),
+        MaskOp::Subtract => so_far * (1.0 - part),
+        MaskOp::Intersect => so_far * part,
+    }
+}
+
+struct Layer {
     kind: Kind,
     invert: bool,
 }
@@ -193,10 +263,10 @@ enum Kind {
     Nothing,
 }
 
-impl Coverage {
-    fn new(mask: &LocalMask, w: usize, h: usize) -> Self {
+impl Layer {
+    fn new(shape: &MaskShape, invert: bool, w: usize, h: usize) -> Self {
         let (fw, fh) = (w as f32, h as f32);
-        let kind = match &mask.shape {
+        let kind = match shape {
             MaskShape::Linear { x0, y0, x1, y1 } => {
                 let p0 = [x0 * fw, y0 * fh];
                 let v = [x1 * fw - p0[0], y1 * fh - p0[1]];
@@ -219,16 +289,15 @@ impl Coverage {
             MaskShape::ColorRange { color, range, smooth } => Kind::Colour { color: *color, tolerance: (range / 100.0).clamp(0.0, 1.0) * 0.5 + 1e-3, soft: (smooth / 100.0).clamp(0.0, 1.0) },
             MaskShape::LuminanceRange { low, high, smooth } => Kind::Luma { low: *low, high: *high, soft: (smooth / 100.0).clamp(0.0, 1.0) * 0.25 },
         };
-        Coverage { kind, invert: mask.invert }
+        Layer { kind, invert }
     }
 
-    /// Whether coverage depends on the picture's pixels (a Range mask), so that [`Coverage::at_px`] must be used.
-    pub fn needs_pixels(&self) -> bool {
+    fn needs_pixels(&self) -> bool {
         matches!(self.kind, Kind::Colour { .. } | Kind::Luma { .. })
     }
 
     /// Coverage (0 … 1) at pixel `(x, y)` whose colour is `rgb`. Shapes that do not look at colour ignore it.
-    pub fn at_px(&self, x: usize, y: usize, rgb: [f32; 3]) -> f32 {
+    fn at_px(&self, x: usize, y: usize, rgb: [f32; 3]) -> f32 {
         let c = match &self.kind {
             Kind::Colour { color, tolerance, soft } => {
                 let d = (0..3).map(|i| (rgb[i] - color[i]).abs()).fold(0.0f32, f32::max);
@@ -247,8 +316,7 @@ impl Coverage {
         if self.invert { 1.0 - c } else { c }
     }
 
-    /// Coverage (0 … 1) at pixel `(x, y)`. A Range mask has no answer without the picture: use [`Coverage::at_px`].
-    pub fn at(&self, x: usize, y: usize) -> f32 {
+    fn at(&self, x: usize, y: usize) -> f32 {
         let (px, py) = (x as f32 + 0.5, y as f32 + 0.5);
         let c = match &self.kind {
             Kind::Linear { p0, v, len2 } => {
@@ -390,7 +458,19 @@ pub fn validate(p: &CameraRaw) -> Result<(), String> {
                 return Err(format!("{name}: {field} must be finite and within -{limit}..{limit}"));
             }
         }
-        match &mask.shape {
+        if mask.parts.len() > MAX_PARTS {
+            return Err(format!("{name}: at most {MAX_PARTS} combined shapes"));
+        }
+        for part in &mask.parts {
+            validate_shape(&part.shape, &name)?;
+        }
+        validate_shape(&mask.shape, &name)?;
+    }
+    Ok(())
+}
+
+fn validate_shape(shape: &MaskShape, name: &str) -> Result<(), String> {
+        match shape {
             MaskShape::Linear { x0, y0, x1, y1 } => {
                 if [x0, y0, x1, y1].iter().any(|v| !v.is_finite() || !(-2.0..=3.0).contains(*v)) {
                     return Err(format!("{name}: gradient points must be finite and near the picture"));
@@ -426,7 +506,6 @@ pub fn validate(p: &CameraRaw) -> Result<(), String> {
                 }
             }
         }
-    }
     Ok(())
 }
 
