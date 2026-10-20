@@ -10,6 +10,8 @@ use serde_json::{Value, json};
 use crate::theme::Tokens;
 
 pub const SUPER_RESOLUTION: &str = "superResolution";
+/// BiRefNet in Image Triage finds the subject in a picture the editor wrote (`input`) and writes its coverage map (`output`).
+pub const SUBJECT_MASK: &str = "subjectMask";
 /// A request the host never picks up (not running, or an older build) is given up on after this long.
 const CLAIM_TIMEOUT_S: f64 = 20.0;
 /// The host polls on its autosave tick (about every 1.5 s): one that has not asked for this long is not connected.
@@ -56,6 +58,9 @@ pub struct HostJob {
     last_poll: Option<f64>,
     /// The request was made by Done: when it succeeds the dialog completes that Done.
     then_done: bool,
+    /// What the host is told besides the kind (file paths for a mask), and what the dialog wants done with the answer.
+    extra: Value,
+    tag: String,
 }
 
 impl Default for HostJob {
@@ -72,6 +77,8 @@ impl Default for HostJob {
             requested_at: 0.0,
             last_poll: None,
             then_done: false,
+            extra: Value::Null,
+            tag: String::new(),
         }
     }
 }
@@ -113,6 +120,29 @@ impl HostJob {
         true
     }
 
+    /// A request that is not part of Done (an automatic mask): `extra` goes to the host with the kind, `tag` comes back with the
+    /// answer (`take_mask_ready`). Returns whether it was made; `false` means no host is polling or one request is already in flight.
+    pub fn request_mask(&mut self, kind: &'static str, extra: Value, tag: &str, now: f64) -> bool {
+        if self.busy() || !self.host_present(now) {
+            return false;
+        }
+        self.last_id += 1;
+        let (last_id, last_poll) = (self.last_id, self.last_poll);
+        *self = HostJob { last_id, id: last_id, kind, phase: Phase::Requested, requested_at: now, last_poll, extra, tag: tag.to_string(), ..Default::default() };
+        self.message = tr("Waiting for Image Triage…").to_string();
+        true
+    }
+
+    /// Once, when the host has finished a mask request: its tag and the file the coverage map is in. The popup closes quietly.
+    pub fn take_mask_ready(&mut self) -> Option<(String, String)> {
+        if self.phase == Phase::Finished && !self.then_done && self.kind == SUBJECT_MASK {
+            let answer = (self.tag.clone(), self.extra.get("output").and_then(Value::as_str).unwrap_or("").to_string());
+            self.reset();
+            return Some(answer);
+        }
+        None
+    }
+
     /// True once, when the host has applied what Done asked for: the dialog completes the Done now.
     pub fn take_done_ready(&mut self) -> bool {
         if self.phase == Phase::Finished && self.then_done {
@@ -126,14 +156,24 @@ impl HostJob {
     pub fn tick(&mut self, now: f64) {
         if self.phase == Phase::Requested && now - self.requested_at > CLAIM_TIMEOUT_S {
             self.phase = Phase::Failed;
-            self.message = tr("Image Triage did not respond. Super Resolution is applied by Image Triage when Camera Raw is opened from it.").to_string();
+            self.message = if self.kind == SUBJECT_MASK {
+                tr("Image Triage did not respond. Subject masks are made by Image Triage when Camera Raw is opened from it.").to_string()
+            } else {
+                tr("Image Triage did not respond. Super Resolution is applied by Image Triage when Camera Raw is opened from it.").to_string()
+            };
         }
     }
 
     fn state(&self) -> Value {
         let mut state = json!({"id": self.id, "phase": self.phase.name(), "cancel": self.cancel, "pending": null});
         if self.phase == Phase::Requested {
-            state["pending"] = json!({"id": self.id, "kind": self.kind});
+            let mut pending = json!({"id": self.id, "kind": self.kind});
+            if let (Some(into), Some(extra)) = (pending.as_object_mut(), self.extra.as_object()) {
+                for (key, value) in extra {
+                    into.entry(key.clone()).or_insert_with(|| value.clone());
+                }
+            }
+            state["pending"] = pending;
         }
         state
     }
@@ -211,6 +251,7 @@ impl HostJob {
     fn title(&self) -> &str {
         match self.kind {
             SUPER_RESOLUTION => tr("Applying Super Resolution…"),
+            SUBJECT_MASK => tr("Finding the subject…"),
             _ => tr("Working…"),
         }
     }
@@ -275,10 +316,10 @@ impl HostJob {
                         });
                     }
                     Phase::Finished | Phase::Failed => {
-                        let (heading, colour) = if self.phase == Phase::Finished {
-                            (tr("Super Resolution finished"), t.text)
-                        } else {
-                            (tr("Super Resolution could not finish"), t.danger)
+                        let (heading, colour) = match (self.phase, self.kind) {
+                            (Phase::Finished, _) => (tr("Super Resolution finished"), t.text),
+                            (_, SUBJECT_MASK) => (tr("The subject could not be found"), t.danger),
+                            _ => (tr("Super Resolution could not finish"), t.danger),
                         };
                         ui.label(egui::RichText::new(heading).color(colour));
                         ui.add_space(6.0);
@@ -444,6 +485,35 @@ mod tests {
         job.tick(100.0 + CLAIM_TIMEOUT_S + 1.0);
         assert_eq!(job.phase(), Phase::Failed);
         assert!(!job.take_done_ready());
+    }
+
+    #[test]
+    fn a_mask_request_carries_its_files_and_comes_back_with_its_tag() {
+        let mut job = HostJob::default();
+        job.control(&json!({}), 0.0).unwrap();
+        assert!(job.request_mask(SUBJECT_MASK, json!({"input": "a.png", "output": "b.png"}), "background", 1.0));
+        let state = job.control(&json!({}), 1.0).unwrap();
+        assert_eq!((state["pending"]["kind"].as_str(), state["pending"]["input"].as_str(), state["pending"]["output"].as_str()), (Some(SUBJECT_MASK), Some("a.png"), Some("b.png")));
+        let id = job.id;
+        job.control(&json!({"claim": id}), 1.0).unwrap();
+        assert_eq!(job.take_mask_ready(), None, "not finished");
+        job.control(&json!({"finish": {"id": id, "ok": true, "message": "Subject found."}}), 2.0).unwrap();
+        assert!(!job.take_done_ready(), "a mask is not a Done");
+        assert_eq!(job.take_mask_ready(), Some(("background".to_string(), "b.png".to_string())));
+        assert_eq!(job.take_mask_ready(), None, "once");
+        assert!(!job.is_open());
+    }
+
+    #[test]
+    fn a_failed_mask_stays_up_with_its_reason() {
+        let mut job = HostJob::default();
+        job.control(&json!({}), 0.0).unwrap();
+        assert!(job.request_mask(SUBJECT_MASK, json!({"output": "b.png"}), "subject", 1.0));
+        let id = job.id;
+        job.control(&json!({"claim": id}), 1.0).unwrap();
+        job.control(&json!({"finish": {"id": id, "ok": false, "message": "model missing"}}), 2.0).unwrap();
+        assert_eq!((job.phase(), job.take_mask_ready()), (Phase::Failed, None));
+        assert!(job.is_open());
     }
 
     #[test]

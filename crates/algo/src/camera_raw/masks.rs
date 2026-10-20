@@ -110,6 +110,10 @@ pub enum MaskShape {
     Radial { cx: f32, cy: f32, rx: f32, ry: f32, angle: f32, feather: f32 },
     /// A coverage map made by a selection tool, `w x h` bytes, run-length coded and written in base64 (see [`MaskShape::raster`]).
     Raster { w: u32, h: u32, data: String },
+    /// Pixels whose colour is near `color` (in the picture's own working values, 0 … 1 per channel). `range` 0 … 100 is how far a colour may be.
+    ColorRange { color: [f32; 3], range: f32, smooth: f32 },
+    /// Pixels whose brightness lies in `low` … `high` (0 … 1), softened over `smooth` percent of a quarter of the scale at each end.
+    LuminanceRange { low: f32, high: f32, smooth: f32 },
 }
 
 impl Default for MaskShape {
@@ -119,6 +123,19 @@ impl Default for MaskShape {
 }
 
 impl MaskShape {
+    /// The coverage map of a raster mask, `(w, h, bytes)`; `None` for other shapes or a damaged map.
+    pub fn raster_bytes(&self) -> Option<(u32, u32, Vec<u8>)> {
+        match self {
+            MaskShape::Raster { w, h, data } if *w > 0 && *h > 0 && *w <= MAX_RASTER_SIDE && *h <= MAX_RASTER_SIDE => decode_runs(data, *w as usize * *h as usize).map(|bytes| (*w, *h, bytes)),
+            _ => None,
+        }
+    }
+
+    /// A raster mask from 8-bit coverage (`w x h`, row-major).
+    pub fn raster_from_bytes(w: u32, h: u32, bytes: &[u8]) -> Self {
+        MaskShape::Raster { w, h, data: encode_runs(bytes) }
+    }
+
     /// A raster mask from coverage values in 0 … 1 (`w x h`, row-major).
     pub fn raster(w: u32, h: u32, coverage: &[f32]) -> Self {
         let bytes: Vec<u8> = coverage.iter().map(|v| (v.clamp(0.0, 1.0) * 255.0).round() as u8).collect();
@@ -169,6 +186,9 @@ enum Kind {
     Linear { p0: [f32; 2], v: [f32; 2], len2: f32 },
     Radial { c: [f32; 2], r: [f32; 2], cos: f32, sin: f32, inner: f32 },
     Raster { w: usize, h: usize, bytes: Vec<u8>, size: [f32; 2] },
+    /// Decided per pixel from the picture itself (see [`Coverage::at_px`]).
+    Colour { color: [f32; 3], tolerance: f32, soft: f32 },
+    Luma { low: f32, high: f32, soft: f32 },
     /// A raster that could not be read: covers nothing.
     Nothing,
 }
@@ -196,11 +216,38 @@ impl Coverage {
                 Some(bytes) if *mw > 0 && *mh > 0 => Kind::Raster { w: *mw as usize, h: *mh as usize, bytes, size: [fw, fh] },
                 _ => Kind::Nothing,
             },
+            MaskShape::ColorRange { color, range, smooth } => Kind::Colour { color: *color, tolerance: (range / 100.0).clamp(0.0, 1.0) * 0.5 + 1e-3, soft: (smooth / 100.0).clamp(0.0, 1.0) },
+            MaskShape::LuminanceRange { low, high, smooth } => Kind::Luma { low: *low, high: *high, soft: (smooth / 100.0).clamp(0.0, 1.0) * 0.25 },
         };
         Coverage { kind, invert: mask.invert }
     }
 
-    /// Coverage (0 … 1) at pixel `(x, y)`.
+    /// Whether coverage depends on the picture's pixels (a Range mask), so that [`Coverage::at_px`] must be used.
+    pub fn needs_pixels(&self) -> bool {
+        matches!(self.kind, Kind::Colour { .. } | Kind::Luma { .. })
+    }
+
+    /// Coverage (0 … 1) at pixel `(x, y)` whose colour is `rgb`. Shapes that do not look at colour ignore it.
+    pub fn at_px(&self, x: usize, y: usize, rgb: [f32; 3]) -> f32 {
+        let c = match &self.kind {
+            Kind::Colour { color, tolerance, soft } => {
+                let d = (0..3).map(|i| (rgb[i] - color[i]).abs()).fold(0.0f32, f32::max);
+                // Full coverage inside the inner part of the tolerance, falling off to none at its edge.
+                let inner = tolerance * (1.0 - soft);
+                if d <= inner { 1.0 } else if d >= *tolerance { 0.0 } else { 1.0 - smooth_step((d - inner) / (tolerance - inner).max(1e-6)) }
+            }
+            Kind::Luma { low, high, soft } => {
+                let y = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+                let rise = if *soft <= 0.0 { f32::from(y >= *low) } else { smooth_step((y - (low - soft)) / soft.max(1e-6)) };
+                let fall = if *soft <= 0.0 { f32::from(y <= *high) } else { 1.0 - smooth_step((y - high) / soft.max(1e-6)) };
+                rise * fall
+            }
+            _ => return self.at(x, y),
+        };
+        if self.invert { 1.0 - c } else { c }
+    }
+
+    /// Coverage (0 … 1) at pixel `(x, y)`. A Range mask has no answer without the picture: use [`Coverage::at_px`].
     pub fn at(&self, x: usize, y: usize) -> f32 {
         let (px, py) = (x as f32 + 0.5, y as f32 + 0.5);
         let c = match &self.kind {
@@ -222,10 +269,15 @@ impl Coverage {
                 }
             }
             Kind::Raster { w, h, bytes, size } => sample(bytes, *w, *h, px / size[0], py / size[1]),
-            Kind::Nothing => 0.0,
+            Kind::Nothing | Kind::Colour { .. } | Kind::Luma { .. } => 0.0,
         };
         if self.invert { 1.0 - c } else { c }
     }
+}
+
+fn smooth_step(t: f32) -> f32 {
+    let t = t.clamp(0.0, 1.0);
+    t * t * (3.0 - 2.0 * t)
 }
 
 /// Bilinear sample of a `w x h` byte map at normalized `(u, v)` (pixel centres).
@@ -363,6 +415,16 @@ pub fn validate(p: &CameraRaw) -> Result<(), String> {
                     return Err(format!("{name}: coverage map is damaged"));
                 }
             }
+            MaskShape::ColorRange { color, range, smooth } => {
+                if color.iter().any(|v| !v.is_finite() || !(-0.5..=2.0).contains(v)) || !range.is_finite() || !(0.0..=100.0).contains(range) || !smooth.is_finite() || !(0.0..=100.0).contains(smooth) {
+                    return Err(format!("{name}: colour range out of bounds"));
+                }
+            }
+            MaskShape::LuminanceRange { low, high, smooth } => {
+                if !low.is_finite() || !high.is_finite() || !smooth.is_finite() || !(0.0..=1.0).contains(low) || !(0.0..=1.0).contains(high) || low > high || !(0.0..=100.0).contains(smooth) {
+                    return Err(format!("{name}: luminance range out of bounds"));
+                }
+            }
         }
     }
     Ok(())
@@ -375,13 +437,14 @@ pub(super) fn apply(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, floa
     }
     for mask in p.masks.iter().filter(|m| m.active()) {
         let coverage = mask.coverage_fn(w, h);
+        let ranged = coverage.needs_pixels();
         let mut local = px.to_vec();
         super::develop(&mut local, w, h, &mask.adjust.on(p), float);
         let strength = mask.amount / 100.0;
         crate::photo_util::par_rows(px, w, 1, |y, row| {
             let source = &local[y * w..(y + 1) * w];
             for (x, (out, adjusted)) in row.iter_mut().zip(source).enumerate() {
-                let k = coverage.at(x, y) * strength;
+                let k = if ranged { coverage.at_px(x, y, [out[0], out[1], out[2]]) } else { coverage.at(x, y) } * strength;
                 if k > 0.0 {
                     for c in 0..3 {
                         out[c] += (adjusted[c] - out[c]) * k;

@@ -4146,3 +4146,8 @@ cameraRaw	Visualize Range	Aralığı Görselleştir
 	Decrease Brush Hardness	Fırça sertliğini azalt
 	Increase Brush Hardness	Fırça sertliğini artır
 cameraRaw	Click here, then drag on the photo.	Buraya tıklayın, ardından fotoğraf üzerinde sürükleyin.
+cameraRaw	Click here, then click a colour in the photo.	Buraya tıklayın, ardından fotoğraftaki bir renge tıklayın.
+cameraRaw	Click here, then paint on the photo.	Buraya tıklayın, ardından fotoğraf üzerinde boyayın.
+cameraRaw	Click here, then drag a box around an object.	Buraya tıklayın, ardından bir nesnenin etrafına kutu sürükleyin.
+cameraRaw	Luminance Range	Parlaklık Aralığı
+cameraRaw	Needs Image Triage. Open Camera Raw from Image Triage to use it.	Image Triage gerekir. Camera Raw'ı Image Triage'dan açın.

@@ -4335,3 +4335,8 @@ cameraRaw	Visualize Range	Tartomány megjelenítése
 	Decrease Brush Hardness	Ecsetkeménység csökkentése
 	Increase Brush Hardness	Ecsetkeménység növelése
 cameraRaw	Click here, then drag on the photo.	Kattintson ide, majd húzzon a fényképen.
+cameraRaw	Click here, then click a colour in the photo.	Kattintson ide, majd egy színre a fényképen.
+cameraRaw	Click here, then paint on the photo.	Kattintson ide, majd fessen a fényképen.
+cameraRaw	Click here, then drag a box around an object.	Kattintson ide, majd húzzon keretet egy objektum köré.
+cameraRaw	Luminance Range	Fénysűrűség-tartomány
+cameraRaw	Needs Image Triage. Open Camera Raw from Image Triage to use it.	Az Image Triage szükséges hozzá. Nyissa meg a Camera Rawt az Image Triage-ból.

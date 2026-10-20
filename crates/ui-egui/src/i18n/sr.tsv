@@ -4489,3 +4489,8 @@ cameraRaw	Visualize Range	Prikaži opseg
 	Decrease Brush Hardness	Smanji tvrdoću četkice
 	Increase Brush Hardness	Povećaj tvrdoću četkice
 cameraRaw	Click here, then drag on the photo.	Kliknite ovde, a zatim prevucite preko fotografije.
+cameraRaw	Click here, then click a colour in the photo.	Kliknite ovde, a zatim kliknite boju na fotografiji.
+cameraRaw	Click here, then paint on the photo.	Kliknite ovde, a zatim slikajte po fotografiji.
+cameraRaw	Click here, then drag a box around an object.	Kliknite ovde, a zatim prevucite okvir oko objekta.
+cameraRaw	Luminance Range	Opseg luminanse
+cameraRaw	Needs Image Triage. Open Camera Raw from Image Triage to use it.	Potreban je Image Triage. Otvorite Camera Raw iz Image Triage-a.

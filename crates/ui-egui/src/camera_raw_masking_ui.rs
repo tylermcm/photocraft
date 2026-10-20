@@ -181,8 +181,8 @@ fn icon(ui: &Ui, r: Rect, id: &str) {
         _ => {}
     }
 }
-pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut Option<super::mask_edit::MaskTool>) {
-    use super::mask_edit::MaskTool;
+pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut Option<super::mask_edit::MaskTool>, request: &mut Option<super::mask_edit::AutoMask>, host_ready: bool) {
+    use super::mask_edit::{AutoMask, MaskTool};
     let design = crate::camera_raw_design::get(ui.ctx());
     let d = &design.masking;
     let t = Tokens::get(ui.ctx());
@@ -230,6 +230,9 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
                     let tool = match e.id.as_str() {
                         "linear-gradient-label" => Some(MaskTool::Linear),
                         "radial-gradient-label" => Some(MaskTool::Radial),
+                        "objects-label" => Some(MaskTool::Objects),
+                        "brush-label" => Some(MaskTool::Brush),
+                        "range-label" => Some(MaskTool::Colour),
                         _ => None,
                     };
                     if let Some(tool) = tool {
@@ -243,7 +246,12 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
                         if response.clicked() {
                             *armed = Some(tool);
                         }
-                        response.on_hover_text(tr("Click here, then drag on the photo."));
+                        response.on_hover_text(match tool {
+                            MaskTool::Colour => tr("Click here, then click a colour in the photo."),
+                            MaskTool::Brush => tr("Click here, then paint on the photo."),
+                            MaskTool::Objects => tr("Click here, then drag a box around an object."),
+                            _ => tr("Click here, then drag on the photo."),
+                        });
                     } else {
                         let response = ui.interact(r, ui.id().with(&e.id), Sense::hover());
                         response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, false, tr(&e.label)));
@@ -252,10 +260,27 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
                 }
             }
             Kind::Card => {
-                ui.painter().rect(r, t.radius_lg, t.field, Stroke::new(1.5, t.text_faint), egui::StrokeKind::Inside);
-                let response = ui.interact(r, ui.id().with(&e.id), Sense::hover());
-                response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, false, tr(&e.label)));
-                response.on_hover_text(tr("Not available"));
+                // Subject and Background are found by Image Triage (BiRefNet); the others are not built yet.
+                let auto = match e.id.as_str() {
+                    "subject-card" => Some(AutoMask::Subject),
+                    "sky-card" => Some(AutoMask::Sky),
+                    "background-card" => Some(AutoMask::Background),
+                    _ => None,
+                };
+                let live = auto.is_some_and(|kind| kind == AutoMask::Sky || host_ready);
+                let response = ui.interact(r, ui.id().with(&e.id), if live { Sense::click() } else { Sense::hover() });
+                let outline = if live && response.hovered() { t.text } else { t.text_faint };
+                ui.painter().rect(r, t.radius_lg, if live && response.hovered() { t.hover } else { t.field }, Stroke::new(1.5, outline), egui::StrokeKind::Inside);
+                response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, live, tr(&e.label)));
+                if live {
+                    if response.clicked() {
+                        *request = auto;
+                    }
+                } else if auto.is_some() {
+                    response.on_hover_text(tr("Needs Image Triage. Open Camera Raw from Image Triage to use it."));
+                } else {
+                    response.on_hover_text(tr("Not available"));
+                }
             }
             Kind::Key => {
                 ui.painter().rect_stroke(r.shrink(2.0), t.radius_sm, Stroke::new(1.0, t.field_border), egui::StrokeKind::Inside);
@@ -288,7 +313,18 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
                     t.icon,
                 );
             }
-            Kind::Icon => icon(ui, r, &e.id),
+            Kind::Icon => {
+                icon(ui, r, &e.id);
+                if e.id == "range-menu-indicator" {
+                    // The corner of the Range card: a luminance range instead of a colour range.
+                    let response = ui.interact(r.expand(4.0), ui.id().with(&e.id), Sense::click());
+                    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, tr("Luminance Range")));
+                    if response.clicked() {
+                        *request = Some(AutoMask::LuminanceRange);
+                    }
+                    response.on_hover_text(tr("Luminance Range"));
+                }
+            }
         }
     }
     if toggle {

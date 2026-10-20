@@ -3392,3 +3392,8 @@ cameraRaw	Visualize Range	Показать диапазон
 	Decrease Brush Hardness	Уменьшить жёсткость кисти
 	Increase Brush Hardness	Увеличить жёсткость кисти
 cameraRaw	Click here, then drag on the photo.	Нажмите здесь, затем проведите по фотографии.
+cameraRaw	Click here, then click a colour in the photo.	Нажмите здесь, затем щёлкните цвет на фотографии.
+cameraRaw	Click here, then paint on the photo.	Нажмите здесь, затем рисуйте на фотографии.
+cameraRaw	Click here, then drag a box around an object.	Нажмите здесь, затем обведите объект рамкой.
+cameraRaw	Luminance Range	Диапазон яркости
+cameraRaw	Needs Image Triage. Open Camera Raw from Image Triage to use it.	Требуется Image Triage. Откройте Camera Raw из Image Triage.

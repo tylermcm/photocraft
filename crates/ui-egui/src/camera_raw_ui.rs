@@ -42,6 +42,8 @@ mod preview_worker;
 mod info;
 #[path = "camera_raw_mask_edit_ui.rs"]
 pub(crate) mod mask_edit;
+#[path = "camera_raw_mask_paint_ui.rs"]
+pub(crate) mod mask_paint;
 #[path = "camera_raw_masking_ui.rs"]
 pub(crate) mod masking;
 #[path = "camera_raw_mixer_ui.rs"]
@@ -2195,7 +2197,30 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
                     ui.set_width(right.width());
                     // The creation panel until there is a mask (or Create New Mask is pressed), then the list and its settings.
                     if d.params.masks.is_empty() || workspace.mask_ui.creating {
-                        masking::show(ui, &mut workspace.masking_people, &mut workspace.masking_help, &mut workspace.mask_ui.tool);
+                        let now = ui.ctx().input(|i| i.time);
+                        let mut asked = None;
+                        let tool_before = workspace.mask_ui.tool;
+                        let host_ready = d.host_job.host_present(now) && !d.host_job.is_open();
+                        masking::show(ui, &mut workspace.masking_people, &mut workspace.masking_help, &mut workspace.mask_ui.tool, &mut asked, host_ready);
+                        if let Some(kind) = asked {
+                            workspace.mask_ui.notice = match kind {
+                                mask_edit::AutoMask::Sky => mask_edit::make_sky(d, &mut workspace.mask_ui),
+                                mask_edit::AutoMask::LuminanceRange => {
+                                    mask_edit::add_luminance_range(d, &mut workspace.mask_ui);
+                                    Ok(())
+                                }
+                                _ => mask_edit::request_auto(d, kind, now),
+                            }
+                            .err();
+                        }
+                        // Arming a tool from here starts a new mask: nothing stays selected to be painted into.
+                        if workspace.mask_ui.tool != tool_before && workspace.mask_ui.tool.is_some() {
+                            workspace.mask_ui.selected = None;
+                        }
+                        if let Some(notice) = &workspace.mask_ui.notice {
+                            ui.add_space(6.0);
+                            ui.label(egui::RichText::new(notice).color(Tokens::get(ui.ctx()).danger));
+                        }
                     } else {
                         dirty |= mask_edit::panel(ui, &mut d.params, &mut workspace.mask_ui);
                     }
@@ -2391,6 +2416,9 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
             workspace.white_balance_tool = false;
         }
         d.dirty |= dirty;
+        if let Some((tag, output)) = d.host_job.take_mask_ready() {
+            workspace.mask_ui.notice = mask_edit::finish_auto(d, &mut workspace.mask_ui, &tag, &output).err();
+        }
         d.host_job.show(ctx);
         if d.dirty {
             ctx.request_repaint();

@@ -3032,3 +3032,8 @@ cameraRaw	Visualize Range	視覺化範圍
 	Decrease Brush Hardness	降低筆刷硬度
 	Increase Brush Hardness	提高筆刷硬度
 cameraRaw	Click here, then drag on the photo.	按一下此處，然後在相片上拖曳。
+cameraRaw	Click here, then click a colour in the photo.	按一下此處，然後按一下相片中的顏色。
+cameraRaw	Click here, then paint on the photo.	按一下此處，然後在相片上繪製。
+cameraRaw	Click here, then drag a box around an object.	按一下此處，然後在物件周圍拖曳出方框。
+cameraRaw	Luminance Range	明度範圍
+cameraRaw	Needs Image Triage. Open Camera Raw from Image Triage to use it.	需要 Image Triage。請從 Image Triage 開啟 Camera Raw。

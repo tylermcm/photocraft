@@ -4095,3 +4095,8 @@ cameraRaw	Visualize Range	範囲を表示
 	Decrease Brush Hardness	ブラシの硬さを下げる
 	Increase Brush Hardness	ブラシの硬さを上げる
 cameraRaw	Click here, then drag on the photo.	ここをクリックしてから、写真上でドラッグします。
+cameraRaw	Click here, then click a colour in the photo.	ここをクリックしてから、写真内の色をクリックします。
+cameraRaw	Click here, then paint on the photo.	ここをクリックしてから、写真上でペイントします。
+cameraRaw	Click here, then drag a box around an object.	ここをクリックしてから、オブジェクトの周囲にボックスをドラッグします。
+cameraRaw	Luminance Range	輝度範囲
+cameraRaw	Needs Image Triage. Open Camera Raw from Image Triage to use it.	Image Triage が必要です。Image Triage から Camera Raw を開いてください。

@@ -165,3 +165,88 @@ fn masks_are_saved_and_read_back_exactly() {
     assert!(serde_json::from_str::<LocalMask>(r#"{"shape":{"type":"linear","x0":0,"y0":0,"x1":1,"y1":1},"bogus":1}"#).is_err());
     assert!(serde_json::from_str::<LocalMask>(r#"{"shape":{"type":"mystery"}}"#).is_err());
 }
+
+/// Left half dark, right half bright, with a red patch top-left: for the Range masks.
+fn two_tone() -> Vec<[f32; 4]> {
+    (0..W * H)
+        .map(|i| {
+            let (x, y) = (i % W, i / W);
+            if x < 8 && y < 8 {
+                [0.8, 0.1, 0.1, 1.0]
+            } else if x < W / 2 {
+                [0.1, 0.1, 0.1, 1.0]
+            } else {
+                [0.8, 0.8, 0.8, 1.0]
+            }
+        })
+        .collect()
+}
+
+fn develop_two_tone(shape: MaskShape) -> Vec<[f32; 4]> {
+    let mut px = two_tone();
+    develop(&mut px, W, H, &brighten(shape), false);
+    px
+}
+
+#[test]
+fn a_luminance_range_lifts_only_the_brightnesses_inside_it() {
+    let before = two_tone();
+    // Only the dark half: the bright half stays as it was.
+    let out = develop_two_tone(MaskShape::LuminanceRange { low: 0.0, high: 0.3, smooth: 0.0 });
+    assert!(out[20 * W + 20][0] > before[20 * W + 20][0] + 0.05, "dark pixels are lifted");
+    assert!((out[20 * W + 50][0] - before[20 * W + 50][0]).abs() < 1e-6, "bright pixels are untouched");
+    // Only the bright half.
+    let out = develop_two_tone(MaskShape::LuminanceRange { low: 0.5, high: 1.0, smooth: 0.0 });
+    assert!(out[20 * W + 50][0] > before[20 * W + 50][0] + 0.02 && (out[20 * W + 20][0] - before[20 * W + 20][0]).abs() < 1e-6);
+    // Inverting swaps them.
+    let mut p = brighten(MaskShape::LuminanceRange { low: 0.5, high: 1.0, smooth: 0.0 });
+    p.masks[0].invert = true;
+    let mut px = two_tone();
+    develop(&mut px, W, H, &p, false);
+    assert!(px[20 * W + 20][0] > before[20 * W + 20][0] + 0.05 && (px[20 * W + 50][0] - before[20 * W + 50][0]).abs() < 1e-6);
+    // Smoothness makes the edge gradual: a pixel just outside the range is partly lifted.
+    let hard = develop_two_tone(MaskShape::LuminanceRange { low: 0.0, high: 0.05, smooth: 0.0 });
+    let soft = develop_two_tone(MaskShape::LuminanceRange { low: 0.0, high: 0.05, smooth: 100.0 });
+    assert!((hard[20 * W + 20][0] - before[20 * W + 20][0]).abs() < 1e-6, "0.1 is outside 0..0.05 with no smoothing");
+    assert!(soft[20 * W + 20][0] > before[20 * W + 20][0] + 0.01, "but inside the softened edge");
+}
+
+#[test]
+fn a_colour_range_follows_the_colour_and_its_range() {
+    let before = two_tone();
+    let red = MaskShape::ColorRange { color: [0.8, 0.1, 0.1], range: 10.0, smooth: 0.0 };
+    let out = develop_two_tone(red);
+    assert!(out[2 * W + 2][0] > before[2 * W + 2][0] + 0.02, "the red patch is lifted");
+    assert!((out[20 * W + 20][0] - before[20 * W + 20][0]).abs() < 1e-6 && (out[20 * W + 50][0] - before[20 * W + 50][0]).abs() < 1e-6, "greys are not");
+    // A wide range reaches the greys too.
+    let wide = develop_two_tone(MaskShape::ColorRange { color: [0.45, 0.1, 0.1], range: 100.0, smooth: 0.0 });
+    assert!(wide[20 * W + 20][0] > before[20 * W + 20][0] + 0.01);
+}
+
+#[test]
+fn range_masks_are_validated_and_survive_serde() {
+    use photocraft_algo::camera_raw::CameraRaw;
+    for bad in [
+        MaskShape::ColorRange { color: [f32::NAN, 0.0, 0.0], range: 10.0, smooth: 0.0 },
+        MaskShape::ColorRange { color: [0.1, 0.1, 0.1], range: 101.0, smooth: 0.0 },
+        MaskShape::LuminanceRange { low: 0.6, high: 0.4, smooth: 0.0 },
+        MaskShape::LuminanceRange { low: -0.1, high: 0.4, smooth: 0.0 },
+        MaskShape::LuminanceRange { low: 0.1, high: 0.4, smooth: 200.0 },
+    ] {
+        let p = brighten(bad.clone());
+        assert!(p.validate().is_err(), "{bad:?}");
+    }
+    for good in [MaskShape::ColorRange { color: [0.2, 0.3, 0.4], range: 40.0, smooth: 50.0 }, MaskShape::LuminanceRange { low: 0.2, high: 0.8, smooth: 30.0 }] {
+        let p = brighten(good);
+        assert!(p.validate().is_ok());
+        let back: CameraRaw = serde_json::from_value(serde_json::to_value(&p).unwrap()).unwrap();
+        assert_eq!(back.masks, p.masks);
+    }
+}
+
+#[test]
+fn a_raster_mask_can_be_read_back_and_rewritten() {
+    let shape = MaskShape::raster_from_bytes(4, 2, &[0, 255, 0, 255, 10, 20, 30, 40]);
+    assert_eq!(shape.raster_bytes(), Some((4, 2, vec![0, 255, 0, 255, 10, 20, 30, 40])));
+    assert_eq!(MaskShape::default().raster_bytes(), None);
+}

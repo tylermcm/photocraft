@@ -3602,3 +3602,8 @@ cameraRaw	Visualize Range	범위 시각화
 	Decrease Brush Hardness	브러시 경도 줄이기
 	Increase Brush Hardness	브러시 경도 늘리기
 cameraRaw	Click here, then drag on the photo.	여기를 클릭한 다음 사진에서 드래그하세요.
+cameraRaw	Click here, then click a colour in the photo.	여기를 클릭한 다음 사진의 색상을 클릭하세요.
+cameraRaw	Click here, then paint on the photo.	여기를 클릭한 다음 사진에 칠하세요.
+cameraRaw	Click here, then drag a box around an object.	여기를 클릭한 다음 개체 주위로 상자를 드래그하세요.
+cameraRaw	Luminance Range	휘도 범위
+cameraRaw	Needs Image Triage. Open Camera Raw from Image Triage to use it.	Image Triage가 필요합니다. Image Triage에서 Camera Raw를 여세요.

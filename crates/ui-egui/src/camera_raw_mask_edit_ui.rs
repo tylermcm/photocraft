@@ -9,6 +9,7 @@ use photocraft_algo::camera_raw::{CameraRaw, LocalMask, MaskShape};
 use serde::{Deserialize, Serialize};
 
 use super::CameraRawDialog;
+use super::mask_paint::Brush;
 use crate::theme::Tokens;
 
 fn tr(text: &str) -> &str {
@@ -21,6 +22,121 @@ fn tr(text: &str) -> &str {
 pub enum MaskTool {
     Linear,
     Radial,
+    /// Paint coverage (K).
+    Brush,
+    /// Drag a box (or click) on an object.
+    Objects,
+    /// Click a colour to select pixels of that colour.
+    Colour,
+}
+
+/// A mask Image Triage finds for us (BiRefNet), asked for from the Create New Mask panel.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AutoMask {
+    Subject,
+    /// Found here, with the editor's own sky selection (no model, no Image Triage).
+    Sky,
+    /// The subject's matte, inverted.
+    Background,
+    /// The brightest part of the picture, to be set with Min and Max.
+    LuminanceRange,
+}
+
+impl AutoMask {
+    fn tag(self) -> &'static str {
+        match self {
+            AutoMask::Subject => "subject",
+            AutoMask::Sky => "sky",
+            AutoMask::LuminanceRange => "luminanceRange",
+            AutoMask::Background => "background",
+        }
+    }
+}
+
+const AUTO_INPUT: &str = "photocraft-mask-input.png";
+const AUTO_OUTPUT: &str = "photocraft-mask-output.png";
+
+/// Write the preview picture and ask Image Triage to find the subject in it. The answer arrives later (`finish_auto`).
+pub(super) fn request_auto(d: &mut CameraRawDialog, kind: AutoMask, now: f64) -> Result<(), String> {
+    if d.params.masks.len() >= photocraft_algo::camera_raw::MAX_MASKS {
+        return Err(tr("A photo can have at most 16 masks.").to_string());
+    }
+    let image = CameraRawDialog::image(&d.proxy, d.pw, d.ph, &d.display);
+    let rgb: Vec<u8> = image.pixels.iter().flat_map(|c| [c.r(), c.g(), c.b()]).collect();
+    let picture = photocraft_codecs::Image::from_u8(d.pw as u32, d.ph as u32, photocraft_codecs::ChannelLayout::Rgb, rgb).map_err(|e| e.to_string())?;
+    let png = photocraft_codecs::encode(&picture, photocraft_codecs::Format::Png, &Default::default()).map_err(|e| e.to_string())?;
+    let dir = std::env::temp_dir();
+    let (input, output) = (dir.join(AUTO_INPUT), dir.join(AUTO_OUTPUT));
+    std::fs::write(&input, png).map_err(|e| e.to_string())?;
+    let asked = serde_json::json!({"input": input.to_string_lossy(), "output": output.to_string_lossy()});
+    if d.host_job.request_mask(super::host_job::SUBJECT_MASK, asked, kind.tag(), now) {
+        Ok(())
+    } else {
+        Err(tr("Needs Image Triage. Open Camera Raw from Image Triage to use it.").to_string())
+    }
+}
+
+/// Image Triage has written the subject's coverage map: it becomes a new mask (inverted for Background) and is selected.
+pub(super) fn finish_auto(d: &mut CameraRawDialog, st: &mut MaskUiState, tag: &str, output: &str) -> Result<(), String> {
+    let bytes = std::fs::read(output).map_err(|e| e.to_string())?;
+    if d.params.masks.len() >= photocraft_algo::camera_raw::MAX_MASKS {
+        return Err(tr("A photo can have at most 16 masks.").to_string());
+    }
+    let background = tag == AutoMask::Background.tag();
+    d.params.masks.push(mask_from_png(&bytes, background)?);
+    st.selected = Some(d.params.masks.len() - 1);
+    st.creating = false;
+    d.dirty = true;
+    Ok(())
+}
+
+/// A raster mask from a selection result over the preview picture (`w` x `h`); `None` when nothing was selected.
+fn mask_from_region(region: &photocraft_algo::selection::Region, w: usize, h: usize, name: &str) -> Option<LocalMask> {
+    let mut coverage = vec![0.0f32; w * h];
+    let mut any = 0usize;
+    for y in region.bbox.y0.max(0)..region.bbox.y1.min(h as i32) {
+        for x in region.bbox.x0.max(0)..region.bbox.x1.min(w as i32) {
+            let v = region.at(x, y);
+            coverage[y as usize * w + x as usize] = v;
+            any += usize::from(v > 0.5);
+        }
+    }
+    // Under a thousandth of the picture is noise, not a sky.
+    (any * 1000 >= w * h).then(|| LocalMask { name: name.to_string(), shape: MaskShape::raster(w as u32, h as u32, &coverage), ..Default::default() })
+}
+
+/// Sky: the editor's own colour-and-gradient sky selection on the preview picture.
+pub(super) fn make_sky(d: &mut CameraRawDialog, st: &mut MaskUiState) -> Result<(), String> {
+    use photocraft_algo::segment::{ImageSampler, RgbImage, sky};
+    if d.params.masks.len() >= photocraft_algo::camera_raw::MAX_MASKS {
+        return Err(tr("A photo can have at most 16 masks.").to_string());
+    }
+    let (w, h) = (d.pw, d.ph);
+    let shown = CameraRawDialog::image(&d.proxy, w, h, &d.display);
+    let img = RgbImage::from_fn(w, h, |x, y| {
+        let c = shown.pixels[y * w + x];
+        [c.r() as f32 / 255.0, c.g() as f32 / 255.0, c.b() as f32 / 255.0]
+    });
+    let sampler = ImageSampler { img: &img, origin: (0, 0) };
+    let region = sky::select_sky(&sampler, photocraft_geom::Rect::new(0, 0, w as i32, h as i32), sky::SkyParams::default());
+    let mask = region.and_then(|r| mask_from_region(&r, w, h, tr("Sky"))).ok_or_else(|| tr("No sky was found in this photo.").to_string())?;
+    d.params.masks.push(mask);
+    st.selected = Some(d.params.masks.len() - 1);
+    st.creating = false;
+    d.dirty = true;
+    Ok(())
+}
+
+/// A raster mask from the coverage map Image Triage wrote (a grayscale PNG, white = the subject).
+fn mask_from_png(bytes: &[u8], background: bool) -> Result<LocalMask, String> {
+    let gray = photocraft_codecs::decode(bytes).map_err(|e| e.to_string())?.convert(photocraft_codecs::ChannelLayout::Gray, photocraft_codecs::SampleType::U8);
+    let (w, h) = (gray.width(), gray.height());
+    let side = photocraft_algo::camera_raw::MAX_RASTER_SIDE;
+    if w == 0 || h == 0 || w > side || h > side || gray.data().len() != w as usize * h as usize {
+        return Err(tr("The mask Image Triage made has an unusable size.").to_string());
+    }
+    let coverage: Vec<f32> = gray.data().iter().map(|v| *v as f32 / 255.0).collect();
+    Ok(LocalMask { name: tr(if background { "Background" } else { "Subject" }).to_string(), shape: MaskShape::raster(w, h, &coverage), invert: background, ..Default::default() })
 }
 
 /// What the Masking tab remembers while it is open. View state only: never part of the photo's settings.
@@ -35,11 +151,14 @@ pub struct MaskUiState {
     pub overlay: bool,
     /// Show the Create New Mask panel although masks exist.
     pub creating: bool,
+    /// Why the last Subject / Background request did not make a mask (shown under the cards).
+    pub notice: Option<String>,
+    pub brush: super::mask_paint::Brush,
 }
 
 impl Default for MaskUiState {
     fn default() -> Self {
-        Self { selected: None, tool: None, overlay: true, creating: false }
+        Self { selected: None, tool: None, overlay: true, creating: false, notice: None, brush: Default::default() }
     }
 }
 
@@ -64,6 +183,8 @@ fn kind_name(shape: &MaskShape) -> &'static str {
         MaskShape::Linear { .. } => "Linear Gradient",
         MaskShape::Radial { .. } => "Radial Gradient",
         MaskShape::Raster { .. } => "Mask",
+        MaskShape::ColorRange { .. } => "Color Range",
+        MaskShape::LuminanceRange { .. } => "Luminance Range",
     }
 }
 
@@ -148,7 +269,7 @@ fn handles(frame: &Frame, mask: &LocalMask) -> Vec<(Pos2, Part)> {
             let turn = c + vec2(ux[0], ux[1]) * (rx * frame.rect.width() + 22.0);
             vec![(c, Part::RadialCentre), (c + ex, Part::RadialX), (c + ey, Part::RadialY), (turn, Part::RadialTurn)]
         }
-        MaskShape::Raster { .. } => Vec::new(),
+        _ => Vec::new(),
     }
 }
 
@@ -216,7 +337,15 @@ pub(super) fn canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Re
     let t = Tokens::get(ui.ctx());
     let mut changed = false;
     if st.overlay && let Some(mask) = st.selected.and_then(|i| d.params.masks.get(i)) {
-        draw_overlay(ui, rect, mask);
+        let pixels = if d.processed.len() == d.pw * d.ph { &d.processed } else { &d.proxy };
+        draw_overlay(ui, rect, mask, pixels, d.pw, d.ph, d.preview_revision);
+    }
+    if let Some(tool) = st.tool.filter(|t| matches!(t, MaskTool::Brush | MaskTool::Objects | MaskTool::Colour)) {
+        let changed = tool_canvas(ui, d, rect, response, st, panning, tool);
+        if changed {
+            d.dirty = true;
+        }
+        return changed;
     }
     let primary_down = ui.input(|i| i.pointer.primary_down());
     let shift = ui.input(|i| i.modifiers.shift);
@@ -240,7 +369,7 @@ pub(super) fn canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Re
                 if d.params.masks.len() < photocraft_algo::camera_raw::MAX_MASKS {
                     let at = frame.norm(pos);
                     d.params.masks.push(match tool {
-                        MaskTool::Linear => linear(at, at),
+                        MaskTool::Linear | MaskTool::Brush | MaskTool::Objects | MaskTool::Colour => linear(at, at),
                         MaskTool::Radial => radial(at, MIN_RADIUS, MIN_RADIUS),
                     });
                     let index = d.params.masks.len() - 1;
@@ -267,7 +396,7 @@ pub(super) fn canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Re
             if rect.contains(pos) && d.params.masks.len() < photocraft_algo::camera_raw::MAX_MASKS {
                 let at = frame.norm(pos);
                 d.params.masks.push(match tool {
-                    MaskTool::Linear => linear([at[0], clamp_unit(at[1] - 0.15)], [at[0], clamp_unit(at[1] + 0.15)]),
+                    MaskTool::Linear | MaskTool::Brush | MaskTool::Objects | MaskTool::Colour => linear([at[0], clamp_unit(at[1] - 0.15)], [at[0], clamp_unit(at[1] + 0.15)]),
                     MaskTool::Radial => radial(at, DEFAULT_RADIUS_PX * rect.height() / rect.width().max(1.0), DEFAULT_RADIUS_PX),
                 });
                 st.selected = Some(d.params.masks.len() - 1);
@@ -288,7 +417,7 @@ pub(super) fn canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Re
             if end.distance(anchor) < CLICK_SLOP {
                 let at = frame.norm(anchor);
                 *mask = match tool {
-                    MaskTool::Linear => linear([at[0], clamp_unit(at[1] - 0.15)], [at[0], clamp_unit(at[1] + 0.15)]),
+                    MaskTool::Linear | MaskTool::Brush | MaskTool::Objects | MaskTool::Colour => linear([at[0], clamp_unit(at[1] - 0.15)], [at[0], clamp_unit(at[1] + 0.15)]),
                     MaskTool::Radial => radial(at, DEFAULT_RADIUS_PX * rect.height() / rect.width().max(1.0), DEFAULT_RADIUS_PX),
                 };
                 changed = true;
@@ -320,12 +449,202 @@ pub(super) fn canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Re
     changed
 }
 
+/// The tools that work on the picture's pixels instead of a drawn shape: Brush, Objects and Color Range. Returns whether the masks changed.
+fn tool_canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Response, st: &mut MaskUiState, panning: bool, tool: MaskTool) -> bool {
+    let frame = Frame { rect };
+    let pointer = ui.input(|i| i.pointer.hover_pos());
+    let at = ui.input(|i| i.pointer.interact_pos());
+    let down = ui.input(|i| i.pointer.primary_down());
+    let mut changed = false;
+    match tool {
+        MaskTool::Brush => {
+            let id = egui::Id::new("camera-raw-brush-last");
+            let last: Option<Pos2> = ui.ctx().data(|data| data.get_temp(id));
+            let dragging = !panning && down && (response.dragged_by(egui::PointerButton::Primary) || response.drag_started_by(egui::PointerButton::Primary));
+            match at.filter(|p| dragging && (last.is_some() || rect.contains(*p))) {
+                Some(pos) => {
+                    let erase = st.brush.erase || ui.input(|i| i.modifiers.alt);
+                    changed = paint(d, st, &frame, last, pos, erase);
+                    ui.ctx().data_mut(|data| data.insert_temp(id, pos));
+                }
+                None => ui.ctx().data_mut(|data| data.remove::<Pos2>(id)),
+            }
+            if let Some(p) = pointer.filter(|p| response.hovered() && rect.contains(*p)) {
+                let radius = st.brush.size / 100.0 * rect.width().max(rect.height()) / 2.0;
+                ui.painter().circle_stroke(p, radius.max(2.0), Stroke::new(2.5, Color32::from_black_alpha(140)));
+                ui.painter().circle_stroke(p, radius.max(2.0), Stroke::new(1.0, Color32::WHITE));
+                ui.ctx().set_cursor_icon(egui::CursorIcon::Crosshair);
+            }
+        }
+        MaskTool::Objects => {
+            let id = egui::Id::new("camera-raw-objects-anchor");
+            let anchor: Option<Pos2> = ui.ctx().data(|data| data.get_temp(id));
+            if !panning
+                && response.drag_started_by(egui::PointerButton::Primary)
+                && let Some(press) = ui.input(|i| i.pointer.press_origin()).filter(|p| rect.contains(*p))
+            {
+                ui.ctx().data_mut(|data| data.insert_temp(id, press));
+            } else if let Some(start) = anchor {
+                if down {
+                    if let Some(now) = at {
+                        let r = Rect::from_two_pos(start, now);
+                        ui.painter().rect_stroke(r, 0.0, Stroke::new(2.5, Color32::from_black_alpha(140)), egui::StrokeKind::Outside);
+                        ui.painter().rect_stroke(r, 0.0, Stroke::new(1.0, Color32::WHITE), egui::StrokeKind::Outside);
+                    }
+                } else {
+                    ui.ctx().data_mut(|data| data.remove::<Pos2>(id));
+                    if let Some(end) = at {
+                        changed = select_object(d, st, &frame, (start, end));
+                    }
+                }
+            }
+            if !panning
+                && response.clicked_by(egui::PointerButton::Primary)
+                && let Some(pos) = at.filter(|p| rect.contains(*p))
+            {
+                changed |= select_object(d, st, &frame, (pos, pos));
+            }
+            if pointer.is_some_and(|p| response.hovered() && rect.contains(p)) {
+                ui.ctx().set_cursor_icon(egui::CursorIcon::Crosshair);
+            }
+        }
+        MaskTool::Colour => {
+            if !panning
+                && response.clicked_by(egui::PointerButton::Primary)
+                && let Some(pos) = at.filter(|p| rect.contains(*p))
+            {
+                changed = pick_colour(d, st, &frame, pos);
+            }
+            if pointer.is_some_and(|p| response.hovered() && rect.contains(p)) {
+                ui.ctx().set_cursor_icon(egui::CursorIcon::Crosshair);
+            }
+        }
+        MaskTool::Linear | MaskTool::Radial => {}
+    }
+    changed
+}
+
+/// A mask was made or changed: select it and leave the creation panel.
+fn adopt(st: &mut MaskUiState, d: &CameraRawDialog) {
+    st.selected = Some(d.params.masks.len().saturating_sub(1));
+    st.creating = false;
+}
+
+/// One Brush stroke segment, into the selected raster mask (a new Brush mask when none is selected).
+fn paint(d: &mut CameraRawDialog, st: &mut MaskUiState, frame: &Frame, last: Option<Pos2>, pos: Pos2, erase: bool) -> bool {
+    let target = st.selected.filter(|i| d.params.masks.get(*i).is_some_and(|m| matches!(m.shape, MaskShape::Raster { .. })));
+    let index = match target {
+        Some(i) => i,
+        None => {
+            if d.params.masks.len() >= photocraft_algo::camera_raw::MAX_MASKS {
+                return false;
+            }
+            let (w, h) = Brush::map_size(d.pw, d.ph);
+            d.params.masks.push(LocalMask { name: tr("Brush").to_string(), shape: MaskShape::raster_from_bytes(w, h, &vec![0u8; w as usize * h as usize]), ..Default::default() });
+            adopt(st, d);
+            d.params.masks.len() - 1
+        }
+    };
+    let Some((w, h, mut bytes)) = d.params.masks[index].shape.raster_bytes() else { return false };
+    let to_map = |p: Pos2| {
+        let n = frame.norm(p);
+        (n[0] * w as f32, n[1] * h as f32)
+    };
+    let to = to_map(pos);
+    st.brush.stroke(&mut bytes, w, h, last.map_or(to, to_map), to, erase);
+    d.params.masks[index].shape = MaskShape::raster_from_bytes(w, h, &bytes);
+    true
+}
+
+/// The preview picture as the segmentation code reads it.
+fn picture(d: &CameraRawDialog) -> photocraft_algo::segment::RgbImage {
+    let (w, h) = (d.pw, d.ph);
+    let shown = CameraRawDialog::image(&d.proxy, w, h, &d.display);
+    photocraft_algo::segment::RgbImage::from_fn(w, h, |x, y| {
+        let c = shown.pixels[y * w + x];
+        [c.r() as f32 / 255.0, c.g() as f32 / 255.0, c.b() as f32 / 255.0]
+    })
+}
+
+/// Objects: the object inside a dragged box, or under a click (`a` and `b` close together).
+fn select_object(d: &mut CameraRawDialog, st: &mut MaskUiState, frame: &Frame, (a, b): (Pos2, Pos2)) -> bool {
+    use photocraft_algo::segment::{ImageSampler, grabcut};
+    if d.params.masks.len() >= photocraft_algo::camera_raw::MAX_MASKS {
+        st.notice = Some(tr("A photo can have at most 16 masks.").to_string());
+        return false;
+    }
+    let (w, h) = (d.pw, d.ph);
+    let to_px = |p: Pos2| {
+        let n = frame.norm(p);
+        ((n[0] * w as f32).clamp(0.0, w as f32 - 1.0), (n[1] * h as f32).clamp(0.0, h as f32 - 1.0))
+    };
+    let (pa, pb) = (to_px(a), to_px(b));
+    let img = picture(d);
+    let sampler = ImageSampler { img: &img, origin: (0, 0) };
+    let canvas = photocraft_geom::Rect::new(0, 0, w as i32, h as i32);
+    let region = if a.distance(b) < CLICK_SLOP {
+        grabcut::object_at(&sampler, canvas, pa.0, pa.1, 600)
+    } else {
+        let boxed = photocraft_geom::Rect::new(pa.0.min(pb.0) as i32, pa.1.min(pb.1) as i32, pa.0.max(pb.0) as i32 + 1, pa.1.max(pb.1) as i32 + 1);
+        grabcut::object_select(&sampler, canvas, boxed, 600)
+    };
+    match region.and_then(|r| mask_from_region(&r, w, h, tr("Objects"))) {
+        Some(mask) => {
+            d.params.masks.push(mask);
+            adopt(st, d);
+            st.tool = None;
+            st.notice = None;
+            true
+        }
+        None => {
+            st.notice = Some(tr("Nothing was found there.").to_string());
+            false
+        }
+    }
+}
+
+/// Color Range: every pixel near the colour that was clicked.
+fn pick_colour(d: &mut CameraRawDialog, st: &mut MaskUiState, frame: &Frame, pos: Pos2) -> bool {
+    if d.params.masks.len() >= photocraft_algo::camera_raw::MAX_MASKS {
+        st.notice = Some(tr("A photo can have at most 16 masks.").to_string());
+        return false;
+    }
+    let n = frame.norm(pos);
+    let (x, y) = (((n[0] * d.pw as f32) as usize).min(d.pw.saturating_sub(1)), ((n[1] * d.ph as f32) as usize).min(d.ph.saturating_sub(1)));
+    let pixels = if d.processed.len() == d.pw * d.ph { &d.processed } else { &d.proxy };
+    let Some(p) = pixels.get(y * d.pw + x) else { return false };
+    let color = [p[0].clamp(-0.5, 2.0), p[1].clamp(-0.5, 2.0), p[2].clamp(-0.5, 2.0)];
+    d.params.masks.push(LocalMask { name: tr("Color Range").to_string(), shape: MaskShape::ColorRange { color, range: 30.0, smooth: 30.0 }, ..Default::default() });
+    adopt(st, d);
+    st.tool = None;
+    st.notice = None;
+    true
+}
+
+/// Luminance Range: the brightest part of the picture to start with; its Min and Max are set in the panel.
+pub(super) fn add_luminance_range(d: &mut CameraRawDialog, st: &mut MaskUiState) -> bool {
+    if d.params.masks.len() >= photocraft_algo::camera_raw::MAX_MASKS {
+        st.notice = Some(tr("A photo can have at most 16 masks.").to_string());
+        return false;
+    }
+    d.params.masks.push(LocalMask { name: tr("Luminance Range").to_string(), shape: MaskShape::LuminanceRange { low: 0.5, high: 1.0, smooth: 20.0 }, ..Default::default() });
+    adopt(st, d);
+    st.tool = None;
+    st.notice = None;
+    d.dirty = true;
+    true
+}
+
 /// The mask's coverage as a red veil over the photo (made at most a few hundred pixels across and kept until the mask changes).
-fn draw_overlay(ui: &Ui, rect: Rect, mask: &LocalMask) {
+fn draw_overlay(ui: &Ui, rect: Rect, mask: &LocalMask, pixels: &[[f32; 4]], pw: usize, ph: usize, revision: u64) {
     use std::hash::{Hash, Hasher};
     let key = {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         serde_json::to_string(mask).unwrap_or_default().hash(&mut hasher);
+        // A Range mask follows the picture, so the veil is made again when the picture changes.
+        if matches!(mask.shape, MaskShape::ColorRange { .. } | MaskShape::LuminanceRange { .. }) {
+            revision.hash(&mut hasher);
+        }
         hasher.finish()
     };
     let id = egui::Id::new("camera-raw-mask-overlay");
@@ -336,8 +655,16 @@ fn draw_overlay(ui: &Ui, rect: Rect, mask: &LocalMask) {
             let aspect = rect.width().max(1.0) / rect.height().max(1.0);
             let (w, h) = if aspect >= 1.0 { (320usize, (320.0 / aspect).round().max(1.0) as usize) } else { ((320.0 * aspect).round().max(1.0) as usize, 320usize) };
             let coverage = mask.coverage_fn(w, h);
-            let pixels: Vec<Color32> = (0..w * h).map(|i| Color32::from_rgba_unmultiplied(235, 40, 40, (coverage.at(i % w, i / w).clamp(0.0, 1.0) * 150.0) as u8)).collect();
-            let image = egui::ColorImage { size: [w, h], source_size: vec2(w as f32, h as f32), pixels };
+            let at = |x: usize, y: usize| {
+                if coverage.needs_pixels() && pw > 0 && ph > 0 && pixels.len() >= pw * ph {
+                    let p = pixels[(y * ph / h).min(ph - 1) * pw + (x * pw / w).min(pw - 1)];
+                    coverage.at_px(x, y, [p[0], p[1], p[2]])
+                } else {
+                    coverage.at(x, y)
+                }
+            };
+            let veil: Vec<Color32> = (0..w * h).map(|i| Color32::from_rgba_unmultiplied(235, 40, 40, (at(i % w, i / w).clamp(0.0, 1.0) * 150.0) as u8)).collect();
+            let image = egui::ColorImage { size: [w, h], source_size: vec2(w as f32, h as f32), pixels: veil };
             let handle = ui.ctx().load_texture("camera-raw-mask-overlay", image, TextureOptions::LINEAR);
             ui.ctx().data_mut(|data| data.insert_temp(id, (key, handle.clone())));
             handle
@@ -388,7 +715,7 @@ fn draw_guides(ui: &Ui, frame: &Frame, mask: &LocalMask, active: Option<Part>, p
             let turn = c + vec2(ux[0], ux[1]) * (rx * clip.width() + 22.0);
             line(ui, x_handle, turn, 1.0);
         }
-        MaskShape::Raster { .. } => {}
+        _ => {}
     }
     for (point, part) in handles(frame, mask) {
         let hot = active == Some(part) || pointer.is_some_and(|p| p.distance(point) <= HIT_RADIUS);
@@ -412,6 +739,13 @@ pub(super) fn keys(ctx: &egui::Context, st: &mut MaskUiState, params: &mut Camer
     }
     if pressed(Key::J) {
         st.tool = Some(MaskTool::Radial);
+    }
+    if pressed(Key::K) {
+        st.tool = Some(MaskTool::Brush);
+        st.selected = None;
+    }
+    if st.tool.is_some() && pressed(Key::Escape) {
+        st.tool = None;
     }
     if st.selected.is_some() && pressed(Key::O) {
         st.overlay = !st.overlay;
@@ -484,6 +818,17 @@ pub(super) fn panel(ui: &mut Ui, p: &mut CameraRaw, st: &mut MaskUiState) -> boo
     ui.add_space(8.0);
     ui.separator();
     ui.add_space(6.0);
+    if st.tool == Some(MaskTool::Brush) {
+        // Brush settings are view state, not part of the photo's settings, so they never mark the photo changed.
+        let mut ignored = false;
+        super::row(ui, &mut ignored, "Size", &mut st.brush.size, Brush::SIZE, None);
+        super::row(ui, &mut ignored, "Feather", &mut st.brush.feather, 0.0..=100.0, None);
+        super::row(ui, &mut ignored, "Flow", &mut st.brush.flow, 1.0..=100.0, None);
+        ui.checkbox(&mut st.brush.erase, tr("Erase"));
+        ui.add_space(6.0);
+        ui.separator();
+        ui.add_space(6.0);
+    }
     let Some(index) = st.selected.filter(|i| *i < p.masks.len()) else {
         ui.label(egui::RichText::new(tr("Select a mask to edit it.")).color(t.text_faint));
         return dirty;
@@ -493,6 +838,31 @@ pub(super) fn panel(ui: &mut Ui, p: &mut CameraRaw, st: &mut MaskUiState) -> boo
     dirty |= ui.checkbox(&mut mask.invert, tr("Invert")).changed();
     if let MaskShape::Radial { feather, .. } = &mut mask.shape {
         super::row(ui, &mut dirty, "Feather", feather, 0.0..=100.0, None);
+    }
+    match &mut mask.shape {
+        MaskShape::ColorRange { range, smooth, .. } => {
+            super::row(ui, &mut dirty, "Range", range, 0.0..=100.0, None);
+            super::row(ui, &mut dirty, "Smoothness", smooth, 0.0..=100.0, None);
+        }
+        MaskShape::LuminanceRange { low, high, smooth } => {
+            // Stored as 0 to 1, shown as 0 to 100; the two ends never cross.
+            let (mut lo, mut hi) = (*low * 100.0, *high * 100.0);
+            let (mut lo_moved, mut hi_moved) = (false, false);
+            super::row(ui, &mut lo_moved, "Luminance Min", &mut lo, 0.0..=100.0, None);
+            super::row(ui, &mut hi_moved, "Luminance Max", &mut hi, 0.0..=100.0, None);
+            if lo_moved {
+                *low = (lo / 100.0).clamp(0.0, 1.0);
+                *high = high.max(*low);
+                dirty = true;
+            }
+            if hi_moved {
+                *high = (hi / 100.0).clamp(0.0, 1.0);
+                *low = low.min(*high);
+                dirty = true;
+            }
+            super::row(ui, &mut dirty, "Smoothness", smooth, 0.0..=100.0, None);
+        }
+        _ => {}
     }
     super::row(ui, &mut dirty, "Amount", &mut mask.amount, 0.0..=100.0, None);
     ui.add_space(6.0);
@@ -599,6 +969,27 @@ mod tests {
         let mut moved = mask.clone();
         drag_to(&f, &mut moved, &hold, grab, false);
         assert_eq!(moved.shape, mask.shape, "no movement, no jump");
+    }
+
+    #[test]
+    fn the_subject_map_from_image_triage_becomes_a_raster_mask() {
+        let (w, h) = (8u32, 4u32);
+        let data: Vec<u8> = (0..w * h).map(|i| if i % w < 4 { 255 } else { 0 }).collect();
+        let image = photocraft_codecs::Image::from_u8(w, h, photocraft_codecs::ChannelLayout::Gray, data).unwrap();
+        let png = photocraft_codecs::encode(&image, photocraft_codecs::Format::Png, &Default::default()).unwrap();
+        let subject = mask_from_png(&png, false).unwrap();
+        let background = mask_from_png(&png, true).unwrap();
+        assert!(!subject.invert && background.invert);
+        assert_eq!(subject.shape, background.shape);
+        let cover = subject.coverage_fn(8, 4);
+        assert!(cover.at(1, 2) > 0.99 && cover.at(6, 2) < 0.01, "left half is the subject");
+        let outside = background.coverage_fn(8, 4);
+        assert!(outside.at(1, 2) < 0.01 && outside.at(6, 2) > 0.99, "Background is the rest");
+        // Damaged or oversized answers are refused, not drawn.
+        assert!(mask_from_png(b"not a png", false).is_err());
+        let big = photocraft_codecs::Image::from_u8(1537, 2, photocraft_codecs::ChannelLayout::Gray, vec![0; 1537 * 2]).unwrap();
+        let big = photocraft_codecs::encode(&big, photocraft_codecs::Format::Png, &Default::default()).unwrap();
+        assert!(mask_from_png(&big, false).is_err());
     }
 
     #[test]

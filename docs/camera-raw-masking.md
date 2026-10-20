@@ -1,7 +1,6 @@
 # Camera Raw Masking: design and plan
 
-Status 2026-10-19: **slice 1 (the engine layer) is built and tested; nothing else is.** The Masking tab is still the drawn
-"Create New Mask" panel whose cards say "Not available" (`camera_raw_masking_ui.rs`, geometry in `design/camera-raw/masking-design.json`).
+Status 2026-10-20: **slices 1-5 are built and tested**: Linear and Radial gradients, Subject and Background (BiRefNet, found by Image Triage), Sky, Objects, Brush, Color Range and Luminance Range. Not built: Landscape and People (no model here), combining masks (slice 6). The Masking tab layout is a general one (`camera_raw_masking_ui.rs`, geometry in `design/camera-raw/masking-design.json`); an ACR 18.6 parity pass needs screenshots.
 
 ## What exists, and what "hooking up the buttons" really needs
 
@@ -52,3 +51,10 @@ everything else (buttons, overlay, undo, export, host) sits on it. Same shape as
 6. **Combining masks** (add, subtract, intersect), and more local controls (sharpness, noise, colour grading).
 
 People and Landscape stay "not available" (no model for them here).
+
+## Status of the slices (2026-10-20)
+
+* Slices 1-3 done (engine, persistence + host gate, gradients end to end).
+* Slice 4 done, with one change from the plan: **Subject and Background use BiRefNet, as the old built-in editor did**, not the classical `select_subject`. The editor writes its preview picture to a PNG and asks Image Triage over the host-job channel (`ui.hostJob`, kind `subjectMask`: `input`, `output`). The host (`subject_mask_service.py`, `subject_mask_worker.py`) runs `birefnet_worker.generate_subject_mask` under the managed torch runtime with the same progress popup and Cancel as Super Resolution, and the editor turns the grayscale PNG into a raster mask (Background is the same map, inverted). Without Image Triage the two cards say so. Sky (`segment::sky`) and Objects (`grabcut::object_select` / `object_at`, a dragged box or a click) run in the editor.
+* Slice 5 done: Brush (K; size, feather, flow, erase, Alt erases; strokes edit the selected raster mask or make a new one; `camera_raw_mask_paint_ui.rs`), Color Range (click a colour; Range and Smoothness) and Luminance Range (the corner of the Range card; Min, Max, Smoothness). Range masks are evaluated from the picture's own pixels at the point they are applied.
+* Known limits: the subject worker starts a fresh torch process per request (about 48 s cold on the author's GPU); Brush maps are 1024 px on the long side; Range masks have no depth range; Landscape and People stay unavailable.
