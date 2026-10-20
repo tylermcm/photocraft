@@ -181,7 +181,31 @@ fn icon(ui: &Ui, r: Rect, id: &str) {
         _ => {}
     }
 }
-pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut Option<super::mask_edit::MaskTool>, request: &mut Option<super::mask_edit::AutoMask>, host_ready: bool) {
+/// Whether each kind of host job may be started from the panel now (see `host_job::Ready`).
+#[derive(Clone, Copy)]
+pub(super) struct HostReady {
+    pub subject: super::host_job::Ready,
+    pub scene: super::host_job::Ready,
+    pub people: super::host_job::Ready,
+}
+
+impl HostReady {
+    pub(super) fn of(job: &super::host_job::HostJob, now: f64) -> Self {
+        use super::host_job::{PEOPLE_MASKS, SCENE_MASKS, SUBJECT_MASK};
+        HostReady { subject: job.ready(SUBJECT_MASK, now), scene: job.ready(SCENE_MASKS, now), people: job.ready(PEOPLE_MASKS, now) }
+    }
+}
+
+/// The tooltip of a host-job action that cannot be used.
+fn unavailable(ready: super::host_job::Ready) -> &'static str {
+    if ready == super::host_job::Ready::NoTools {
+        tr("Needs Editor tools in Image Triage (Set Up AI).")
+    } else {
+        tr("Needs Image Triage. Open Camera Raw from Image Triage to use it.")
+    }
+}
+
+pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut Option<super::mask_edit::MaskTool>, request: &mut Option<super::mask_edit::AutoMask>, host: HostReady) {
     use super::mask_edit::{AutoMask, MaskTool};
     let design = crate::camera_raw_design::get(ui.ctx());
     let d = &design.masking;
@@ -196,7 +220,7 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
         if !*people && e.id.starts_with("people-warning-") {
             continue;
         }
-        if e.id == "people-warning-icon" && host_ready {
+        if e.id == "people-warning-icon" && host.people.is_yes() {
             continue;
         }
         let shift = if !*people && e.id.starts_with("help-") { -d.people_body_height } else { 0.0 };
@@ -205,7 +229,7 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
         match e.kind {
             Kind::Text => {
                 let color = if e.id == "help-text" { t.text_faint } else { t.text };
-                if e.id == "people-warning-text" && host_ready {
+                if e.id == "people-warning-text" && host.people.is_yes() {
                     // People are found by Image Triage (OneFormer, SAM and BiRefNet): offer to look instead of saying it cannot.
                     let galley = ui.painter().layout_job(egui::text::LayoutJob::simple(tr("Find the people in this photo").into(), font, t.accent, r.width()));
                     let response = ui.interact(r, ui.id().with("people-find"), Sense::click());
@@ -245,15 +269,15 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
                     if e.id == "landscape-label" {
                         let glyph = d.elements.iter().find(|v| v.id == "landscape-glyph");
                         let hit = glyph.map_or(r, |v| r.union(Rect::from_min_max(panel.min + vec2(v.rect[0], v.rect[1]), panel.min + vec2(v.rect[2], v.rect[3]))));
-                        let response = ui.interact(hit.expand2(vec2(4.0, 2.0)), ui.id().with(&e.id), if host_ready { Sense::click() } else { Sense::hover() });
-                        response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, host_ready, tr(&e.label)));
-                        if host_ready {
+                        let response = ui.interact(hit.expand2(vec2(4.0, 2.0)), ui.id().with(&e.id), if host.scene.is_yes() { Sense::click() } else { Sense::hover() });
+                        response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, host.scene.is_yes(), tr(&e.label)));
+                        if host.scene.is_yes() {
                             if response.clicked() {
                                 *request = Some(AutoMask::Landscape);
                             }
                             response.on_hover_text(tr("Find sky, water, mountains, vegetation and buildings."));
                         } else {
-                            response.on_hover_text(tr("Needs Image Triage. Open Camera Raw from Image Triage to use it."));
+                            response.on_hover_text(unavailable(host.scene));
                         }
                         continue;
                     }
@@ -297,7 +321,8 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
                     "background-card" => Some(AutoMask::Background),
                     _ => None,
                 };
-                let live = auto.is_some_and(|kind| kind == AutoMask::Sky || host_ready);
+                let ready = host.subject;
+                let live = auto.is_some_and(|kind| kind == AutoMask::Sky || ready.is_yes());
                 let response = ui.interact(r, ui.id().with(&e.id), if live { Sense::click() } else { Sense::hover() });
                 let outline = if live && response.hovered() { t.text } else { t.text_faint };
                 ui.painter().rect(r, t.radius_lg, if live && response.hovered() { t.hover } else { t.field }, Stroke::new(1.5, outline), egui::StrokeKind::Inside);
@@ -307,7 +332,7 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
                         *request = auto;
                     }
                 } else if auto.is_some() {
-                    response.on_hover_text(tr("Needs Image Triage. Open Camera Raw from Image Triage to use it."));
+                    response.on_hover_text(unavailable(ready));
                 } else {
                     response.on_hover_text(tr("Not available"));
                 }

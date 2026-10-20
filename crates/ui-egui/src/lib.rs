@@ -776,6 +776,8 @@ pub struct PhotocraftApp {
     pub(crate) gradient: gradient_ui::LiveGradient,
     /// Filter › Camera Raw Filter dialog (camera_raw_ui).
     pub(crate) camera_raw: Option<camera_raw_ui::CameraRawDialog>,
+    /// The job kinds the host said it can run (`ui.hostJob` `tools`), kept for dialogs opened later; `None`: never said.
+    pub(crate) host_tools: Option<camera_raw_ui::host_job::Tools>,
     /// A raw file just opened interactively, waiting for the open-time Camera Raw dialog (shown
     /// on the next frame, which has the egui context).
     pub(crate) pending_raw_open: Option<camera_raw_ui::RawOpen>,
@@ -986,6 +988,7 @@ impl PhotocraftApp {
             distort: Default::default(),
             gradient: Default::default(),
             camera_raw: None,
+            host_tools: None,
             pending_raw_open: None,
             raw_workspace: raw_workspace::State::default(),
             raw_redevelop: None,

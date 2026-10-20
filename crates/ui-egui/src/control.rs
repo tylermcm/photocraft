@@ -385,6 +385,14 @@ fn context_entries(app: &PhotocraftApp, menu: &crate::canvas_tool_menu::CanvasTo
     entries
 }
 
+/// `ui.hostJob` with no Camera Raw dialog open: nothing is pending, but the host's `tools` list is kept.
+fn host_job_closed(app: &mut PhotocraftApp, p: &Value) -> Result<Value, String> {
+    if let Some(tools) = crate::camera_raw_ui::host_job::parse_tools(p)? {
+        app.host_tools = Some(tools);
+    }
+    Ok(json!({"id": 0, "phase": "idle", "cancel": false, "pending": null, "open": false}))
+}
+
 fn dispatch(app: &mut PhotocraftApp, ctx: &egui::Context, req: &ControlRequest) -> Outcome {
     let p = &req.params;
     let s = |k: &str| p.get(k).and_then(Value::as_str);
@@ -392,7 +400,7 @@ fn dispatch(app: &mut PhotocraftApp, ctx: &egui::Context, req: &ControlRequest) 
     let wait = p.get("wait").and_then(Value::as_bool).unwrap_or(true);
     match req.method.as_str() {
         "app.handoff" => ok(
-            json!({"version": 2, "replace": true, "hiddenStart": true, "cameraRaw": 1, "cameraRawPrefetch": 1, "cameraRawSwitch": 1, "cameraRawFinishing": 1, "cameraRawCalibration": 1, "cameraRawSuperResolution": 1, "cameraRawHostJob": 1, "cameraRawMasks": 1, "stashWithoutPreview": 1, "renderManifest": 1, "fullRender": 1, "filmstrip": 1}),
+            json!({"version": 2, "replace": true, "hiddenStart": true, "cameraRaw": 1, "cameraRawPrefetch": 1, "cameraRawSwitch": 1, "cameraRawFinishing": 1, "cameraRawCalibration": 1, "cameraRawSuperResolution": 1, "cameraRawHostJob": 1, "cameraRawHostTools": 1, "cameraRawMasks": 1, "stashWithoutPreview": 1, "renderManifest": 1, "fullRender": 1, "filmstrip": 1}),
         ),
         "ui.filmstrip" => wrap(crate::camera_raw_filmstrip_ui::control(ctx, p).map(|mut reply| {
             reply["cameraRawOpen"] = json!(app.camera_raw.is_some() || crate::raw_workspace::shell_active(app));
@@ -400,9 +408,16 @@ fn dispatch(app: &mut PhotocraftApp, ctx: &egui::Context, req: &ControlRequest) 
         })),
         "ui.cameraRaw" => run_waiting(app, wait, |app| crate::raw_workspace::control(app, ctx, p)),
         // The host polls this for a request made in the open Camera Raw dialog (Super Resolution on Done) and reports its progress.
+        // `tools` (the job kinds the host can run) is remembered here too, so a dialog opened later starts with it.
         "ui.hostJob" => wrap(match app.camera_raw.as_mut() {
-            Some(d) => d.host_job.control(p, ctx.input(|i| i.time)),
-            None => Ok(json!({"id": 0, "phase": "idle", "cancel": false, "pending": null, "open": false})),
+            Some(d) => {
+                let reply = d.host_job.control(p, ctx.input(|i| i.time));
+                if reply.is_ok() {
+                    app.host_tools = d.host_job.tools().cloned();
+                }
+                reply
+            }
+            None => host_job_closed(app, p),
         }),
         "app.prefetch" => match (s("path"), s("signature")) {
             (Some(path), Some(signature)) => wrap(crate::raw_workspace::request_prefetch(app, path, signature)),
@@ -1518,6 +1533,24 @@ mod tests {
             Outcome::Done(v) => v,
             _ => panic!("{method}: expected an immediate reply"),
         }
+    }
+
+    #[test]
+    fn host_tools_are_advertised_accepted_and_kept_for_later_dialogs() {
+        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let ctx = egui::Context::default();
+        assert_eq!(call(&mut app, &ctx, "app.handoff", json!({}))["result"]["cameraRawHostTools"], 1);
+        assert!(app.host_tools.is_none());
+        let reply = call(&mut app, &ctx, "ui.hostJob", json!({"tools": ["subjectMask", "somethingNew"]}));
+        assert_eq!(reply["ok"], true, "{reply}");
+        assert_eq!(reply["result"]["open"], false);
+        let kept = app.host_tools.clone().unwrap_or_default();
+        assert!(kept.contains("subjectMask") && kept.contains("somethingNew"));
+        assert_eq!(call(&mut app, &ctx, "ui.hostJob", json!({"tools": []}))["ok"], true);
+        assert_eq!(app.host_tools.as_ref().map(|t| t.len()), Some(0));
+        assert_eq!(call(&mut app, &ctx, "ui.hostJob", json!({}))["ok"], true);
+        assert_eq!(app.host_tools.as_ref().map(|t| t.len()), Some(0), "a poll without `tools` keeps the list");
+        assert_eq!(call(&mut app, &ctx, "ui.hostJob", json!({"tools": "subjectMask"}))["ok"], false);
     }
 
     #[test]

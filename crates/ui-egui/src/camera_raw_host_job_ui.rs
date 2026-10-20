@@ -4,6 +4,8 @@
 //! control server and cannot call the host, so the request waits here until the host polls `ui.hostJob`, claims it and reports
 //! progress; this module shows that progress ("Applying Super Resolution…", a bar, an estimate, Cancel) until the host finishes it or
 //! the user cancels, and tells the dialog when it may complete the Done that started it.
+use std::collections::BTreeSet;
+
 use egui::{Align2, FontId, Sense, vec2};
 use serde_json::{Value, json};
 
@@ -21,6 +23,33 @@ pub const PEOPLE_MASKS: &str = "peopleMasks";
 fn is_mask_kind(kind: &str) -> bool {
     matches!(kind, SUBJECT_MASK | SCENE_MASKS | PEOPLE_MASKS)
 }
+/// What the Masking tab may do with a host job right now.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Ready {
+    /// The host is polling, nothing is in flight and the host can run this kind.
+    Yes,
+    /// No host is polling, or a request is already in flight.
+    NoHost,
+    /// The host told us (`tools`) that it cannot run this kind.
+    NoTools,
+}
+
+impl Ready {
+    pub fn is_yes(self) -> bool {
+        self == Ready::Yes
+    }
+}
+
+/// The host's `tools` list: the job kinds it can run. Unknown strings are kept and simply never asked about.
+pub type Tools = BTreeSet<String>;
+
+/// `tools` of a `ui.hostJob` call: `None` when the field is absent, otherwise the list (possibly empty).
+pub fn parse_tools(p: &Value) -> Result<Option<Tools>, String> {
+    let Some(tools) = p.get("tools") else { return Ok(None) };
+    let list = tools.as_array().ok_or("tools must be a list of job kinds")?;
+    list.iter().map(|kind| kind.as_str().map(str::to_string).ok_or_else(|| "tools must be a list of strings".to_string())).collect::<Result<Tools, _>>().map(Some)
+}
+
 /// A request the host never picks up (not running, or an older build) is given up on after this long.
 const CLAIM_TIMEOUT_S: f64 = 20.0;
 /// The host polls on its autosave tick (about every 1.5 s): one that has not asked for this long is not connected.
@@ -70,6 +99,8 @@ pub struct HostJob {
     /// What the host is told besides the kind (file paths for a mask), and what the dialog wants done with the answer.
     extra: Value,
     tag: String,
+    /// The job kinds the host said it can run (`None`: never said, so everything is offered).
+    tools: Option<Tools>,
 }
 
 impl Default for HostJob {
@@ -88,6 +119,7 @@ impl Default for HostJob {
             then_done: false,
             extra: Value::Null,
             tag: String::new(),
+            tools: None,
         }
     }
 }
@@ -103,6 +135,31 @@ impl HostJob {
         self.last_poll.is_some_and(|at| now - at <= HOST_PRESENT_S)
     }
 
+    /// The host's list of runnable job kinds (`None`: it never sent one).
+    pub fn tools(&self) -> Option<&Tools> {
+        self.tools.as_ref()
+    }
+
+    pub fn set_tools(&mut self, tools: Option<Tools>) {
+        self.tools = tools;
+    }
+
+    /// Whether the host can run `kind`: always, until it has sent a `tools` list.
+    pub fn allows(&self, kind: &str) -> bool {
+        self.tools.as_ref().is_none_or(|tools| tools.contains(kind))
+    }
+
+    /// Whether an action that starts a `kind` job may be used now.
+    pub fn ready(&self, kind: &str, now: f64) -> Ready {
+        if !self.host_present(now) || self.is_open() {
+            Ready::NoHost
+        } else if !self.allows(kind) {
+            Ready::NoTools
+        } else {
+            Ready::Yes
+        }
+    }
+
     #[cfg(test)]
     fn phase(&self) -> Phase {
         self.phase
@@ -113,7 +170,7 @@ impl HostJob {
     }
 
     fn reset(&mut self) {
-        *self = HostJob { last_id: self.last_id, last_poll: self.last_poll, ..Default::default() };
+        *self = HostJob { last_id: self.last_id, last_poll: self.last_poll, tools: self.tools.take(), ..Default::default() };
     }
 
     /// Done with Super Resolution on: ask the host to apply it first. Returns whether a request was made; `false` (no host, or one
@@ -123,8 +180,8 @@ impl HostJob {
             return false;
         }
         self.last_id += 1;
-        let (last_id, last_poll) = (self.last_id, self.last_poll);
-        *self = HostJob { last_id, id: last_id, kind, phase: Phase::Requested, requested_at: now, last_poll, then_done: true, ..Default::default() };
+        let (last_id, last_poll, tools) = (self.last_id, self.last_poll, self.tools.take());
+        *self = HostJob { last_id, id: last_id, kind, phase: Phase::Requested, requested_at: now, last_poll, then_done: true, tools, ..Default::default() };
         self.message = tr("Waiting for Image Triage…").to_string();
         true
     }
@@ -136,8 +193,8 @@ impl HostJob {
             return false;
         }
         self.last_id += 1;
-        let (last_id, last_poll) = (self.last_id, self.last_poll);
-        *self = HostJob { last_id, id: last_id, kind, phase: Phase::Requested, requested_at: now, last_poll, extra, tag: tag.to_string(), ..Default::default() };
+        let (last_id, last_poll, tools) = (self.last_id, self.last_poll, self.tools.take());
+        *self = HostJob { last_id, id: last_id, kind, phase: Phase::Requested, requested_at: now, last_poll, extra, tag: tag.to_string(), tools, ..Default::default() };
         self.message = tr("Waiting for Image Triage…").to_string();
         true
     }
@@ -187,14 +244,18 @@ impl HostJob {
         state
     }
 
-    /// `ui.hostJob`: no field polls; `claim`, `progress` and `finish` are the host's replies (one per call).
+    /// `ui.hostJob`: no field polls; `tools` (the job kinds the host can run) may ride along with any call; `claim`, `progress` and `finish` are the host's replies (one per call).
     pub fn control(&mut self, p: &Value, now: f64) -> Result<Value, String> {
         if let Some(object) = p.as_object()
-            && let Some(key) = object.keys().find(|key| !["claim", "progress", "finish"].contains(&key.as_str()))
+            && let Some(key) = object.keys().find(|key| !["claim", "progress", "finish", "tools"].contains(&key.as_str()))
         {
             return Err(format!("unknown ui.hostJob field `{key}`"));
         }
+        let tools = parse_tools(p)?;
         self.last_poll = Some(now);
+        if tools.is_some() {
+            self.tools = tools;
+        }
         let given = ["claim", "progress", "finish"].iter().filter(|name| p.get(**name).is_some()).count();
         if given > 1 {
             return Err("ui.hostJob takes one of claim, progress or finish".into());
@@ -497,6 +558,60 @@ mod tests {
         job.tick(100.0 + CLAIM_TIMEOUT_S + 1.0);
         assert_eq!(job.phase(), Phase::Failed);
         assert!(!job.take_done_ready());
+    }
+
+    const KINDS: [&str; 3] = [SUBJECT_MASK, SCENE_MASKS, PEOPLE_MASKS];
+
+    #[test]
+    fn without_a_tools_list_every_job_is_offered() {
+        let mut job = HostJob::default();
+        job.control(&json!({}), 0.0).unwrap();
+        assert!(job.tools().is_none());
+        assert!(KINDS.iter().all(|kind| job.ready(kind, 1.0) == Ready::Yes));
+    }
+
+    #[test]
+    fn an_empty_tools_list_disables_every_host_job() {
+        let mut job = HostJob::default();
+        job.control(&json!({"tools": []}), 0.0).unwrap();
+        assert!(KINDS.iter().all(|kind| job.ready(kind, 1.0) == Ready::NoTools));
+    }
+
+    #[test]
+    fn a_partial_list_and_its_updates_apply_at_once() {
+        let mut job = HostJob::default();
+        job.control(&json!({"tools": [SUBJECT_MASK]}), 0.0).unwrap();
+        assert_eq!(job.ready(SUBJECT_MASK, 1.0), Ready::Yes);
+        assert_eq!(job.ready(SCENE_MASKS, 1.0), Ready::NoTools);
+        assert_eq!(job.ready(PEOPLE_MASKS, 1.0), Ready::NoTools);
+        job.control(&json!({"tools": [SCENE_MASKS, PEOPLE_MASKS]}), 1.0).unwrap();
+        assert_eq!(job.ready(SUBJECT_MASK, 1.0), Ready::NoTools);
+        assert_eq!(job.ready(SCENE_MASKS, 1.0), Ready::Yes);
+        job.control(&json!({}), 2.0).unwrap();
+        assert_eq!(job.ready(SUBJECT_MASK, 2.0), Ready::NoTools, "a poll without `tools` keeps the last list");
+    }
+
+    #[test]
+    fn unknown_kinds_are_accepted_and_ignored() {
+        let mut job = HostJob::default();
+        job.control(&json!({"tools": ["somethingNew", PEOPLE_MASKS]}), 0.0).unwrap();
+        assert_eq!(job.ready(PEOPLE_MASKS, 1.0), Ready::Yes);
+        assert_eq!(job.ready(SUBJECT_MASK, 1.0), Ready::NoTools);
+        assert!(job.control(&json!({"tools": "subjectMask"}), 1.0).is_err());
+        assert!(job.control(&json!({"tools": [1]}), 1.0).is_err());
+    }
+
+    #[test]
+    fn the_list_survives_requests_and_a_busy_job_is_left_alone() {
+        let mut job = HostJob::default();
+        job.control(&json!({"tools": [SUBJECT_MASK]}), 0.0).unwrap();
+        assert!(job.request_mask(SUBJECT_MASK, json!({"input": "a", "output": "b"}), "subject", 1.0));
+        assert_eq!(job.ready(SUBJECT_MASK, 1.0), Ready::NoHost, "in flight");
+        let id = job.id;
+        job.control(&json!({"finish": {"id": id, "ok": false, "message": "x"}}), 1.0).unwrap();
+        job.reset();
+        assert_eq!(job.ready(SCENE_MASKS, 1.0), Ready::NoTools);
+        assert_eq!(job.ready(SUBJECT_MASK, 1.0), Ready::Yes);
     }
 
     #[test]

@@ -848,7 +848,11 @@ fn open_pixels(
         preview_worker: None,
         preview_sent: 0,
         preview_shown: 0,
-        host_job: Default::default(),
+        host_job: {
+            let mut job = host_job::HostJob::default();
+            job.set_tools(app.host_tools.clone());
+            job
+        },
         snapshots: snapshots::Store::default(),
         layer,
         layer_name: name,
@@ -2200,7 +2204,7 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
                         let now = ui.ctx().input(|i| i.time);
                         let mut asked = None;
                         let tool_before = workspace.mask_ui.tool;
-                        let host_ready = d.host_job.host_present(now) && !d.host_job.is_open();
+                        let host_ready = masking::HostReady::of(&d.host_job, now);
                         if workspace.mask_ui.combine.is_some() {
                             ui.label(egui::RichText::new(crate::i18n::tr_ctx(crate::i18n::current(), "cameraRaw", "The next shape you make is combined into the selected mask.")).color(Tokens::get(ui.ctx()).text_dim));
                             ui.add_space(4.0);

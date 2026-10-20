@@ -707,3 +707,7 @@ then send `enabled:true`. A lost reply must not restore a second strip over the
 possibly visible native tray; keep the last acknowledged presentation and retry.
 The host restores its retained widget on process exit or when leaving the editor.
 Standalone preview seeds its one-photo strip from the existing Camera Raw texture.
+
+## Host tools (`cameraRawHostTools`)
+
+`app.handoff` advertises `cameraRawHostTools: 1`. A host that has it may add `tools` to any `ui.hostJob` call (an empty `{}` poll works): `{"tools": ["subjectMask", "sceneMasks", "peopleMasks"]}`, the list of host-job kinds it can currently run. The editor keeps the latest list (also while no Camera Raw dialog is open, for the next one) and replies as usual. An empty list means none; a call without `tools` leaves the last list in place; unknown kind strings are accepted and never asked about; a `tools` that is not a list of strings is an error. The kinds the Masking tab asks for are `subjectMask` (Subject, Background), `sceneMasks` (Landscape) and `peopleMasks` (People); `superResolution` (Done) is not gated. While no list has been received (a standalone editor, an older host) every action stays enabled. Masking actions whose kind is not listed are disabled with the tooltip "Needs Editor tools in Image Triage (Set Up AI)." and follow a new list without reopening the dialog.
