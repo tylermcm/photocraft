@@ -365,12 +365,14 @@ mod tests {
     #[test]
     fn local_masks_round_trip_through_the_private_extension() {
         use photocraft_algo::camera_raw::{LocalAdjust, LocalMask, MaskShape};
-        let mut p = CameraRaw::default();
-        p.masks = vec![
-            LocalMask { name: "Sky".into(), shape: MaskShape::raster(3, 2, &[0.0, 0.5, 1.0, 1.0, 0.5, 0.0]), invert: true, adjust: LocalAdjust { exposure: -0.7, ..Default::default() }, ..Default::default() },
-            LocalMask { shape: MaskShape::Radial { cx: 0.4, cy: 0.5, rx: 0.2, ry: 0.3, angle: 15.0, feather: 40.0 }, adjust: LocalAdjust { saturation: 25.0, ..Default::default() }, ..Default::default() },
-            LocalMask { shape: MaskShape::Linear { x0: 0.5, y0: 0.1, x1: 0.5, y1: 0.6 }, adjust: LocalAdjust { highlights: -30.0, ..Default::default() }, amount: 70.0, ..Default::default() },
-        ];
+        let p = CameraRaw {
+            masks: vec![
+                LocalMask { name: "Sky".into(), shape: MaskShape::raster(3, 2, &[0.0, 0.5, 1.0, 1.0, 0.5, 0.0]), invert: true, adjust: LocalAdjust { exposure: -0.7, ..Default::default() }, ..Default::default() },
+                LocalMask { shape: MaskShape::Radial { cx: 0.4, cy: 0.5, rx: 0.2, ry: 0.3, angle: 15.0, feather: 40.0 }, adjust: LocalAdjust { saturation: 25.0, ..Default::default() }, ..Default::default() },
+                LocalMask { shape: MaskShape::Linear { x0: 0.5, y0: 0.1, x1: 0.5, y1: 0.6 }, adjust: LocalAdjust { highlights: -30.0, ..Default::default() }, amount: 70.0, ..Default::default() },
+            ],
+            ..Default::default()
+        };
         let text = save(&p);
         assert!(text.contains("pc:Finishing"));
         let mut back = CameraRaw::default();

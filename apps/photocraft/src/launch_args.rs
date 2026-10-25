@@ -296,6 +296,8 @@ mod tests {
             "--automation-write-root",
             "/w",
             "--safe-gpu",
+            "--hosted",
+            "--raw-workspace",
             "--in-window-menus",
             "--new-instance",
             "--present-mode",
@@ -311,6 +313,7 @@ mod tests {
         assert_eq!(parsed.automation.automation_read_root.as_deref(), Some(std::path::Path::new("/r")));
         assert_eq!(parsed.automation.automation_write_root.as_deref(), Some(std::path::Path::new("/w")));
         assert!(parsed.safe_gpu && parsed.in_window_menus && parsed.new_instance);
+        assert!(parsed.hosted && parsed.raw_workspace, "the Image Triage host's flags");
         assert_eq!(parsed.present_mode, Some(PresentMode::AutoNoVsync));
         assert_eq!(parsed.frame_latency, Some(1));
         assert_eq!(parsed.stroke_trace.as_deref(), Some("stderr"));

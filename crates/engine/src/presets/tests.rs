@@ -851,7 +851,6 @@ fn a_damaged_preset_set_keeps_the_other_sets() {
         let mut next = Session::new();
         next.load_presets_json(blob);
         assert_eq!(next.presets.documents, s.presets.documents, "damaged `{key}`");
-        assert_eq!(next.presets.export_presets, s.presets.export_presets, "damaged `{key}`");
         assert_eq!(next.presets.tool_presets.len(), Session::new().presets.tool_presets.len(), "damaged `{key}`");
         if key != "export_presets" {
             assert_eq!(next.presets.export_presets, s.presets.export_presets, "damaged `{key}`");

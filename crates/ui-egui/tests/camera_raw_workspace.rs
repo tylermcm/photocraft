@@ -27,6 +27,20 @@ fn invoke(h: &mut Harness<'_, PhotocraftApp>, value: Value) -> Result<Value, Str
 fn inspect(h: &Harness<'_, PhotocraftApp>) -> Value {
     control::inspect(h.state(), &h.ctx)["cameraRaw"].clone()
 }
+
+/// Steps until the preview being developed on its worker has landed: the dialog's preview is asynchronous (upstream's `request_render`), so a histogram read
+/// straight after a change is the one before it.
+fn settle(h: &mut Harness<'_, PhotocraftApp>) {
+    h.run_steps(3);
+    for _ in 0..400 {
+        if inspect(h)["previewPending"] == false {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        h.run_steps(1);
+    }
+    h.run_steps(2);
+}
 fn pointer(h: &mut Harness<'_, PhotocraftApp>, at: Pos2, pressed: bool) {
     h.event(Event::PointerMoved(at));
     h.event(Event::PointerButton { pos: at, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE });
@@ -113,18 +127,18 @@ fn workspace_navigation_is_view_only_and_mixed_invalid_requests_are_atomic() {
 fn bypass_changes_only_the_preview_and_preserves_recipe_and_document_history() {
     let mut h = fixture();
     invoke(&mut h, json!({"set":{"exposure":1.0,"saturation":-20.0}})).unwrap();
-    h.run_steps(5);
+    settle(&mut h);
     let adjusted = inspect(&h);
     let history = h.state().session.active().unwrap().history.past_len();
     invoke(&mut h, json!({"workspace":{"bypassSection":"Light"}})).unwrap();
-    h.run_steps(5);
+    settle(&mut h);
     let bypassed = inspect(&h);
     assert_eq!(bypassed["params"], adjusted["params"]);
     assert_eq!(bypassed["previewBypass"], "Light");
     assert_ne!(bypassed["histogram"]["red"], adjusted["histogram"]["red"]);
     assert_eq!(h.state().session.active().unwrap().history.past_len(), history);
     invoke(&mut h, json!({"workspace":{"bypassSection":null}})).unwrap();
-    h.run_steps(5);
+    settle(&mut h);
     let restored = inspect(&h);
     assert_eq!(restored["histogram"], adjusted["histogram"]);
     assert_eq!(restored["params"], adjusted["params"]);
@@ -153,12 +167,21 @@ fn detail_enhancements_are_explicitly_unavailable_and_manual_noise_retains_its_r
     invoke(&mut h, json!({"set":{"noiseLuminance":27.0},"workspace":{"panels":{"open":["Detail"]}}})).unwrap();
     h.run_steps(12);
     let initial = inspect(&h);
-    for label in ["Denoise", "Raw Details", "Super Resolution"] {
+    for label in ["Denoise", "Raw Details"] {
         let rect = h.get_by_label(label).rect();
         pointer(&mut h, rect.center(), true);
         pointer(&mut h, rect.center(), false);
         assert_eq!(inspect(&h)["params"], initial["params"]);
     }
+    // Super Resolution is the host's job (it upsizes the finished render, `1f4857294`): its box is a recipe setting, not an unavailable control.
+    let rect = h.get_by_label("Super Resolution").rect();
+    pointer(&mut h, rect.center(), true);
+    pointer(&mut h, rect.center(), false);
+    assert_eq!(inspect(&h)["params"]["superResolution"], true);
+    let rect = h.get_by_label("Super Resolution").rect();
+    pointer(&mut h, rect.center(), true);
+    pointer(&mut h, rect.center(), false);
+    assert_eq!(inspect(&h)["params"]["superResolution"], false);
     assert!(h.query_by_label("Luminance").is_none());
     h.get_by_label("Manual Noise Reduction").click();
     h.run_steps(8);

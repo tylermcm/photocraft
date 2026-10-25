@@ -398,7 +398,7 @@ fn encode_runs(bytes: &[u8]) -> String {
 
 /// The `expected` bytes the text holds, or `None` when it is not exactly that many valid runs.
 fn decode_runs(text: &str, expected: usize) -> Option<Vec<u8>> {
-    if text.len() % 4 != 0 || text.len() > MAX_RASTER_TEXT || expected == 0 || expected > (MAX_RASTER_SIDE as usize).pow(2) {
+    if !text.len().is_multiple_of(4) || text.len() > MAX_RASTER_TEXT || expected == 0 || expected > (MAX_RASTER_SIDE as usize).pow(2) {
         return None;
     }
     let value = |c: u8| -> Option<u32> { B64.iter().position(|b| *b == c).map(|p| p as u32) };

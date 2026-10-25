@@ -323,7 +323,7 @@ fn parts_are_validated_saved_and_cost_nothing_when_absent() {
     let back: CameraRaw = serde_json::from_value(serde_json::to_value(&p).unwrap()).unwrap();
     assert_eq!(back.masks, p.masks);
     // A mask without parts writes no `parts` key, so older files and settings are unchanged.
-    let plain = serde_json::to_value(&brighten(top_half())).unwrap();
+    let plain = serde_json::to_value(brighten(top_half())).unwrap();
     assert!(plain["masks"][0].get("parts").is_none());
     // A damaged part is refused, and so is a mask with too many.
     p.masks[0].parts[0].shape = MaskShape::Raster { w: 2, h: 2, data: "AAAA".into() };

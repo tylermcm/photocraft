@@ -71,7 +71,7 @@ pub(super) fn apply(px: &mut [[f32; 4]], p: &CameraRaw) {
     let m = matrix(p);
     let tint = p.calib_shadow_tint / 100.0 * 0.15;
     for q in px.iter_mut() {
-        if !(q[3] > 0.0) || q[..3].iter().any(|v| !v.is_finite()) {
+        if q[3].is_nan() || q[3] <= 0.0 || q[..3].iter().any(|v| !v.is_finite()) {
             continue;
         }
         let c = [q[0], q[1], q[2]].map(|v| enc.decode(v).max(0.0));

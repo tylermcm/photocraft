@@ -563,17 +563,17 @@ pub(super) fn canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Re
         if let Some(pos) = press {
             if let Some((i, point, part)) = handle_hit(&d.params.masks, st.selected, st.part, pos) {
                 drag = Some(Drag { mask: i, component: st.part, part, offset: [(pos.x - point.x) / rect.width().max(1.0), (pos.y - point.y) / rect.height().max(1.0)] });
-            } else if let Some(tool) = st.tool.filter(|_| rect.contains(pos)) {
-                if room(d, st).is_ok() {
-                    let at = frame.norm(pos);
-                    let made = match tool {
-                        MaskTool::Linear | MaskTool::Brush | MaskTool::Objects | MaskTool::Colour => linear(at, at),
-                        MaskTool::Radial => radial(at, MIN_RADIUS, MIN_RADIUS),
-                    };
-                    let (index, component) = commit(d, st, made);
-                    drag = Some(Drag { mask: index, component, part: Part::Create(tool, pos), offset: [0.0, 0.0] });
-                    changed = true;
-                }
+            } else if let Some(tool) = st.tool.filter(|_| rect.contains(pos))
+                && room(d, st).is_ok()
+            {
+                let at = frame.norm(pos);
+                let made = match tool {
+                    MaskTool::Linear | MaskTool::Brush | MaskTool::Objects | MaskTool::Colour => linear(at, at),
+                    MaskTool::Radial => radial(at, MIN_RADIUS, MIN_RADIUS),
+                };
+                let (index, component) = commit(d, st, made);
+                drag = Some(Drag { mask: index, component, part: Part::Create(tool, pos), offset: [0.0, 0.0] });
+                changed = true;
             }
         }
     }
@@ -587,19 +587,21 @@ pub(super) fn canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Re
         changed |= *shape != before;
     }
     // A press that did not move makes a default-sized mask of the armed tool.
-    if !panning && response.clicked_by(egui::PointerButton::Primary) && drag.is_none() {
-        if let (Some(tool), Some(pos)) = (st.tool, ui.input(|i| i.pointer.interact_pos())) {
-            if rect.contains(pos) && room(d, st).is_ok() {
-                let at = frame.norm(pos);
-                let made = match tool {
-                    MaskTool::Linear | MaskTool::Brush | MaskTool::Objects | MaskTool::Colour => linear([at[0], clamp_unit(at[1] - 0.15)], [at[0], clamp_unit(at[1] + 0.15)]),
-                    MaskTool::Radial => radial(at, DEFAULT_RADIUS_PX * rect.height() / rect.width().max(1.0), DEFAULT_RADIUS_PX),
-                };
-                commit(d, st, made);
-                st.tool = None;
-                changed = true;
-            }
-        }
+    if !panning
+        && response.clicked_by(egui::PointerButton::Primary)
+        && drag.is_none()
+        && let (Some(tool), Some(pos)) = (st.tool, ui.input(|i| i.pointer.interact_pos()))
+        && rect.contains(pos)
+        && room(d, st).is_ok()
+    {
+        let at = frame.norm(pos);
+        let made = match tool {
+            MaskTool::Linear | MaskTool::Brush | MaskTool::Objects | MaskTool::Colour => linear([at[0], clamp_unit(at[1] - 0.15)], [at[0], clamp_unit(at[1] + 0.15)]),
+            MaskTool::Radial => radial(at, DEFAULT_RADIUS_PX * rect.height() / rect.width().max(1.0), DEFAULT_RADIUS_PX),
+        };
+        commit(d, st, made);
+        st.tool = None;
+        changed = true;
     }
     // Releasing a creation drag that hardly moved leaves a default-sized mask, and the tool is used up.
     let previous: Option<Drag> = ui.ctx().data(|data| data.get_temp(drag_id()));
@@ -1314,8 +1316,7 @@ mod tests {
 
     #[test]
     fn keys_and_state_stay_sane() {
-        let mut st = MaskUiState::default();
-        st.selected = Some(3);
+        let mut st = MaskUiState { selected: Some(3), ..Default::default() };
         st.settle(2);
         assert_eq!(st.selected, Some(1));
         st.settle(0);
