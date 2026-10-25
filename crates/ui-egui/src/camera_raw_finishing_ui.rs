@@ -81,9 +81,9 @@ pub struct RangePreview {
 fn input_pixels(d: &CameraRawDialog) -> Vec<[f32; 4]> {
     let mut params = d.params.clone();
     params.point_colors.clear();
-    let mut px = d.proxy.clone();
+    let mut px = d.proxy.to_vec();
     let scale = (d.pw as f32 / d.full_w.max(1) as f32).min(1.0);
-    crate::raw_recipe::apply(&mut px, d.pw, d.ph, &params, d.raw_curve.as_deref(), scale, d.float);
+    crate::raw_recipe::apply(&mut px, d.pw, d.ph, &params, d.raw_curve.as_deref().map(Vec::as_slice), scale, d.float);
     px
 }
 pub fn preview(ui: &Ui, d: &mut CameraRawDialog, image: Rect, response: &Response, tools: &mut MixerTools, panning: bool) {

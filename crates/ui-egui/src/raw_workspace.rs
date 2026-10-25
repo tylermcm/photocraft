@@ -383,6 +383,8 @@ pub fn queue_dialog(app: &mut PhotocraftApp, document: Option<DocId>) {
     claim(app, document);
     let Some(bytes) = pending.bytes else { return };
     app.raw_workspace.browsing = Some(document);
+    // Open develops the real photo with the demosaic method from Preferences, unless the dialog's Detail panel picks another.
+    let method = app.session.prefs().raw_defaults.demosaic.method();
     app.pending_raw_open = Some(camera_raw_ui::RawOpen {
         document,
         name,
@@ -393,6 +395,8 @@ pub fn queue_dialog(app: &mut PhotocraftApp, document: Option<DocId>) {
         continue_from: pending.spec.continue_from,
         proxy: pending.proxy,
         full_size: pending.full_size,
+        developed_with: method,
+        demosaic: method,
     });
 }
 

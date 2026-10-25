@@ -107,7 +107,7 @@ fn row(ui: &mut Ui, rect: Rect, label: &str, value: &mut f32, gradient: &[Color3
         -100.0..=100.0,
         "",
         Some(gradient),
-        widgets::RowGestures { reset: Some(0.0), wheel_step: None },
+        widgets::RowGestures { reset: Some(0.0), wheel_step: None, curve: None },
         Some(0),
         d.value_width,
         Some(root.slider_style()),

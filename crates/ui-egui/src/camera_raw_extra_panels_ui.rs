@@ -271,7 +271,7 @@ pub(super) fn calibration(ui: &mut Ui, p: &mut photocraft_algo::camera_raw::Came
     ui.separator();
     space(ui);
     calibration_heading(ui, "Shadows");
-    super::row(ui, &mut dirty, "Tint", &mut p.calib_shadow_tint, -100.0..=100.0, Some(&[super::hue_color(120.0), super::hue_color(300.0)]));
+    super::row(ui, &mut dirty, "Tint", &mut p.calib_shadow_tint, -100.0..=100.0, Some(&[crate::widgets::hue_color(120.0), crate::widgets::hue_color(300.0)]));
     for (i, (label, hue, ends)) in
         [("Red Primary", 0.0, [300.0, 30.0]), ("Green Primary", 120.0, [60.0, 160.0]), ("Blue Primary", 240.0, [180.0, 270.0])].into_iter().enumerate()
     {
@@ -279,8 +279,8 @@ pub(super) fn calibration(ui: &mut Ui, p: &mut photocraft_algo::camera_raw::Came
         ui.separator();
         space(ui);
         calibration_heading(ui, label);
-        super::row(ui, &mut dirty, "Hue", &mut p.calib_hue[i], -100.0..=100.0, Some(&[super::hue_color(ends[0]), super::hue_color(ends[1])]));
-        super::row(ui, &mut dirty, "Saturation", &mut p.calib_sat[i], -100.0..=100.0, Some(&[t.text_faint, super::hue_color(hue)]));
+        super::row(ui, &mut dirty, "Hue", &mut p.calib_hue[i], -100.0..=100.0, Some(&[crate::widgets::hue_color(ends[0]), crate::widgets::hue_color(ends[1])]));
+        super::row(ui, &mut dirty, "Saturation", &mut p.calib_sat[i], -100.0..=100.0, Some(&[t.text_faint, crate::widgets::hue_color(hue)]));
     }
     dirty
 }

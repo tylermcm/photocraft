@@ -76,6 +76,8 @@ pub fn tuning(params: &CameraRaw) -> photocraft_io::raw::RawTuning {
         temperature: params.temperature,
         tint: params.tint,
         exposure: params.exposure,
+        // The method a raw opens with is the open's choice (`RawOpen::demosaic`), not a recipe setting.
+        demosaic: Default::default(),
         shadows: params.shadows,
         highlights: params.highlights,
         clarity: params.clarity,

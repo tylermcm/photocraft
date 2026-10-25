@@ -257,7 +257,7 @@ pub(crate) fn disclosed_slider(ui: &mut Ui, label: &str, value: &mut f32, range:
         range,
         "",
         None,
-        widgets::RowGestures { reset: Some(0.0), wheel_step: None },
+        widgets::RowGestures { reset: Some(0.0), wheel_step: None, curve: None },
         None,
         design.value_field_width,
         Some(design.slider_style()),
@@ -713,9 +713,9 @@ pub(crate) fn grading(ui: &mut Ui, p: &mut CameraRaw, state: &mut GradingView) -
     }
     ui.add_space(design.grading_footer_gap);
     ui.separator();
-    dirty |= slider_row_with(ui, tr("Blending"), &mut p.grade_blending, 0.0..=100.0, "", None, widgets::RowGestures { reset: Some(50.0), wheel_step: None })
+    dirty |= slider_row_with(ui, tr("Blending"), &mut p.grade_blending, 0.0..=100.0, "", None, widgets::RowGestures { reset: Some(50.0), wheel_step: None, curve: None })
         .changed();
-    dirty |= slider_row_with(ui, tr("Balance"), &mut p.grade_balance, -100.0..=100.0, "", None, widgets::RowGestures { reset: Some(0.0), wheel_step: None })
+    dirty |= slider_row_with(ui, tr("Balance"), &mut p.grade_balance, -100.0..=100.0, "", None, widgets::RowGestures { reset: Some(0.0), wheel_step: None, curve: None })
         .changed();
     dirty
 }

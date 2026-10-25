@@ -250,7 +250,7 @@ fn left_aligned_camera_raw_numbers_keep_a_full_width_edit_target_and_accept_type
                 -5.0..=5.0,
                 "",
                 None,
-                widgets::RowGestures { reset: Some(0.0), wheel_step: None },
+                widgets::RowGestures { reset: Some(0.0), wheel_step: None, curve: None },
                 Some(2),
                 width,
                 Some(style),
