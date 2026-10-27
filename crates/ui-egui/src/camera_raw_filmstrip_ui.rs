@@ -442,6 +442,11 @@ pub(crate) fn navigation(ui: &mut Ui, navigation: Rect, before: &mut bool) {
         *before = false;
     }
     if s.hosted && !ui.ctx().text_edit_focused() && !ui.input(|i| i.modifiers.any()) && !egui::Popup::is_any_open(ui.ctx()) {
+        // E puts the editor away, as it opens it from the grid; the parent settles the edit and closes it.
+        if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::E)) {
+            let current = s.current;
+            request(&mut s, current, "close", Value::Null);
+        }
         let target = ui.input_mut(|i| {
             if i.consume_key(egui::Modifiers::NONE, egui::Key::ArrowRight) {
                 Some(s.current.saturating_add(1))

@@ -79,7 +79,9 @@ pub fn open_with_camera_raw(app: &mut PhotocraftApp, path: &str, replace: bool, 
     let workspace = app.raw_workspace.enabled;
     if workspace {
         if !wants_dialog {
-            app.raw_workspace.end_shell();
+            // A frame left standing by the photo just left stays up: the host opens this photo's dialog (`ui.cameraRaw open`) a moment
+            // after the document lands, and the editor's own windows must not show in that gap.
+            app.raw_workspace.hold_shell_for_dialog();
         } else if !in_place {
             // The photo's Camera Raw is on its way: its frame stands in for the editor's windows until the dialog opens.
             let name = std::path::Path::new(&path).file_name().and_then(|name| name.to_str()).unwrap_or(&path).to_string();

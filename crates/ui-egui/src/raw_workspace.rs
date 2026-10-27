@@ -69,12 +69,23 @@ pub(crate) struct Shell {
     awaiting_open: bool,
     /// The document that was left: the frame only stands in while it is still the active one.
     left: Option<DocId>,
+    /// The host opens the dialog itself once the document lands (no pending dialog of ours): the frame stays until it does.
+    hold_for_dialog: bool,
 }
 
 impl State {
     /// The loading frame goes away: the dialog is up, or there will be no dialog.
     pub(crate) fn end_shell(&mut self) {
         self.shell = None;
+    }
+
+    /// A standing frame now waits for the dialog the host opens itself, instead of for the next `app.open`; no frame stays none.
+    pub(crate) fn hold_shell_for_dialog(&mut self) {
+        if let Some(shell) = self.shell.as_mut() {
+            shell.awaiting_open = false;
+            shell.hold_for_dialog = true;
+            shell.since = std::time::Instant::now();
+        }
     }
 }
 
@@ -83,7 +94,7 @@ impl State {
 pub(crate) fn begin_shell(app: &mut PhotocraftApp, name: &str, awaiting_open: bool) {
     if app.raw_workspace.enabled {
         let left = if awaiting_open { app.session.active().map(|st| st.doc.id) } else { None };
-        app.raw_workspace.shell = Some(Shell { name: name.to_string(), since: std::time::Instant::now(), awaiting_open, left });
+        app.raw_workspace.shell = Some(Shell { name: name.to_string(), since: std::time::Instant::now(), awaiting_open, left, hold_for_dialog: false });
     }
 }
 
@@ -136,7 +147,8 @@ pub fn on_open_event(app: &mut PhotocraftApp, document: Option<DocId>, done: boo
         queue_dialog(app, document);
     }
     // The frame stays only while a dialog is about to open on the photo that just landed.
-    if !done || app.pending_raw_open.is_none() {
+    let held = app.raw_workspace.shell.as_ref().is_some_and(|shell| shell.hold_for_dialog) && done;
+    if (!done || app.pending_raw_open.is_none()) && !held {
         app.raw_workspace.end_shell();
     }
 }
@@ -441,7 +453,8 @@ pub fn control(app: &mut PhotocraftApp, ctx: &egui::Context, p: &serde_json::Val
     if done {
         // Leaving the photo: a raw keeps its settings as a recipe and nothing is developed. The host opens another
         // photo next; its Camera Raw frame is up from now, so the editor's own windows never show in between.
-        let leaving_a_raw = camera_raw_ui::target_name(app) == Some("openRaw");
+        // Any photo with its dialog up, not only a raw: a JPEG browsed here is a filter dialog on an ordinary document.
+        let leaving_a_raw = camera_raw_ui::target_name(app).is_some();
         left = Some(camera_raw_ui::done(app)?);
         if leaving_a_raw {
             begin_shell(app, "", true);
