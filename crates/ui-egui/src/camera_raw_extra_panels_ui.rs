@@ -19,9 +19,9 @@ pub(super) fn detail_enhancements(ui: &mut Ui, super_resolution: &mut bool) -> b
         let row = Rect::from_min_size(rect.min + vec2(0.0, y - 8.0), vec2(rect.width(), 16.0));
         // Super Resolution is a setting like any other: Image Triage upsizes the finished photo when it is output.
         let live = label == "Super Resolution";
-        let response = ui.interact(row, ui.id().with(("enhancement", label)), if live { Sense::click() } else { Sense::hover() });
+        let response = ui.interact(row, ui.scope_id().with(("enhancement", label)), if live { Sense::click() } else { Sense::hover() });
         let checked = live && *super_resolution;
-        response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, live, checked, tr(label)));
+        response.widget_info(|| egui::WidgetInfo::selected(egui::Role::CheckBox, live, checked, tr(label)));
         if live {
             if response.clicked() {
                 *super_resolution = !*super_resolution;
@@ -53,7 +53,7 @@ pub(super) fn noise_disclosure(ui: &mut Ui, expanded: &mut bool) {
     let design = crate::camera_raw_design::get(ui.ctx());
     let t = Tokens::get(ui.ctx());
     let (row, response) = ui.allocate_exact_size(vec2(ui.available_width(), design.slider_label_row_height + design.slider_track_height), Sense::click());
-    response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, ui.is_enabled(), *expanded, tr("Manual Noise Reduction")));
+    response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, ui.is_enabled(), *expanded, tr("Manual Noise Reduction")));
     if response.clicked() {
         *expanded = !*expanded;
     }
@@ -87,7 +87,7 @@ fn disclosure(ui: &mut Ui, label: &str, icon: &str) {
     let t = Tokens::get(ui.ctx());
     let (row, response) = ui.allocate_exact_size(vec2(ui.available_width(), design.extra_disclosure_height), Sense::hover());
     let rect = row.expand2(vec2(design.extra_disclosure_outset, 0.0));
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, false, tr(label)));
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, false, tr(label)));
     response.on_disabled_hover_text(tr("Not available"));
     ui.painter().rect_filled(rect, t.radius * 2.0, t.field);
     let glyph = Rect::from_min_size(rect.min + vec2(7.0, 4.0), vec2(22.0, 22.0));
@@ -119,7 +119,7 @@ fn empty_slider(ui: &mut Ui, label: &str) {
     let width = ui.available_width();
     let height = design.slider_label_row_height + design.slider_track_height;
     let (rect, response) = ui.allocate_exact_size(vec2(width, height), Sense::hover());
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Slider, false, tr(label)));
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Slider, false, tr(label)));
     ui.painter().text(
         pos2(rect.left(), rect.top() + design.slider_label_row_height / 2.0),
         Align2::LEFT_CENTER,
@@ -142,8 +142,8 @@ fn optics(ui: &mut Ui) {
     let (tabs, _) = ui.allocate_exact_size(vec2(ui.available_width(), design.optics_tabs_height), Sense::hover());
     for (offset, label, selected) in [(0.0, "Profile", true), (47.0, "Manual", false)] {
         let rect = Rect::from_min_size(tabs.min + vec2(offset, 0.0), vec2(44.0, 24.0));
-        let response = ui.interact(rect, ui.id().with(label), Sense::hover());
-        response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, false, selected, tr(label)));
+        let response = ui.interact(rect, ui.scope_id().with(label), Sense::hover());
+        response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, false, selected, tr(label)));
         ui.painter().text(
             rect.left_center(),
             Align2::LEFT_CENTER,
@@ -178,8 +178,8 @@ fn lens_blur(ui: &mut Ui) {
     let (row, _) = ui.allocate_exact_size(vec2(ui.available_width(), side + 8.0), Sense::hover());
     for (index, label) in ["Circle", "Bubble", "5-Blade", "Ring", "Cat Eye"].into_iter().enumerate() {
         let rect = Rect::from_min_size(row.min + vec2(index as f32 * (side + gap), 2.0), vec2(side, side));
-        let response = ui.interact(rect, ui.id().with(("bokeh", index)), Sense::hover());
-        response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, false, false, tr(label)));
+        let response = ui.interact(rect, ui.scope_id().with(("bokeh", index)), Sense::hover());
+        response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, false, false, tr(label)));
         ui.painter().rect_stroke(rect, t.radius * 3.0, Stroke::new(1.5, t.field_border), egui::StrokeKind::Inside);
         for (offset, radius) in [(vec2(2.0, -1.0), side * 0.27), (vec2(-5.0, 6.0), side * 0.15)] {
             let center = rect.center() + offset;
@@ -215,7 +215,7 @@ fn lens_blur(ui: &mut Ui) {
         });
     });
     let (range, response) = ui.allocate_exact_size(vec2(ui.available_width(), 22.0), Sense::hover());
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Slider, false, tr("Focus Range")));
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Slider, false, tr("Focus Range")));
     ui.painter().rect_filled(range, 0.0, t.separator);
     space(ui);
     ui.horizontal(|ui| {
@@ -235,7 +235,7 @@ fn lens_blur(ui: &mut Ui) {
 fn focus_icon(ui: &mut Ui, subject: bool) {
     let t = Tokens::get(ui.ctx());
     let (rect, response) = ui.allocate_exact_size(vec2(22.0, 22.0), Sense::hover());
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, false, tr(if subject { "Subject" } else { "Target" })));
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, false, tr(if subject { "Subject" } else { "Target" })));
     let center = rect.center();
     let stroke = Stroke::new(1.5, t.text_faint.gamma_multiply(0.65));
     if subject {
@@ -262,7 +262,12 @@ pub(super) fn calibration(ui: &mut Ui, p: &mut photocraft_algo::camera_raw::Came
     ui.horizontal(|ui| {
         ui.label(tr("Process"));
         ui.add_enabled_ui(false, |ui| {
-            egui::ComboBox::from_id_salt("raw-calibration-process").width(ui.available_width()).selected_text(tr("Version 6 (Current)")).show_ui(ui, |_| {});
+            craft_ui::ComboBox::from_id_salt("raw-calibration-process")
+                .width(ui.available_width())
+                .selected_text(tr("Version 6 (Current)"))
+                .show_ui(ui, |_| {})
+                .response
+                .widget_info(|| egui::WidgetInfo::labeled(egui::Role::ComboBox, false, tr("Process")));
         })
         .response
         .on_disabled_hover_text(tr("Not available"));
@@ -271,7 +276,7 @@ pub(super) fn calibration(ui: &mut Ui, p: &mut photocraft_algo::camera_raw::Came
     ui.separator();
     space(ui);
     calibration_heading(ui, "Shadows");
-    super::row(ui, &mut dirty, "Tint", &mut p.calib_shadow_tint, -100.0..=100.0, Some(&[crate::widgets::hue_color(120.0), crate::widgets::hue_color(300.0)]));
+    super::row(ui, &mut dirty, "Tint", &mut p.shadow_tint, -100.0..=100.0, Some(&[crate::widgets::hue_color(120.0), crate::widgets::hue_color(300.0)]));
     for (i, (label, hue, ends)) in
         [("Red Primary", 0.0, [300.0, 30.0]), ("Green Primary", 120.0, [60.0, 160.0]), ("Blue Primary", 240.0, [180.0, 270.0])].into_iter().enumerate()
     {
@@ -279,8 +284,15 @@ pub(super) fn calibration(ui: &mut Ui, p: &mut photocraft_algo::camera_raw::Came
         ui.separator();
         space(ui);
         calibration_heading(ui, label);
-        super::row(ui, &mut dirty, "Hue", &mut p.calib_hue[i], -100.0..=100.0, Some(&[crate::widgets::hue_color(ends[0]), crate::widgets::hue_color(ends[1])]));
-        super::row(ui, &mut dirty, "Saturation", &mut p.calib_sat[i], -100.0..=100.0, Some(&[t.text_faint, crate::widgets::hue_color(hue)]));
+        super::row(
+            ui,
+            &mut dirty,
+            "Hue",
+            &mut p.calibration_hue[i],
+            -100.0..=100.0,
+            Some(&[crate::widgets::hue_color(ends[0]), crate::widgets::hue_color(ends[1])]),
+        );
+        super::row(ui, &mut dirty, "Saturation", &mut p.calibration_sat[i], -100.0..=100.0, Some(&[t.text_faint, crate::widgets::hue_color(hue)]));
     }
     dirty
 }
@@ -289,7 +301,7 @@ fn calibration_heading(ui: &mut Ui, label: &str) {
     let design = crate::camera_raw_design::get(ui.ctx());
     ui.add_space(design.calibration_title_leading);
     let (rect, response) = ui.allocate_exact_size(vec2(ui.available_width(), design.calibration_title_height), Sense::hover());
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, ui.is_enabled(), tr(label)));
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, ui.is_enabled(), tr(label)));
     ui.painter().text(rect.center(), Align2::CENTER_CENTER, tr(label), FontId::proportional(design.panel_font_size), Tokens::get(ui.ctx()).text);
 }
 

@@ -46,6 +46,7 @@ pub fn start(app: &mut PhotocraftApp, p: &Value) -> Result<Started, String> {
         }
         _ => return Err("render takes either a `project` or a `recipe`".into()),
     };
+    let defaults = app.session.prefs().raw_defaults.clone();
     app.session
         .start_job(
             "app.render",
@@ -61,7 +62,7 @@ pub fn start(app: &mut PhotocraftApp, p: &Value) -> Result<Started, String> {
                         ctx.check()?;
                         photocraft_io::import(&name, &bytes).map_err(|e| EngineError::Other(e.to_string()))?.document
                     }
-                    Source::Recipe { source, params } => develop(&read, &source, &params, ctx)?,
+                    Source::Recipe { source, params } => develop(&read, &source, &params, &defaults, ctx)?,
                 };
                 ctx.check()?;
                 let float = doc.depth == photocraft_color::SampleType::F32;
@@ -83,6 +84,7 @@ fn develop(
     read: &crate::BackgroundAutomationReadFn,
     source: &str,
     params: &CameraRaw,
+    defaults: &photocraft_engine::prefs::RawDefaults,
     ctx: &photocraft_engine::jobs::JobCtx,
 ) -> photocraft_engine::Result<photocraft_doc::Document> {
     let (name, bytes) = read(source).map_err(EngineError::Other)?;
@@ -90,20 +92,23 @@ fn develop(
         return Err(EngineError::Other(format!("{source}: a Camera Raw recipe applies to raw photos only")));
     }
     ctx.check()?;
-    let (imported, white_balanced) =
+    let (mut imported, white_balanced) =
         photocraft_io::raw::import_raw_tuned(&name, &bytes, &crate::raw_recipe::tuning(params)).map_err(|e| EngineError::Other(e.to_string()))?;
     ctx.check()?;
-    let rest = crate::raw_recipe::after_develop(params, white_balanced);
-    if rest.is_identity() {
-        return Ok(imported.document);
-    }
-    // The same Camera Raw step Open applies, on a session of its own (the editor's is never touched).
+    let mut rest = crate::raw_recipe::after_develop(params, white_balanced);
+    crate::camera_raw_ui::output_sharpening(defaults, &mut rest);
+    // The same Camera Raw step and workflow defaults Open applies, on a separate session.
     let mut session = photocraft_engine::Session::new();
+    session.edit_prefs(|prefs| prefs.raw_defaults = defaults.clone());
+    photocraft_engine::file_cmds::raw_defaults(&session, &imported.warnings, &mut imported.document);
     session.add_document(imported.document, None);
     let layer = session.active().and_then(|state| state.active_layer).ok_or_else(|| EngineError::Other("no layer to develop".into()))?;
     let mut step = crate::camera_raw_ui::non_defaults(&rest);
     step["layer"] = json!(layer.0);
-    session.execute("filter.cameraRaw", step)?;
+    if !rest.is_identity() {
+        session.execute("filter.cameraRaw", step)?;
+    }
+    crate::camera_raw_ui::apply_session_raw_conversions(&mut session, defaults).map_err(EngineError::Other)?;
     session.active().map(|state| photocraft_doc::Document::clone(&state.doc)).ok_or_else(|| EngineError::Other("the developed document went away".into()))
 }
 

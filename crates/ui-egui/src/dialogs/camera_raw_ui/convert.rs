@@ -1,0 +1,202 @@
+use super::open::Coverage;
+use super::{CameraRaw, CameraRawDialog, LayerId, MAX_SAMPLERS, PhotocraftApp, RgbHistogram, Value, json};
+use super::{OpenAs, host_job, proxy_geometry, proxy_pixels, settings_menu, snapshots};
+
+/// Camera Raw Defaults › Sharpen For: output sharpening, folded into the Camera Raw step `rest`
+/// as the workflow's Sharpen For is. Returns what it applied.
+pub(crate) fn output_sharpening(d: &photocraft_engine::prefs::RawDefaults, rest: &mut CameraRaw) -> Vec<&'static str> {
+    match d.sharpen_for.preset() {
+        Some((amount, radius)) if rest.sharpen_amount == 0.0 => {
+            rest.sharpen_amount = amount;
+            rest.sharpen_radius = radius;
+            vec!["sharpenFor"]
+        }
+        _ => Vec::new(),
+    }
+}
+
+/// The Camera Raw Defaults [`apply_raw_conversions`] applies. Resolution is not among them: the
+/// open itself sets it (`file_cmds::raw_defaults`), and a re-develop keeps it.
+pub(super) fn raw_conversions(d: &photocraft_engine::prefs::RawDefaults) -> Vec<&'static str> {
+    use photocraft_engine::prefs::{RawColorSpace, RawDepth};
+    let mut out = Vec::new();
+    // Raws develop into ProPhoto-compatible RGB (`photocraft_io::raw`); the other spaces are a
+    // conversion.
+    if d.color_space != RawColorSpace::ProPhoto {
+        out.push("colorSpace");
+    }
+    if d.bit_depth == RawDepth::Eight {
+        out.push("bitDepth");
+    }
+    if d.open_as_smart_object {
+        out.push("openAsSmartObject");
+    }
+    out
+}
+
+/// Camera Raw Defaults (Preferences) after the Camera Raw step: the colour space and bit depth
+/// the developed document opens in, and Open as Smart Object.
+pub(super) fn apply_raw_conversions(app: &mut PhotocraftApp, index: usize, d: &photocraft_engine::prefs::RawDefaults) -> Result<(), String> {
+    app.session.set_active(index);
+    apply_session_raw_conversions(&mut app.session, d)
+}
+
+pub(crate) fn apply_session_raw_conversions(session: &mut photocraft_engine::Session, d: &photocraft_engine::prefs::RawDefaults) -> Result<(), String> {
+    for step in raw_conversions(d) {
+        let (id, params) = match step {
+            "colorSpace" => ("edit.convertToProfile", json!({"profile": d.color_space.profile_id(), "intent": "relative"})),
+            "bitDepth" => ("image.mode.bits8", json!({})),
+            _ => ("layer.smartObjects.convertToSmartObject", json!({})),
+        };
+        session.execute(id, params).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+pub(super) fn open_pixels_prepared(
+    app: &mut PhotocraftApp,
+    ctx: &egui::Context,
+    layer: LayerId,
+    surf: photocraft_raster::Surface,
+    params: CameraRaw,
+    how: OpenAs,
+) -> Result<(), String> {
+    let OpenAs { coverage, target, prepared, full_size } = how;
+    let st = app.session.active().ok_or("no document")?;
+    let canvas = st.doc.bounds();
+    let name = st.doc.layer(layer).map(|l| l.name.clone()).unwrap_or_default();
+    let mut params = params;
+    if params.encoding_gamma == 0.0 {
+        params.encoding_gamma = photocraft_engine::lens_cmds::encoding_gamma(&st.doc);
+    }
+    let geometry = proxy_geometry(canvas, &surf)?;
+    let (area, w, h, k, pw, ph) = (geometry.area, geometry.w, geometry.h, geometry.k, geometry.pw, geometry.ph);
+    let (full_w, full_h) = full_size.map(|(fw, fh)| (fw as usize, fh as usize)).unwrap_or((w, h));
+    // The proxy a worker thread built ahead, when it is for this very layer; otherwise built here.
+    let proxy: Vec<[f32; 4]> = match prepared.filter(|p| p.area == area && p.k == k && p.pw == pw && p.ph == ph) {
+        Some(p) => (*p.pixels).clone(),
+        None => proxy_pixels(&surf, &geometry),
+    };
+    // Coverage at the centre of each proxy block.
+    let sample = |value: &dyn Fn(i32, i32) -> f32| {
+        (0..ph)
+            .flat_map(|y| (0..pw).map(move |x| (area.x0 + (x * k + k / 2).min(w - 1) as i32, area.y0 + (y * k + k / 2).min(h - 1) as i32)))
+            .map(|(x, y)| value(x, y).clamp(0.0, 1.0))
+            .collect::<Vec<_>>()
+    };
+    let selection = match &coverage {
+        Coverage::Selection => st.doc.selection.as_ref().map(|mask| sample(&|x, y| mask.sample_channel(x, y, 0))),
+        Coverage::Mask(mask) => Some(sample(&|x, y| mask.value(x, y))),
+        Coverage::None => None,
+    };
+    let source = photocraft_engine::color_cmds::composite_profile(&st.doc);
+    let display = app.session.color.canvas_display(&st.doc).map_err(|e| e.to_string())?;
+    let lab_transform = photocraft_cms::cached(&source, photocraft_cms::Builtin::LabD50.profile(), Default::default()).map_err(|e| e.to_string())?;
+    let scope_transform = photocraft_cms::cached(&source, photocraft_cms::Builtin::Srgb.profile(), Default::default()).map_err(|e| e.to_string())?;
+    if let Some(saved) = app.session.prefs().dialogs.get("filter.cameraRaw.scope")
+        && saved.get("samplers").and_then(Value::as_array).is_none_or(|a| a.len() <= MAX_SAMPLERS)
+        && let Ok(view) = serde_json::from_value(saved.clone())
+    {
+        app.ui.camera_raw_scope = view;
+    }
+    settings_menu::close_view(&mut app.ui);
+    app.ui.camera_raw_preview = Default::default();
+    app.ui.camera_raw_scope.samplers.clear();
+    // Keep Camera Raw compact on open; vectorscope is an opt-in context-menu view.
+    app.ui.camera_raw_scope.vectorscope = false;
+    if selection.is_none() {
+        app.ui.camera_raw_scope.selected_region = false;
+    }
+    let float = surf.format().sample == photocraft_color::SampleType::F32;
+    let gpu = crate::camera_raw_gpu::for_app(app);
+    let mut d = CameraRawDialog {
+        gpu,
+        source_key: crate::camera_raw_gpu::source_key(),
+        develop_ms: 0.0,
+        develop_backend: "cpu",
+        mixer_tab: 1,
+        host_job: {
+            let mut job = host_job::HostJob::default();
+            job.set_tools(app.host_tools.clone());
+            job
+        },
+        snapshots: snapshots::Store::default(),
+        layer,
+        layer_name: name,
+        original: params.clone(),
+        preview_bypass: None,
+        params,
+        target,
+        before_histogram: RgbHistogram::from_rgba(&proxy),
+        processed: Vec::new(),
+        lab_transform,
+        scope_transform,
+        scope: Default::default(),
+        after_histogram: RgbHistogram::default(),
+        preview_revision: 0,
+        mixer_preview: None,
+        histogram_ms: 0.0,
+        proxy: std::sync::Arc::new(proxy),
+        selection: selection.map(std::sync::Arc::new),
+        pw,
+        ph,
+        full_w,
+        full_h,
+        preview_ppp: ctx.pixels_per_point(),
+        detail: crate::camera_raw_detail_ui::DetailPreview::new(
+            surf,
+            area,
+            match coverage {
+                Coverage::Selection => {
+                    st.doc.selection.clone().map(crate::camera_raw_detail_ui::Coverage::Selection).unwrap_or(crate::camera_raw_detail_ui::Coverage::None)
+                }
+                Coverage::Mask(mask) => crate::camera_raw_detail_ui::Coverage::Mask(mask),
+                Coverage::None => crate::camera_raw_detail_ui::Coverage::None,
+            },
+        ),
+        display,
+        viewport: None,
+        float,
+        tex: None,
+        before_tex: None,
+        before_display_key: None,
+        dirty: true,
+        show_before: false,
+        camera_info: app
+            .session
+            .active()
+            .and_then(|state| state.doc.metadata.exif.as_ref())
+            .map(|bytes| photocraft_algo::exif::read(bytes))
+            .unwrap_or_default(),
+        document_name: app.session.active().map(|state| state.doc.name.clone()).unwrap_or_default(),
+        curve_state: Default::default(),
+        curve_rect: None,
+        render_ms: 0.0,
+        raw_open: None,
+        busy_since: None,
+        raw_curve: None,
+        pending: None,
+        preview_error: None,
+        undo: Vec::new(),
+        redo: Vec::new(),
+        edit_origin: None,
+    };
+    d.render(ctx);
+    app.camera_raw = Some(d);
+    // The dialog is up: the loading frame that stood in for it is done.
+    app.raw_workspace.end_shell();
+    Ok(())
+}
+
+#[cfg(test)]
+pub(super) fn open_pixels(
+    app: &mut PhotocraftApp,
+    ctx: &egui::Context,
+    layer: LayerId,
+    surf: photocraft_raster::Surface,
+    params: CameraRaw,
+    coverage: Coverage,
+    target: super::Target,
+) -> Result<(), String> {
+    open_pixels_prepared(app, ctx, layer, surf, params, OpenAs { coverage, target, prepared: None, full_size: None })
+}

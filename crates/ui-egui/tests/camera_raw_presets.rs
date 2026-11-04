@@ -13,7 +13,8 @@ fn fixture() -> Harness<'static, PhotocraftApp> {
         let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width":64,"height":48})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
-        camera_raw_ui::open(&mut app, &cc.egui_ctx).unwrap();
+        app.raw_workspace.enabled = true;
+        photocraft_ui_egui::raw_workspace::control(&mut app, &cc.egui_ctx, &json!({"open":true})).unwrap();
         app
     });
     h.run_steps(4);

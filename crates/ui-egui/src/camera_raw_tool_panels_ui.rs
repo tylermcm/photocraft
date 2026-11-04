@@ -68,15 +68,15 @@ pub(super) fn red_eye(ui: &mut Ui) {
     ui.painter().text(field.left_center() + vec2(8.0, 0.0), Align2::LEFT_CENTER, tr("Red Eye"), FontId::proportional(design.panel_font_size), t.text);
     let arrow = field.right_center() - vec2(7.0, 0.0);
     ui.painter().add(egui::Shape::line(vec![arrow + vec2(-3.0, -1.5), arrow + vec2(0.0, 1.5), arrow + vec2(3.0, -1.5)], Stroke::new(1.0, t.text_dim)));
-    let response = ui.interact(field, ui.id().with("red-eye-type"), Sense::hover());
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::ComboBox, false, tr("Type")));
+    let response = ui.interact(field, ui.scope_id().with("red-eye-type"), Sense::hover());
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::ComboBox, false, tr("Type")));
     response.on_hover_text(tr("Not available"));
     let auto = Rect::from_min_size(at(panel.width() - 69.0, type_y), vec2(51.0, 20.0));
     ui.painter().rect_filled(auto, 1.0, t.field);
     ui.painter().rect_stroke(auto, 1.0, Stroke::new(1.0, t.field_border), egui::StrokeKind::Inside);
     ui.painter().text(auto.center(), Align2::CENTER_CENTER, tr("Auto"), FontId::proportional(design.panel_font_size), t.text);
-    let response = ui.interact(auto, ui.id().with("red-eye-auto"), Sense::hover());
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, false, tr("Auto")));
+    let response = ui.interact(auto, ui.scope_id().with("red-eye-auto"), Sense::hover());
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, false, tr("Auto")));
     response.on_hover_text(tr("Not available"));
     for (label, y) in [("Pupil Size", layout.pupil_top), ("Darken", layout.darken_top)] {
         let row = Rect::from_min_size(at(22.0, y), vec2((panel.width() - 46.0).max(1.0), 28.0));
@@ -114,8 +114,8 @@ pub(super) fn red_eye(ui: &mut Ui) {
     ui.painter().rect_filled(check, 1.0, t.text_dim);
     ui.painter().add(egui::Shape::line(vec![check.min + vec2(2.0, 6.0), check.min + vec2(5.0, 9.0), check.min + vec2(10.0, 3.0)], Stroke::new(2.0, t.dock)));
     ui.painter().text(at(38.0, layout.overlay_top + 6.0), Align2::LEFT_CENTER, tr("Overlay"), FontId::proportional(design.panel_font_size), t.text_dim);
-    let response = ui.interact(Rect::from_min_size(check.min, vec2(100.0, 14.0)), ui.id().with("red-eye-overlay"), Sense::hover());
-    response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, false, true, tr("Overlay")));
+    let response = ui.interact(Rect::from_min_size(check.min, vec2(100.0, 14.0)), ui.scope_id().with("red-eye-overlay"), Sense::hover());
+    response.widget_info(|| egui::WidgetInfo::selected(egui::Role::CheckBox, false, true, tr("Overlay")));
     response.on_hover_text(tr("Not available"));
 }
 

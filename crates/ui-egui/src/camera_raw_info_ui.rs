@@ -15,8 +15,8 @@ fn file_kind(name: &str) -> String {
 
 /// Paint from the measured left edge, independently of inherited child-layout justification.
 pub(super) fn heading(ui: &mut Ui, rect: Rect, label: &str, size: f32) {
-    let response = ui.interact(rect, ui.id().with(label), Sense::hover());
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, ui.is_enabled(), label));
+    let response = ui.interact(rect, ui.scope_id().with(label), Sense::hover());
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, ui.is_enabled(), label));
     ui.painter().with_clip_rect(rect).text(
         pos2(rect.left(), rect.center().y),
         Align2::LEFT_CENTER,
@@ -80,7 +80,7 @@ pub(super) fn show(ui: &mut Ui, dialog: &CameraRawDialog) {
     ui.add_space(design.info_credentials_top_gap);
     let (heading, response) = ui.allocate_exact_size(vec2(width, 16.0), Sense::hover());
     let label = tl!("Content Credentials");
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, ui.is_enabled(), label));
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, ui.is_enabled(), label));
     let galley = ui.painter().layout_no_wrap(label.into(), crate::theme::semibold(design.info_heading_font_size), tokens.text);
     let at = pos2(heading.left() + design.info_text_inset, heading.center().y - galley.size().y / 2.0);
     let badge = Rect::from_min_size(pos2(at.x + galley.size().x + 8.0, heading.center().y - 7.5), vec2(15.0, 15.0));

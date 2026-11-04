@@ -22,6 +22,7 @@ pub fn glow(ui: &mut Ui, p: &mut CameraRaw, expanded: &mut bool) -> bool {
         dirty |= crate::widgets::dropdown(
             ui,
             "glow-style",
+            tl!("Style"),
             &mut p.glow.style,
             &[(GlowStyle::Diffusion, tr("Diffusion")), (GlowStyle::Bloom, tr("Bloom")), (GlowStyle::Halation, tr("Halation"))],
             180.0,
@@ -46,9 +47,7 @@ pub fn point(ui: &mut Ui, p: &mut CameraRaw, tools: &mut MixerTools) -> bool {
             if tools.selected == i {
                 ui.painter().circle_stroke(rect.center(), 9.0, egui::Stroke::new(1.0, t.text));
             }
-            r.widget_info(|| {
-                egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, ui.is_enabled(), tools.selected == i, format!("{} {}", tr("Point Color"), i + 1))
-            });
+            r.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, ui.is_enabled(), tools.selected == i, format!("{} {}", tr("Point Color"), i + 1)));
             if r.clicked() {
                 tools.selected = i;
             }

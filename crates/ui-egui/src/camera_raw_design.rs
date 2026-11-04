@@ -471,7 +471,7 @@ pub(crate) fn get(ctx: &egui::Context) -> Arc<Design> {
 }
 
 pub(crate) fn apply_preview(ctx: &egui::Context, design: &Design, workspace: &mut crate::camera_raw_workspace_ui::WorkspaceState) {
-    let id = egui::Id::new("camera-raw-applied-design-preview");
+    let id = egui::Id::unique("camera-raw-applied-design-preview");
     let previous = ctx.data(|data| data.get_temp::<Option<crate::camera_raw_workspace_ui::WorkspaceState>>(id)).flatten();
     if previous != design.preview {
         if let Some(preview) = &design.preview {
@@ -483,7 +483,7 @@ pub(crate) fn apply_preview(ctx: &egui::Context, design: &Design, workspace: &mu
 
 #[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
 mod live {
-    use super::*;
+    use super::{Arc, Design, embedded};
     use std::{
         path::PathBuf,
         time::{Duration, SystemTime},
@@ -533,7 +533,7 @@ mod live {
     }
 
     pub(super) fn get(ctx: &egui::Context) -> Arc<Design> {
-        let id = egui::Id::new("camera-raw-live-design");
+        let id = egui::Id::unique("camera-raw-live-design");
         let mut state = ctx.data(|data| data.get_temp::<State>(id)).unwrap_or_else(|| State {
             path: std::env::var_os("PHOTOCRAFT_CAMERA_RAW_LAYOUT_FILE").map(PathBuf::from),
             stamp: None,
@@ -591,7 +591,7 @@ mod live {
             let ctx = egui::Context::default();
             ctx.data_mut(|data| {
                 data.insert_temp(
-                    egui::Id::new("camera-raw-live-design"),
+                    egui::Id::unique("camera-raw-live-design"),
                     State { path: Some(path.clone()), stamp: None, checked: None, design: embedded(), error: None },
                 )
             });

@@ -15,7 +15,8 @@ fn fixture_size(size: egui::Vec2) -> Harness<'static, PhotocraftApp> {
         let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width":64,"height":48})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
-        camera_raw_ui::open(&mut app, &cc.egui_ctx).unwrap();
+        app.raw_workspace.enabled = true;
+        photocraft_ui_egui::raw_workspace::control(&mut app, &cc.egui_ctx, &json!({"open":true})).unwrap();
         app
     });
     h.run_steps(4);
@@ -96,11 +97,17 @@ fn small_viewport_remains_scrollable_and_escape_does_not_cancel_the_photo() {
     let mut h = fixture_size(vec2(720.0, 900.0));
     invoke(&mut h, json!({"workspace":{"saveOptions":true}})).unwrap();
     assert!(inspect(&h)["cameraRawSaveOptions"]["state"]["rect"].is_array());
-    let before=inspect(&h)["cameraRawSaveOptions"]["state"]["rect"][1].as_f64().unwrap();
-    h.event(egui::Event::PointerMoved(egui::pos2(360.0,450.0)));
-    h.event(egui::Event::MouseWheel {unit:egui::MouseWheelUnit::Point,phase:egui::TouchPhase::Move,delta:vec2(0.0,-500.0),modifiers:egui::Modifiers::default()});
+    let before = inspect(&h)["cameraRawSaveOptions"]["state"]["rect"][1].as_f64().unwrap();
+    h.event(egui::Event::PointerMoved(egui::pos2(360.0, 450.0)));
+    h.event(egui::Event::MouseWheel {
+        source: egui::MouseWheelSource::Unknown,
+        unit: egui::MouseWheelUnit::Point,
+        phase: egui::TouchPhase::Move,
+        delta: vec2(0.0, -500.0),
+        modifiers: egui::Modifiers::default(),
+    });
     h.run_steps(12);
-    assert!(inspect(&h)["cameraRawSaveOptions"]["state"]["rect"][1].as_f64().unwrap()<before,"the tall content must scroll inside the small viewport");
+    assert!(inspect(&h)["cameraRawSaveOptions"]["state"]["rect"][1].as_f64().unwrap() < before, "the tall content must scroll inside the small viewport");
     h.key_press(egui::Key::Escape);
     h.run_steps(4);
     assert!(!inspect(&h)["cameraRaw"].is_null());

@@ -205,8 +205,15 @@ fn unavailable(ready: super::host_job::Ready) -> &'static str {
     }
 }
 
-pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut Option<super::mask_edit::MaskTool>, request: &mut Option<super::mask_edit::AutoMask>, host: HostReady) {
-    use super::mask_edit::{AutoMask, MaskTool};
+pub(super) fn show(
+    ui: &mut Ui,
+    people: &mut bool,
+    help: &mut bool,
+    armed: &mut Option<super::mask_edit::MaskTool>,
+    request: &mut Option<super::mask_edit::AutoMask>,
+    host: HostReady,
+) {
+    use super::mask_edit::AutoMask;
     let design = crate::camera_raw_design::get(ui.ctx());
     let d = &design.masking;
     let t = Tokens::get(ui.ctx());
@@ -227,92 +234,7 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
         let r = Rect::from_min_max(panel.min + vec2(e.rect[0], e.rect[1] + shift), panel.min + vec2(e.rect[2], e.rect[3] + shift));
         let font = FontId::proportional(if e.id == "heading" || e.id == "people-label" { d.heading_size } else { d.font_size });
         match e.kind {
-            Kind::Text => {
-                let color = if e.id == "help-text" { t.text_faint } else { t.text };
-                if e.id == "people-warning-text" && host.people.is_yes() {
-                    // People are found by Image Triage (OneFormer, SAM and BiRefNet): offer to look instead of saying it cannot.
-                    let galley = ui.painter().layout_job(egui::text::LayoutJob::simple(tr("Find the people in this photo").into(), font, t.accent, r.width()));
-                    let response = ui.interact(r, ui.id().with("people-find"), Sense::click());
-                    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, tr("Find the people in this photo")));
-                    ui.painter().galley(r.left_top(), galley, t.accent);
-                    if response.clicked() {
-                        *request = Some(AutoMask::People);
-                    }
-                    continue;
-                }
-                if matches!(e.id.as_str(), "people-warning-text" | "help-text") {
-                    let galley = ui.painter().layout_job(egui::text::LayoutJob::simple(tr(&e.label).into(), font, color, r.width()));
-                    ui.painter().galley(r.left_top(), galley, color);
-                } else {
-                    ui.painter().text(
-                        if e.id.ends_with("-label") && matches!(e.id.as_str(), "subject-label" | "sky-label" | "background-label") {
-                            r.center()
-                        } else {
-                            r.left_center()
-                        },
-                        if matches!(e.id.as_str(), "subject-label" | "sky-label" | "background-label") { Align2::CENTER_CENTER } else { Align2::LEFT_CENTER },
-                        tr(&e.label),
-                        font,
-                        color,
-                    );
-                }
-                if e.id == "help-text" {
-                    let response = ui.interact(r, ui.id().with("masking-help"), Sense::click());
-                    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), tr(&e.label)));
-                    if response.clicked() {
-                        *help = true;
-                    }
-                }
-                if e.id.ends_with("-label") && !matches!(e.id.as_str(), "subject-label" | "sky-label" | "background-label" | "people-label") {
-                    // The gradients work: a click arms the tool and the next drag on the photo makes the mask. Landscape is found by
-                    // Image Triage (OneFormer) and offered as a list of what is in the picture.
-                    if e.id == "landscape-label" {
-                        let glyph = d.elements.iter().find(|v| v.id == "landscape-glyph");
-                        let hit = glyph.map_or(r, |v| r.union(Rect::from_min_max(panel.min + vec2(v.rect[0], v.rect[1]), panel.min + vec2(v.rect[2], v.rect[3]))));
-                        let response = ui.interact(hit.expand2(vec2(4.0, 2.0)), ui.id().with(&e.id), if host.scene.is_yes() { Sense::click() } else { Sense::hover() });
-                        response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, host.scene.is_yes(), tr(&e.label)));
-                        if host.scene.is_yes() {
-                            if response.clicked() {
-                                *request = Some(AutoMask::Landscape);
-                            }
-                            response.on_hover_text(tr("Find sky, water, mountains, vegetation and buildings."));
-                        } else {
-                            response.on_hover_text(unavailable(host.scene));
-                        }
-                        continue;
-                    }
-                    let tool = match e.id.as_str() {
-                        "linear-gradient-label" => Some(MaskTool::Linear),
-                        "radial-gradient-label" => Some(MaskTool::Radial),
-                        "objects-label" => Some(MaskTool::Objects),
-                        "brush-label" => Some(MaskTool::Brush),
-                        "range-label" => Some(MaskTool::Colour),
-                        _ => None,
-                    };
-                    if let Some(tool) = tool {
-                        let glyph = d.elements.iter().find(|v| v.id == e.id.replace("-label", "-glyph"));
-                        let hit = glyph.map_or(r, |v| r.union(Rect::from_min_max(panel.min + vec2(v.rect[0], v.rect[1]), panel.min + vec2(v.rect[2], v.rect[3]))));
-                        let response = ui.interact(hit.expand2(vec2(4.0, 2.0)), ui.id().with(&e.id), Sense::click());
-                        response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, *armed == Some(tool), tr(&e.label)));
-                        if *armed == Some(tool) {
-                            ui.painter().rect_stroke(hit.expand2(vec2(4.0, 2.0)), t.radius_sm, Stroke::new(1.5, t.accent), egui::StrokeKind::Inside);
-                        }
-                        if response.clicked() {
-                            *armed = Some(tool);
-                        }
-                        response.on_hover_text(match tool {
-                            MaskTool::Colour => tr("Click here, then click a colour in the photo."),
-                            MaskTool::Brush => tr("Click here, then paint on the photo."),
-                            MaskTool::Objects => tr("Click here, then drag a box around an object."),
-                            _ => tr("Click here, then drag on the photo."),
-                        });
-                    } else {
-                        let response = ui.interact(r, ui.id().with(&e.id), Sense::hover());
-                        response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, false, tr(&e.label)));
-                        response.on_hover_text(tr("Not available"));
-                    }
-                }
-            }
+            Kind::Text => draw_text_cell(ui, TextCell { e, r, panel, font, host, d, t: &t }, help, armed, request),
             Kind::Card => {
                 // Subject and Background are found by Image Triage (BiRefNet); the others are not built yet.
                 let auto = match e.id.as_str() {
@@ -323,10 +245,16 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
                 };
                 let ready = host.subject;
                 let live = auto.is_some_and(|kind| kind == AutoMask::Sky || ready.is_yes());
-                let response = ui.interact(r, ui.id().with(&e.id), if live { Sense::click() } else { Sense::hover() });
+                let response = ui.interact(r, ui.scope_id().with(&e.id), if live { Sense::click() } else { Sense::hover() });
                 let outline = if live && response.hovered() { t.text } else { t.text_faint };
-                ui.painter().rect(r, t.radius_lg, if live && response.hovered() { t.hover } else { t.field }, Stroke::new(1.5, outline), egui::StrokeKind::Inside);
-                response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, live, tr(&e.label)));
+                ui.painter().rect(
+                    r,
+                    t.radius_lg,
+                    if live && response.hovered() { t.hover } else { t.field },
+                    Stroke::new(1.5, outline),
+                    egui::StrokeKind::Inside,
+                );
+                response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, live, tr(&e.label)));
                 if live {
                     if response.clicked() {
                         *request = auto;
@@ -351,8 +279,8 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
                     .find(|v| v.id == "people-label")
                     .map(|v| r.union(Rect::from_min_max(panel.min + vec2(v.rect[0], v.rect[1]), panel.min + vec2(v.rect[2], v.rect[3]))))
                     .unwrap_or(r);
-                let response = ui.interact(hit, ui.id().with(&e.id), Sense::click());
-                response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::CollapsingHeader, ui.is_enabled(), *people, tr(&e.label)));
+                let response = ui.interact(hit, ui.scope_id().with(&e.id), Sense::click());
+                response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, ui.is_enabled(), *people, tr(&e.label)));
                 if response.clicked() || response.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Space) || i.key_pressed(egui::Key::Enter)) {
                     response.request_focus();
                     toggle = true;
@@ -372,8 +300,8 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
                 icon(ui, r, &e.id);
                 if e.id == "range-menu-indicator" {
                     // The corner of the Range card: a luminance range instead of a colour range.
-                    let response = ui.interact(r.expand(4.0), ui.id().with(&e.id), Sense::click());
-                    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, tr("Luminance Range")));
+                    let response = ui.interact(r.expand(4.0), ui.scope_id().with(&e.id), Sense::click());
+                    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, tr("Luminance Range")));
                     if response.clicked() {
                         *request = Some(AutoMask::LuminanceRange);
                     }
@@ -387,8 +315,8 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
     }
     if *help {
         let ctx = ui.ctx().clone();
-        egui::Modal::new(egui::Id::new("camera-raw-masking-help")).show(&ctx, |ui| {
-            ctx.set_sublayer(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("camera-raw-dialog")), ui.layer_id());
+        egui::Modal::new(egui::Id::unique("camera-raw-masking-help")).show(&ctx, |ui| {
+            ctx.set_sublayer(egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("camera-raw-dialog")), ui.layer_id());
             ui.set_max_width(300.0);
             ui.label(tr("Local masking is not available in Camera Raw yet."));
             ui.separator();
@@ -402,6 +330,109 @@ pub(super) fn show(ui: &mut Ui, people: &mut bool, help: &mut bool, armed: &mut 
         }
     }
 }
+
+struct TextCell<'a> {
+    e: &'a Element,
+    r: Rect,
+    panel: Rect,
+    font: FontId,
+    host: HostReady,
+    d: &'a Design,
+    t: &'a Tokens,
+}
+fn draw_text_cell(
+    ui: &mut Ui,
+    cell: TextCell<'_>,
+    help: &mut bool,
+    armed: &mut Option<super::mask_edit::MaskTool>,
+    request: &mut Option<super::mask_edit::AutoMask>,
+) {
+    use super::mask_edit::{AutoMask, MaskTool};
+    let TextCell { e, r, panel, font, host, d, t } = cell;
+
+    let color = if e.id == "help-text" { t.text_faint } else { t.text };
+    if e.id == "people-warning-text" && host.people.is_yes() {
+        // People are found by Image Triage (OneFormer, SAM and BiRefNet): offer to look instead of saying it cannot.
+        let galley = ui.painter().layout_job(egui::text::LayoutJob::simple(tr("Find the people in this photo").into(), font, t.accent, r.width()));
+        let response = ui.interact(r, ui.scope_id().with("people-find"), Sense::click());
+        response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, tr("Find the people in this photo")));
+        ui.painter().galley(r.left_top(), galley, t.accent);
+        if response.clicked() {
+            *request = Some(AutoMask::People);
+        }
+        return;
+    }
+    if matches!(e.id.as_str(), "people-warning-text" | "help-text") {
+        let galley = ui.painter().layout_job(egui::text::LayoutJob::simple(tr(&e.label).into(), font, color, r.width()));
+        ui.painter().galley(r.left_top(), galley, color);
+    } else {
+        ui.painter().text(
+            if e.id.ends_with("-label") && matches!(e.id.as_str(), "subject-label" | "sky-label" | "background-label") { r.center() } else { r.left_center() },
+            if matches!(e.id.as_str(), "subject-label" | "sky-label" | "background-label") { Align2::CENTER_CENTER } else { Align2::LEFT_CENTER },
+            tr(&e.label),
+            font,
+            color,
+        );
+    }
+    if e.id == "help-text" {
+        let response = ui.interact(r, ui.scope_id().with("masking-help"), Sense::click());
+        response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, ui.is_enabled(), tr(&e.label)));
+        if response.clicked() {
+            *help = true;
+        }
+    }
+    if e.id.ends_with("-label") && !matches!(e.id.as_str(), "subject-label" | "sky-label" | "background-label" | "people-label") {
+        // The gradients work: a click arms the tool and the next drag on the photo makes the mask. Landscape is found by
+        // Image Triage (OneFormer) and offered as a list of what is in the picture.
+        if e.id == "landscape-label" {
+            let glyph = d.elements.iter().find(|v| v.id == "landscape-glyph");
+            let hit = glyph.map_or(r, |v| r.union(Rect::from_min_max(panel.min + vec2(v.rect[0], v.rect[1]), panel.min + vec2(v.rect[2], v.rect[3]))));
+            let response =
+                ui.interact(hit.expand2(vec2(4.0, 2.0)), ui.scope_id().with(&e.id), if host.scene.is_yes() { Sense::click() } else { Sense::hover() });
+            response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, host.scene.is_yes(), tr(&e.label)));
+            if host.scene.is_yes() {
+                if response.clicked() {
+                    *request = Some(AutoMask::Landscape);
+                }
+                response.on_hover_text(tr("Find sky, water, mountains, vegetation and buildings."));
+            } else {
+                response.on_hover_text(unavailable(host.scene));
+            }
+            return;
+        }
+        let tool = match e.id.as_str() {
+            "linear-gradient-label" => Some(MaskTool::Linear),
+            "radial-gradient-label" => Some(MaskTool::Radial),
+            "objects-label" => Some(MaskTool::Objects),
+            "brush-label" => Some(MaskTool::Brush),
+            "range-label" => Some(MaskTool::Colour),
+            _ => None,
+        };
+        if let Some(tool) = tool {
+            let glyph = d.elements.iter().find(|v| v.id == e.id.replace("-label", "-glyph"));
+            let hit = glyph.map_or(r, |v| r.union(Rect::from_min_max(panel.min + vec2(v.rect[0], v.rect[1]), panel.min + vec2(v.rect[2], v.rect[3]))));
+            let response = ui.interact(hit.expand2(vec2(4.0, 2.0)), ui.scope_id().with(&e.id), Sense::click());
+            response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, *armed == Some(tool), tr(&e.label)));
+            if *armed == Some(tool) {
+                ui.painter().rect_stroke(hit.expand2(vec2(4.0, 2.0)), t.radius_sm, Stroke::new(1.5, t.accent), egui::StrokeKind::Inside);
+            }
+            if response.clicked() {
+                *armed = Some(tool);
+            }
+            response.on_hover_text(match tool {
+                MaskTool::Colour => tr("Click here, then click a colour in the photo."),
+                MaskTool::Brush => tr("Click here, then paint on the photo."),
+                MaskTool::Objects => tr("Click here, then drag a box around an object."),
+                _ => tr("Click here, then drag on the photo."),
+            });
+        } else {
+            let response = ui.interact(r, ui.scope_id().with(&e.id), Sense::hover());
+            response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, false, tr(&e.label)));
+            response.on_hover_text(tr("Not available"));
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

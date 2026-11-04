@@ -536,6 +536,14 @@ pub fn gpu_builds_in_background(app: &mut PhotocraftApp) {
     }
 }
 
+/// The main canvas entrypoint for every layout. A hosted Camera Raw view covers it;
+/// the standalone editor retains upstream's canvas implementation.
+pub fn document_area(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
+    if !canvas_covered(app) {
+        crate::canvas::document_area_uncovered(app, ui);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1084,7 +1092,7 @@ mod tests {
                 let _ = app.session.wait_job(photocraft_engine::jobs::JobId(job));
                 for _ in 0..50 {
                     crate::jobs_ui::tick(&mut app, &ctx);
-                    if app.raw_redevelop.is_none() {
+                    if app.raw_redevelop.is_empty() {
                         break;
                     }
                     std::thread::sleep(std::time::Duration::from_millis(20));
@@ -1187,7 +1195,7 @@ mod tests {
         open_in_camera_raw(&mut app, &ctx, spec(None));
         let dialog = app.camera_raw.as_ref().expect("a dialog");
         assert!(dialog.is_stand_in());
-        let described = dialog.describe(&app.ui.camera_raw_scope, &app.ui.camera_raw_preview, &app.ui.camera_raw_workspace);
+        let described = dialog.describe_hosted(&app.ui.camera_raw_scope, &app.ui.camera_raw_preview, &app.ui.camera_raw_workspace);
         assert_eq!(described["sourceSize"], json!([3700, 1900]), "the photo's size, not the stand-in's");
         let size = app.session.active().unwrap().doc.size;
         assert!(size.width < 3700 && size.width >= 1800, "the document is reduced: {}x{}", size.width, size.height);
@@ -1404,7 +1412,7 @@ mod tests {
 
     fn dialog_name(app: &PhotocraftApp) -> String {
         let d = app.camera_raw.as_ref().expect("a dialog is open");
-        d.describe(&app.ui.camera_raw_scope, &app.ui.camera_raw_preview, &app.ui.camera_raw_workspace)["openingRaw"]["name"]
+        d.describe_hosted(&app.ui.camera_raw_scope, &app.ui.camera_raw_preview, &app.ui.camera_raw_workspace)["openingRaw"]["name"]
             .as_str()
             .unwrap_or_default()
             .to_string()

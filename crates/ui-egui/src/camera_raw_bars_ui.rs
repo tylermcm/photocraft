@@ -6,8 +6,8 @@ use egui::{Align2, Color32, FontId, Rect, Response, Sense, Stroke, Ui, pos2, vec
 
 fn button(ui: &mut Ui, rect: Rect, label: &str, selected: bool, enabled: bool) -> Response {
     let t = Tokens::get(ui.ctx());
-    let response = ui.interact(rect, ui.id().with(label), if enabled { Sense::click() } else { Sense::hover() });
-    response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, enabled, selected, label));
+    let response = ui.interact(rect, ui.scope_id().with(label), if enabled { Sense::click() } else { Sense::hover() });
+    response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, enabled, selected, label));
     let fill = if enabled && response.hovered() {
         t.hover
     } else if selected {
@@ -71,7 +71,7 @@ pub(super) fn edit_bar(ui: &mut Ui, d: &mut CameraRawDialog, info: bool) {
         button(ui, hdr, "HDR", false, false).on_hover_text(tl!("HDR editing is not available"));
         let bw = hdr.translate(vec2(-40.0, 0.0));
         if button(ui, bw, "B&W", d.params.saturation == -100.0, true).clicked() {
-            let id = ui.id().with(("cr-color-saturation", d.layer.0, d.document_name.as_str(), d.raw_open.as_ref().and_then(|raw| raw.path.as_deref())));
+            let id = ui.scope_id().with(("cr-color-saturation", d.layer.0, d.document_name.as_str(), d.raw_open.as_ref().and_then(|raw| raw.path.as_deref())));
             if d.params.saturation == -100.0 {
                 d.params.saturation = ui.ctx().data(|data| data.get_temp::<f32>(id)).unwrap_or(0.0);
             } else {
@@ -94,7 +94,7 @@ pub(super) fn white_balance(ui: &mut Ui, p: &mut photocraft_algo::camera_raw::Ca
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 4.0;
         ui.add_sized(vec2(design.white_balance_label_width, 20.0), egui::Label::new(tl!("White balance")));
-        egui::ComboBox::from_id_salt("cr-white-balance")
+        craft_ui::ComboBox::from_id_salt("cr-white-balance")
             .icon(widgets::chevron_icon)
             .width((ui.available_width() - 28.0).max(55.0))
             .selected_text(if custom { tl!("Custom") } else { tl!("As Shot") })
@@ -104,7 +104,9 @@ pub(super) fn white_balance(ui: &mut Ui, p: &mut photocraft_algo::camera_raw::Ca
                     p.tint = 0.0;
                 }
                 ui.add_enabled(false, egui::Label::new(tl!("Custom")));
-            });
+            })
+            .response
+            .widget_info(|| egui::WidgetInfo::labeled(egui::Role::ComboBox, ui.is_enabled(), tl!("White balance")));
         if icons::button_with_icon_size(ui, "pipette", 22.0, 18.0, *picker, tl!("White Balance Tool")).clicked() {
             *picker = !*picker;
         }
@@ -178,20 +180,21 @@ pub(super) fn profile_bar(ui: &mut Ui) {
         egui::UiBuilder::new().max_rect(Rect::from_min_size(pos2(rect.left() + 65.0, rect.center().y - 10.0), vec2((rect.width() - 132.0).max(60.0), 20.0))),
     );
     child.add_enabled_ui(false, |ui| {
-        egui::ComboBox::from_id_salt("cr-profile")
+        craft_ui::ComboBox::from_id_salt("cr-profile")
             .width((rect.width() - 132.0).max(60.0))
             .selected_text(tl!("Embedded"))
             .show_ui(ui, |ui| {
                 ui.label(tl!("Embedded"));
             })
             .response
-            .on_hover_text(tl!("Additional camera profiles are not available"));
+            .on_hover_text(tl!("Additional camera profiles are not available"))
+            .widget_info(|| egui::WidgetInfo::labeled(egui::Role::ComboBox, false, tl!("Profile")));
     });
     let browser = Rect::from_center_size(pos2(rect.right() - design.section_right_padding - 10.0, rect.center().y), vec2(20.0, 20.0));
     let response = ui
-        .interact(browser, ui.id().with("cr-profile-browser"), Sense::hover())
+        .interact(browser, ui.scope_id().with("cr-profile-browser"), Sense::hover())
         .on_hover_text(tl!("Browse Profiles — additional camera profiles are not available"));
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, false, tl!("Browse Profiles")));
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, false, tl!("Browse Profiles")));
     let min = browser.min + vec2(2.0, 2.0);
     for delta in [vec2(0.0, 0.0), vec2(7.0, 0.0), vec2(0.0, 7.0)] {
         ui.painter().rect_filled(Rect::from_min_size(min + delta, vec2(5.0, 5.0)), 0.0, t.icon);
@@ -220,8 +223,8 @@ pub(super) fn curve_selectors(ui: &mut Ui, current: &mut CurveChannel) {
         let center = pos2(row.left() + 42.0 + index as f32 * (design.curve_selector_size + design.curve_selector_gap), row.center().y);
         let rect = Rect::from_center_size(center, vec2(design.curve_selector_size, design.curve_selector_size));
         let label = crate::i18n::tr_ctx(crate::i18n::current(), "cameraRaw", name);
-        let response = ui.interact(rect, ui.id().with(name), Sense::click()).on_hover_text(label);
-        response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, ui.is_enabled(), *current == channel, label));
+        let response = ui.interact(rect, ui.scope_id().with(name), Sense::click()).on_hover_text(label);
+        response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, ui.is_enabled(), *current == channel, label));
         if response.clicked() {
             *current = channel;
         }
@@ -256,7 +259,7 @@ pub(super) fn top_actions(ui: &mut Ui, title: Rect, action: &mut Option<&'static
     child.spacing_mut().item_spacing.x = design.title_action_gap;
     // Draw the observed download glyph independently; there is no bundled download icon.
     let (download, response) = child.allocate_exact_size(vec2(design.title_action_size, design.title_action_size), Sense::click());
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, child.is_enabled(), tl!("Save")));
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, child.is_enabled(), tl!("Save")));
     let center = download.center();
     child.painter().line_segment([center + vec2(0.0, -7.0), center + vec2(0.0, 2.0)], Stroke::new(1.8, t.icon));
     child.painter().add(egui::Shape::line(vec![center + vec2(-4.0, -1.0), center + vec2(0.0, 3.0), center + vec2(4.0, -1.0)], Stroke::new(1.8, t.icon)));
@@ -269,7 +272,10 @@ pub(super) fn top_actions(ui: &mut Ui, title: Rect, action: &mut Option<&'static
     let divider = settings.rect.right() + design.title_action_gap * 0.5;
     child.painter().line_segment([pos2(divider, title.center().y - 10.0), pos2(divider, title.center().y + 10.0)], Stroke::new(1.0, t.separator));
     egui::Popup::menu(&settings).show(|ui| {
-        if ui.button(format!("{}…",crate::i18n::tr_ctx(crate::i18n::current(),"cameraRaw","Camera Raw Preferences"))).clicked() {*action=Some("preferences");ui.close();}
+        if ui.button(format!("{}…", crate::i18n::tr_ctx(crate::i18n::current(), "cameraRaw", "Camera Raw Preferences"))).clicked() {
+            *action = Some("preferences");
+            ui.close();
+        }
         ui.separator();
         ui.checkbox(&mut scope.shadows, tl!("Shadow Clipping Warning (U)"));
         ui.checkbox(&mut scope.highlights, tl!("Highlight Clipping Warning (O)"));

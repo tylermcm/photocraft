@@ -164,11 +164,16 @@ pub struct Candidate {
 fn read_candidates(manifest: &std::path::Path, kind: CandidateKind) -> Result<Candidates, String> {
     let text = std::fs::read_to_string(manifest).map_err(|e| e.to_string())?;
     let value: serde_json::Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
-    let list = value.get(if kind == CandidateKind::Landscape { "categories" } else { "people" }).and_then(serde_json::Value::as_array).ok_or_else(|| tr("Image Triage sent an answer this version does not understand.").to_string())?;
+    let list = value
+        .get(if kind == CandidateKind::Landscape { "categories" } else { "people" })
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| tr("Image Triage sent an answer this version does not understand.").to_string())?;
     let folder = manifest.parent().unwrap_or_else(|| std::path::Path::new("."));
     let mut items = Vec::new();
     for entry in list.iter().take(photocraft_algo::camera_raw::MAX_MASKS) {
-        let (Some(label), Some(file)) = (entry.get("label").and_then(serde_json::Value::as_str), entry.get("file").and_then(serde_json::Value::as_str)) else { continue };
+        let (Some(label), Some(file)) = (entry.get("label").and_then(serde_json::Value::as_str), entry.get("file").and_then(serde_json::Value::as_str)) else {
+            continue;
+        };
         // A manifest only names files inside its own folder.
         if file.contains(['/', '\\']) || file.contains("..") {
             continue;
@@ -181,7 +186,9 @@ fn read_candidates(manifest: &std::path::Path, kind: CandidateKind) -> Result<Ca
         items.push(Candidate { label: name, coverage, checked: true, mask });
     }
     if items.is_empty() {
-        return Err(tr(if kind == CandidateKind::Landscape { "Nothing to mask was found in this photo." } else { "No people were found in this photo." }).to_string());
+        return Err(
+            tr(if kind == CandidateKind::Landscape { "Nothing to mask was found in this photo." } else { "No people were found in this photo." }).to_string()
+        );
     }
     Ok(Candidates { kind: Some(kind), items, hovered: None })
 }
@@ -265,7 +272,12 @@ fn mask_from_png(bytes: &[u8], background: bool) -> Result<LocalMask, String> {
     }
     // A map larger than a mask may be (the host works on a 1600 px picture) is shrunk to fit, not refused.
     let (w, h, bytes) = fit_map(w, h, gray.data());
-    Ok(LocalMask { name: tr(if background { "Background" } else { "Subject" }).to_string(), shape: MaskShape::raster_from_bytes(w, h, &bytes), invert: background, ..Default::default() })
+    Ok(LocalMask {
+        name: tr(if background { "Background" } else { "Subject" }).to_string(),
+        shape: MaskShape::raster_from_bytes(w, h, &bytes),
+        invert: background,
+        ..Default::default()
+    })
 }
 
 /// What the Masking tab remembers while it is open. View state only: never part of the photo's settings.
@@ -295,7 +307,17 @@ pub struct MaskUiState {
 
 impl Default for MaskUiState {
     fn default() -> Self {
-        Self { selected: None, tool: None, overlay: true, creating: false, notice: None, brush: Default::default(), candidates: Candidates::default(), part: None, combine: None }
+        Self {
+            selected: None,
+            tool: None,
+            overlay: true,
+            creating: false,
+            notice: None,
+            brush: Default::default(),
+            candidates: Candidates::default(),
+            part: None,
+            combine: None,
+        }
     }
 }
 
@@ -419,7 +441,7 @@ struct Drag {
 }
 
 fn drag_id() -> egui::Id {
-    egui::Id::new("camera-raw-mask-drag")
+    egui::Id::unique("camera-raw-mask-drag")
 }
 
 struct Frame {
@@ -531,7 +553,9 @@ pub(super) fn canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Re
     settle_part(&d.params.masks, st);
     let t = Tokens::get(ui.ctx());
     let mut changed = false;
-    if st.overlay && let Some(mask) = st.selected.and_then(|i| d.params.masks.get(i)) {
+    if st.overlay
+        && let Some(mask) = st.selected.and_then(|i| d.params.masks.get(i))
+    {
         let pixels = if d.processed.len() == d.pw * d.ph { &d.processed } else { &d.proxy };
         draw_overlay(ui, rect, mask, pixels, d.pw, d.ph, d.preview_revision, "camera-raw-mask-overlay");
     }
@@ -552,7 +576,11 @@ pub(super) fn canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Re
     let handle_hit = |masks: &[LocalMask], selected: Option<usize>, part: Option<usize>, pos: Pos2| {
         let i = selected?;
         let shape = shape_at(masks, i, part)?;
-        handles(&frame, shape).into_iter().filter(|(p, _)| p.distance(pos) <= HIT_RADIUS).min_by(|a, b| a.0.distance(pos).total_cmp(&b.0.distance(pos))).map(|(p, part)| (i, p, part))
+        handles(&frame, shape)
+            .into_iter()
+            .filter(|(p, _)| p.distance(pos) <= HIT_RADIUS)
+            .min_by(|a, b| a.0.distance(pos).total_cmp(&b.0.distance(pos)))
+            .map(|(p, part)| (i, p, part))
     };
     let mut drag: Option<Drag> = ui.ctx().data(|data| data.get_temp(drag_id()));
     if !primary_down {
@@ -562,7 +590,12 @@ pub(super) fn canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Re
         let press = ui.input(|i| i.pointer.press_origin()).or(pointer);
         if let Some(pos) = press {
             if let Some((i, point, part)) = handle_hit(&d.params.masks, st.selected, st.part, pos) {
-                drag = Some(Drag { mask: i, component: st.part, part, offset: [(pos.x - point.x) / rect.width().max(1.0), (pos.y - point.y) / rect.height().max(1.0)] });
+                drag = Some(Drag {
+                    mask: i,
+                    component: st.part,
+                    part,
+                    offset: [(pos.x - point.x) / rect.width().max(1.0), (pos.y - point.y) / rect.height().max(1.0)],
+                });
             } else if let Some(tool) = st.tool.filter(|_| rect.contains(pos))
                 && room(d, st).is_ok()
             {
@@ -596,7 +629,9 @@ pub(super) fn canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Re
     {
         let at = frame.norm(pos);
         let made = match tool {
-            MaskTool::Linear | MaskTool::Brush | MaskTool::Objects | MaskTool::Colour => linear([at[0], clamp_unit(at[1] - 0.15)], [at[0], clamp_unit(at[1] + 0.15)]),
+            MaskTool::Linear | MaskTool::Brush | MaskTool::Objects | MaskTool::Colour => {
+                linear([at[0], clamp_unit(at[1] - 0.15)], [at[0], clamp_unit(at[1] + 0.15)])
+            }
             MaskTool::Radial => radial(at, DEFAULT_RADIUS_PX * rect.height() / rect.width().max(1.0), DEFAULT_RADIUS_PX),
         };
         commit(d, st, made);
@@ -614,7 +649,9 @@ pub(super) fn canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Re
             if end.distance(anchor) < CLICK_SLOP {
                 let at = frame.norm(anchor);
                 *shape = match tool {
-                    MaskTool::Linear | MaskTool::Brush | MaskTool::Objects | MaskTool::Colour => linear([at[0], clamp_unit(at[1] - 0.15)], [at[0], clamp_unit(at[1] + 0.15)]),
+                    MaskTool::Linear | MaskTool::Brush | MaskTool::Objects | MaskTool::Colour => {
+                        linear([at[0], clamp_unit(at[1] - 0.15)], [at[0], clamp_unit(at[1] + 0.15)])
+                    }
                     MaskTool::Radial => radial(at, DEFAULT_RADIUS_PX * rect.height() / rect.width().max(1.0), DEFAULT_RADIUS_PX),
                 }
                 .shape;
@@ -656,7 +693,7 @@ fn tool_canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Response
     let mut changed = false;
     match tool {
         MaskTool::Brush => {
-            let id = egui::Id::new("camera-raw-brush-last");
+            let id = egui::Id::unique("camera-raw-brush-last");
             let last: Option<Pos2> = ui.ctx().data(|data| data.get_temp(id));
             let dragging = !panning && down && (response.dragged_by(egui::PointerButton::Primary) || response.drag_started_by(egui::PointerButton::Primary));
             match at.filter(|p| dragging && (last.is_some() || rect.contains(*p))) {
@@ -675,7 +712,7 @@ fn tool_canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Response
             }
         }
         MaskTool::Objects => {
-            let id = egui::Id::new("camera-raw-objects-anchor");
+            let id = egui::Id::unique("camera-raw-objects-anchor");
             let anchor: Option<Pos2> = ui.ctx().data(|data| data.get_temp(id));
             if !panning
                 && response.drag_started_by(egui::PointerButton::Primary)
@@ -724,7 +761,8 @@ fn tool_canvas(ui: &Ui, d: &mut CameraRawDialog, rect: Rect, response: &Response
 
 /// One Brush stroke segment, into the selected raster mask (a new Brush mask when none is selected).
 fn paint(d: &mut CameraRawDialog, st: &mut MaskUiState, frame: &Frame, last: Option<Pos2>, pos: Pos2, erase: bool) -> bool {
-    let existing = st.selected.filter(|_| st.combine.is_none()).filter(|i| shape_at(&d.params.masks, *i, st.part).is_some_and(|s| matches!(s, MaskShape::Raster { .. })));
+    let existing =
+        st.selected.filter(|_| st.combine.is_none()).filter(|i| shape_at(&d.params.masks, *i, st.part).is_some_and(|s| matches!(s, MaskShape::Raster { .. })));
     let (index, part) = match existing {
         Some(i) => (i, st.part),
         None => {
@@ -732,7 +770,15 @@ fn paint(d: &mut CameraRawDialog, st: &mut MaskUiState, frame: &Frame, last: Opt
                 return false;
             }
             let (w, h) = Brush::map_size(d.pw, d.ph);
-            commit(d, st, LocalMask { name: tr("Brush").to_string(), shape: MaskShape::raster_from_bytes(w, h, &vec![0u8; w as usize * h as usize]), ..Default::default() })
+            commit(
+                d,
+                st,
+                LocalMask {
+                    name: tr("Brush").to_string(),
+                    shape: MaskShape::raster_from_bytes(w, h, &vec![0u8; w as usize * h as usize]),
+                    ..Default::default()
+                },
+            )
         }
     };
     let Some((w, h, mut bytes)) = shape_at(&d.params.masks, index, part).and_then(MaskShape::raster_bytes) else { return false };
@@ -817,7 +863,11 @@ pub(super) fn add_luminance_range(d: &mut CameraRawDialog, st: &mut MaskUiState)
         st.notice = Some(why);
         return false;
     }
-    commit(d, st, LocalMask { name: tr("Luminance Range").to_string(), shape: MaskShape::LuminanceRange { low: 0.5, high: 1.0, smooth: 20.0 }, ..Default::default() });
+    commit(
+        d,
+        st,
+        LocalMask { name: tr("Luminance Range").to_string(), shape: MaskShape::LuminanceRange { low: 0.5, high: 1.0, smooth: 20.0 }, ..Default::default() },
+    );
     st.tool = None;
     st.notice = None;
     true
@@ -836,13 +886,14 @@ fn draw_overlay(ui: &Ui, rect: Rect, mask: &LocalMask, pixels: &[[f32; 4]], pw: 
         }
         hasher.finish()
     };
-    let id = egui::Id::new(slot);
+    let id = egui::Id::unique(slot);
     let cached: Option<(u64, egui::TextureHandle)> = ui.ctx().data(|data| data.get_temp(id));
     let texture = match cached {
         Some((k, handle)) if k == key => handle,
         _ => {
             let aspect = rect.width().max(1.0) / rect.height().max(1.0);
-            let (w, h) = if aspect >= 1.0 { (320usize, (320.0 / aspect).round().max(1.0) as usize) } else { ((320.0 * aspect).round().max(1.0) as usize, 320usize) };
+            let (w, h) =
+                if aspect >= 1.0 { (320usize, (320.0 / aspect).round().max(1.0) as usize) } else { ((320.0 * aspect).round().max(1.0) as usize, 320usize) };
             let coverage = mask.coverage_fn(w, h);
             let at = |x: usize, y: usize| {
                 if coverage.needs_pixels() && pw > 0 && ph > 0 && pixels.len() >= pw * ph {
@@ -852,7 +903,8 @@ fn draw_overlay(ui: &Ui, rect: Rect, mask: &LocalMask, pixels: &[[f32; 4]], pw: 
                     coverage.at(x, y)
                 }
             };
-            let veil: Vec<Color32> = (0..w * h).map(|i| Color32::from_rgba_unmultiplied(235, 40, 40, (at(i % w, i / w).clamp(0.0, 1.0) * 150.0) as u8)).collect();
+            let veil: Vec<Color32> =
+                (0..w * h).map(|i| Color32::from_rgba_unmultiplied(235, 40, 40, (at(i % w, i / w).clamp(0.0, 1.0) * 150.0) as u8)).collect();
             let image = egui::ColorImage { size: [w, h], source_size: vec2(w as f32, h as f32), pixels: veil };
             let handle = ui.ctx().load_texture(slot, image, TextureOptions::LINEAR);
             ui.ctx().data_mut(|data| data.insert_temp(id, (key, handle.clone())));
@@ -976,21 +1028,21 @@ pub(super) fn panel(ui: &mut Ui, p: &mut CameraRaw, st: &mut MaskUiState) -> boo
             ui.painter().rect_filled(row, t.radius_sm, t.hover);
         }
         let eye = Rect::from_center_size(pos2(row.left() + 14.0, row.center().y), vec2(20.0, 20.0));
-        let eye_response = ui.interact(eye, ui.id().with(("mask-eye", i)), Sense::click());
+        let eye_response = ui.interact(eye, ui.scope_id().with(("mask-eye", i)), Sense::click());
         let colour = if mask.enabled { t.text } else { t.text_faint };
         ui.painter().circle_stroke(eye.center(), 6.0, Stroke::new(1.5, colour));
         if mask.enabled {
             ui.painter().circle_filled(eye.center(), 2.5, colour);
         }
-        eye_response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, true, mask.enabled, tr("Show")));
+        eye_response.widget_info(|| egui::WidgetInfo::selected(egui::Role::CheckBox, true, mask.enabled, tr("Show")));
         if eye_response.clicked() {
             mask.enabled = !mask.enabled;
             dirty = true;
         }
         let close = Rect::from_center_size(pos2(row.right() - 14.0, row.center().y), vec2(20.0, 20.0));
-        let close_response = ui.interact(close, ui.id().with(("mask-delete", i)), Sense::click());
+        let close_response = ui.interact(close, ui.scope_id().with(("mask-delete", i)), Sense::click());
         ui.painter().text(close.center(), Align2::CENTER_CENTER, "x", FontId::proportional(13.0), if close_response.hovered() { t.text } else { t.text_faint });
-        close_response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, tr("Delete Mask")));
+        close_response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, tr("Delete Mask")));
         if close_response.clicked() {
             remove = Some(i);
         }
@@ -1141,9 +1193,9 @@ fn component_row(ui: &mut Ui, t: &Tokens, label: &str, selected: bool, deletable
     ui.painter().text(pos2(row.left() + 24.0, row.center().y), Align2::LEFT_CENTER, label, FontId::proportional(12.0), t.text_dim);
     if deletable {
         let close = Rect::from_center_size(pos2(row.right() - 14.0, row.center().y), vec2(20.0, 20.0));
-        let close_response = ui.interact(close, ui.id().with(("component-delete", label)), Sense::click());
+        let close_response = ui.interact(close, ui.scope_id().with(("component-delete", label)), Sense::click());
         ui.painter().text(close.center(), Align2::CENTER_CENTER, "x", FontId::proportional(12.0), if close_response.hovered() { t.text } else { t.text_faint });
-        close_response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, tr("Delete Shape")));
+        close_response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, tr("Delete Shape")));
         let delete = close_response.clicked();
         return (response.clicked() && !delete, delete);
     }
@@ -1192,7 +1244,13 @@ mod tests {
         assert_eq!(mask.shape, MaskShape::Linear { x0: 0.1, y0: 0.1, x1: 0.8, y1: 0.9 });
         // Grabbing the middle moves both ends together.
         let mid = [(0.1 + 0.8) / 2.0, (0.1 + 0.9) / 2.0];
-        drag_to(&f, &mut mask.shape, &Drag { mask: 0, component: None, part: Part::LinearMove, offset: [0.0, 0.0] }, f.screen([mid[0] + 0.1, mid[1] - 0.05]), false);
+        drag_to(
+            &f,
+            &mut mask.shape,
+            &Drag { mask: 0, component: None, part: Part::LinearMove, offset: [0.0, 0.0] },
+            f.screen([mid[0] + 0.1, mid[1] - 0.05]),
+            false,
+        );
         let MaskShape::Linear { x0, y0, x1, y1 } = mask.shape else { panic!() };
         assert!((x0 - 0.2).abs() < 1e-5 && (y0 - 0.05).abs() < 1e-5 && (x1 - 0.9).abs() < 1e-5 && (y1 - 0.85).abs() < 1e-5);
     }
@@ -1202,18 +1260,36 @@ mod tests {
         let f = frame();
         let anchor = f.screen([0.5, 0.5]);
         let mut mask = radial([0.5, 0.5], MIN_RADIUS, MIN_RADIUS);
-        drag_to(&f, &mut mask.shape, &Drag { mask: 0, component: None, part: Part::Create(MaskTool::Radial, anchor), offset: [0.0, 0.0] }, f.screen([0.7, 0.6]), false);
+        drag_to(
+            &f,
+            &mut mask.shape,
+            &Drag { mask: 0, component: None, part: Part::Create(MaskTool::Radial, anchor), offset: [0.0, 0.0] },
+            f.screen([0.7, 0.6]),
+            false,
+        );
         let MaskShape::Radial { cx, cy, rx, ry, .. } = mask.shape else { panic!() };
         assert!((cx - 0.5).abs() < 1e-5 && (cy - 0.5).abs() < 1e-5 && (rx - 0.2).abs() < 1e-4 && (ry - 0.1).abs() < 1e-4, "{rx} {ry}");
         // Shift makes it round on screen: equal pixel radii.
-        drag_to(&f, &mut mask.shape, &Drag { mask: 0, component: None, part: Part::Create(MaskTool::Radial, anchor), offset: [0.0, 0.0] }, f.screen([0.7, 0.6]), true);
+        drag_to(
+            &f,
+            &mut mask.shape,
+            &Drag { mask: 0, component: None, part: Part::Create(MaskTool::Radial, anchor), offset: [0.0, 0.0] },
+            f.screen([0.7, 0.6]),
+            true,
+        );
         let MaskShape::Radial { rx, ry, .. } = mask.shape else { panic!() };
         assert!((rx * 400.0 - ry * 200.0).abs() < 0.01, "round on screen");
         // The X handle sets rx along the axis; turning it rotates the ellipse.
         drag_to(&f, &mut mask.shape, &Drag { mask: 0, component: None, part: Part::RadialX, offset: [0.0, 0.0] }, f.screen([0.9, 0.5]), false);
         let MaskShape::Radial { rx, .. } = mask.shape else { panic!() };
         assert!((rx - 0.4).abs() < 1e-4, "{rx}");
-        drag_to(&f, &mut mask.shape, &Drag { mask: 0, component: None, part: Part::RadialTurn, offset: [0.0, 0.0] }, pos2(f.screen([0.5, 0.5]).x, f.screen([0.5, 0.5]).y + 50.0), false);
+        drag_to(
+            &f,
+            &mut mask.shape,
+            &Drag { mask: 0, component: None, part: Part::RadialTurn, offset: [0.0, 0.0] },
+            pos2(f.screen([0.5, 0.5]).x, f.screen([0.5, 0.5]).y + 50.0),
+            false,
+        );
         let MaskShape::Radial { angle, .. } = mask.shape else { panic!() };
         assert!((angle - 90.0).abs() < 1e-3, "{angle}");
         // Radii never collapse or run away.

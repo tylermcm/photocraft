@@ -64,8 +64,8 @@ impl Design {
 fn button(ui: &mut Ui, rect: Rect, label: &str, x: f32) -> egui::Response {
     let t = Tokens::get(ui.ctx());
     let d = crate::camera_raw_design::get(ui.ctx());
-    let response = ui.interact(rect, ui.id().with(("acr-footer", label)), Sense::click());
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), label));
+    let response = ui.interact(rect, ui.scope_id().with(("acr-footer", label)), Sense::click());
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, ui.is_enabled(), label));
     if response.hovered() && ui.is_enabled() {
         ui.painter().rect_filled(rect, rect.height() / 2.0, t.hover);
     }
@@ -99,8 +99,8 @@ pub(crate) fn draw(ui: &mut Ui, footer: Rect) -> Option<&'static str> {
     ui.painter().rect_stroke(open, height / 2.0, Stroke::new(1.0, t.text_dim), StrokeKind::Inside);
     ui.painter().line_segment([pos2(split_x, open.top()), pos2(split_x, open.bottom())], Stroke::new(1.0, t.text_dim));
     let arrow = Rect::from_min_max(pos2(split_x, open.top()), open.max);
-    let response = ui.interact(arrow, ui.id().with("acr-open-options"), Sense::click()).on_hover_text(tl!("Open"));
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::ComboBox, ui.is_enabled(), tl!("Open")));
+    let response = ui.interact(arrow, ui.scope_id().with("acr-open-options"), Sense::click()).on_hover_text(tl!("Open"));
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::ComboBox, ui.is_enabled(), tl!("Open")));
     let c = arrow.center();
     ui.painter().add(egui::Shape::line(vec![c + vec2(-4.0, -2.0), c + vec2(0.0, 2.0), c + vec2(4.0, -2.0)], Stroke::new(1.0, t.text_dim)));
     egui::Popup::menu(&response).show(|ui| {

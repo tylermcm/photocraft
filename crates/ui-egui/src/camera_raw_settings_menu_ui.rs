@@ -91,8 +91,8 @@ enum Action {
 
 fn item(ui: &mut Ui, rect: Rect, label: &str, shortcut: &str, enabled: bool, submenu: bool, d: &Design) -> egui::Response {
     let t = Tokens::get(ui.ctx());
-    let r = ui.interact(rect, ui.id().with(label), if enabled { Sense::click() } else { Sense::hover() });
-    r.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, label));
+    let r = ui.interact(rect, ui.scope_id().with(label), if enabled { Sense::click() } else { Sense::hover() });
+    r.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, enabled, label));
     if enabled && (r.hovered() || r.has_focus()) {
         ui.painter().rect_filled(rect.shrink2(vec2(4.0, 0.0)), 3.0, t.hover);
     }
@@ -236,8 +236,8 @@ fn validate_clipboard(p: &CameraRaw) -> Result<(), String> {
                     number(key, n, -100.0, 100.0)?;
                 }
             }
-            "calibShadowTint" => number(key, v, -100.0, 100.0)?,
-            "calibHue" | "calibSat" => {
+            "shadowTint" => number(key, v, -100.0, 100.0)?,
+            "calibrationHue" | "calibrationSat" => {
                 for n in v.as_array().ok_or("Calibration settings must be arrays")? {
                     number(key, n, -100.0, 100.0)?;
                 }
@@ -351,42 +351,31 @@ pub(super) fn show(app: &mut PhotocraftApp, ctx: &egui::Context, screen: Rect, a
     let mut open = app.ui.camera_raw_workspace.settings_menu;
     let mut chosen = None;
     app.ui.camera_raw_menu.rect = None;
-    egui::Popup::new(egui::Id::new("acr-settings-menu"), ctx.clone(), anchor, egui::LayerId::new(egui::Order::Foreground, egui::Id::new("camera-raw-dialog")))
-        .kind(egui::PopupKind::Menu)
-        .open_bool(&mut open)
-        .frame(egui::Frame::NONE)
-        .width(md.width)
-        .show(|ui| {
-            let max_height = (screen.height() - 16.0).max(1.0);
-            let (rect, _) = ui.allocate_exact_size(vec2(md.width, md.height().min(max_height)), Sense::hover());
-            app.ui.camera_raw_menu.rect = Some([rect.left(), rect.top(), rect.right(), rect.bottom()]);
-            let t = Tokens::get(ctx);
-            ui.painter().add(egui::Shadow { offset: [0, 2], blur: 6, spread: 1, color: t.shadow }.as_shape(rect, md.radius));
-            ui.painter().rect(rect, md.radius, t.camera_raw_menu_background, Stroke::new(1.0, t.camera_raw_menu_border), egui::StrokeKind::Inside);
-            let mut content = ui.new_child(egui::UiBuilder::new().id_salt("settings-menu-content").max_rect(rect));
-            content.set_clip_rect(rect.intersect(ui.clip_rect()));
-            if rect.height() + 0.1 < md.height() {
-                egui::ScrollArea::vertical().max_height(rect.height()).show(&mut content, |ui| {
-                    let (r, _) = ui.allocate_exact_size(vec2(md.width - 10.0, md.height()), Sense::hover());
-                    chosen = rows(
-                        ui,
-                        r,
-                        md,
-                        Availability {
-                            reset: can_reset,
-                            defaults: can_default,
-                            previous,
-                            clipboard: app.ui.camera_raw_menu.clipboard_ready,
-                            snapshots: !names.is_empty(),
-                            create: can_create,
-                        },
-                        &mut app.ui.camera_raw_menu.focus,
-                    );
-                });
-            } else {
+    egui::Popup::new(
+        egui::Id::unique("acr-settings-menu"),
+        ctx.clone(),
+        anchor,
+        egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("camera-raw-dialog")),
+    )
+    .kind(egui::PopupKind::Menu)
+    .open_bool(&mut open)
+    .frame(egui::Frame::NONE)
+    .width(md.width)
+    .show(|ui| {
+        let max_height = (screen.height() - 16.0).max(1.0);
+        let (rect, _) = ui.allocate_exact_size(vec2(md.width, md.height().min(max_height)), Sense::hover());
+        app.ui.camera_raw_menu.rect = Some([rect.left(), rect.top(), rect.right(), rect.bottom()]);
+        let t = Tokens::get(ctx);
+        ui.painter().add(egui::Shadow { offset: [0, 2], blur: 6, spread: 1, color: t.shadow }.as_shape(rect, md.radius));
+        ui.painter().rect(rect, md.radius, t.camera_raw_menu_background, Stroke::new(1.0, t.camera_raw_menu_border), egui::StrokeKind::Inside);
+        let mut content = ui.new_child(egui::UiBuilder::new().id_salt("settings-menu-content").max_rect(rect));
+        content.set_clip_rect(rect.intersect(ui.clip_rect()));
+        if rect.height() + 0.1 < md.height() {
+            egui::ScrollArea::vertical().max_height(rect.height()).show(&mut content, |ui| {
+                let (r, _) = ui.allocate_exact_size(vec2(md.width - 10.0, md.height()), Sense::hover());
                 chosen = rows(
-                    &mut content,
-                    rect,
+                    ui,
+                    r,
                     md,
                     Availability {
                         reset: can_reset,
@@ -398,11 +387,27 @@ pub(super) fn show(app: &mut PhotocraftApp, ctx: &egui::Context, screen: Rect, a
                     },
                     &mut app.ui.camera_raw_menu.focus,
                 );
-            }
-            if chosen.is_some() {
-                ui.close();
-            }
-        });
+            });
+        } else {
+            chosen = rows(
+                &mut content,
+                rect,
+                md,
+                Availability {
+                    reset: can_reset,
+                    defaults: can_default,
+                    previous,
+                    clipboard: app.ui.camera_raw_menu.clipboard_ready,
+                    snapshots: !names.is_empty(),
+                    create: can_create,
+                },
+                &mut app.ui.camera_raw_menu.focus,
+            );
+        }
+        if chosen.is_some() {
+            ui.close();
+        }
+    });
     app.ui.camera_raw_workspace.settings_menu = open;
     if !open {
         app.ui.camera_raw_menu.focus = None;
@@ -446,7 +451,7 @@ pub(super) fn show(app: &mut PhotocraftApp, ctx: &egui::Context, screen: Rect, a
     }
     if app.ui.camera_raw_menu.snapshot_picker {
         let mut restore = None;
-        egui::Modal::new(egui::Id::new("acr-apply-snapshot")).show(ctx, |ui| {
+        egui::Modal::new(egui::Id::unique("acr-apply-snapshot")).show(ctx, |ui| {
             ui.label(tl!("Apply Snapshot"));
             for (index, name) in names.iter().enumerate() {
                 if ui.button(name).clicked() {

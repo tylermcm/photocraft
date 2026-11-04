@@ -14,7 +14,8 @@ fn fixture() -> Harness<'static, PhotocraftApp> {
         app.run("file.new", json!({"width":64,"height":48})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
         app.run("edit.fill", json!({"color":"#80a0c0"})).unwrap();
-        camera_raw_ui::open(&mut app, &cc.egui_ctx).unwrap();
+        app.raw_workspace.enabled = true;
+        photocraft_ui_egui::raw_workspace::control(&mut app, &cc.egui_ctx, &json!({"open":true})).unwrap();
         app
     });
     h.run_steps(4);
@@ -182,15 +183,15 @@ fn detail_enhancements_are_explicitly_unavailable_and_manual_noise_retains_its_r
     pointer(&mut h, rect.center(), true);
     pointer(&mut h, rect.center(), false);
     assert_eq!(inspect(&h)["params"]["superResolution"], false);
-    assert!(h.query_by_label("Luminance").is_none());
+    assert!(h.query_by_role_and_label(egui::accesskit::Role::Slider, "Luminance").is_none());
     h.get_by_label("Manual Noise Reduction").click();
     h.run_steps(8);
     assert_eq!(inspect(&h)["workspace"]["noiseDetails"], true);
-    assert!(h.query_by_label("Luminance").is_some());
+    assert!(h.query_by_role_and_label(egui::accesskit::Role::Slider, "Luminance").is_some());
     assert_eq!(inspect(&h)["params"]["noiseLuminance"], 27.0);
     h.get_by_label("Manual Noise Reduction").click();
     h.run_steps(8);
-    assert!(h.query_by_label("Luminance").is_none());
+    assert!(h.query_by_role_and_label(egui::accesskit::Role::Slider, "Luminance").is_none());
     assert_eq!(inspect(&h)["params"], initial["params"]);
 }
 
@@ -223,8 +224,7 @@ fn reset_defaults_and_open_are_reversible_and_radius_double_click_uses_one_not_z
     invoke(&mut h, json!({"set":{"sharpenRadius":2.8,"grainSize":70,"gradeBlending":90},"workspace":{"panels":{"open":["Detail"]},"sharpeningDetails":true}}))
         .unwrap();
     h.run_steps(12);
-    let label = h.get_by_label("Radius").rect();
-    let track = pos2(label.left() + 90.0, label.bottom() + 11.0);
+    let track = h.get_by_role_and_label(egui::accesskit::Role::Slider, "Radius").rect().center();
     for _ in 0..2 {
         pointer(&mut h, track, true);
         pointer(&mut h, track, false);
@@ -326,4 +326,22 @@ fn effects_glow_is_enabled_and_remains_a_non_destructive_dialog_edit() {
     assert_eq!(h.state().session.active().unwrap().history.past_len(), history);
     invoke(&mut h, json!({"cancel":true})).unwrap();
     assert_eq!(h.state().session.active().unwrap().history.past_len(), history);
+}
+
+#[test]
+fn camera_raw_first_opens_before_the_default_docked_canvas() {
+    let mut h = Harness::builder().with_size(vec2(1200.0, 900.0)).build_eframe(|cc| {
+        PhotocraftApp::setup_context(&cc.egui_ctx, ThemeKind::ProMedium);
+        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        app.raw_workspace.enabled = true;
+        app.run("file.new", json!({"width":64,"height":48})).unwrap();
+        app.run("layer.new.layer", json!({})).unwrap();
+        assert!(app.ui.panels.dock);
+        app.last_canvas_rect = egui::Rect::NOTHING;
+        app
+    });
+    h.run_steps(4);
+    assert!(inspect(&h).is_object(), "default docking must not bypass Camera Raw-first startup");
+    assert!(photocraft_ui_egui::raw_workspace::canvas_covered(h.state()));
+    assert_eq!(h.state().last_canvas_rect, egui::Rect::NOTHING, "the covered canvas was never drawn");
 }

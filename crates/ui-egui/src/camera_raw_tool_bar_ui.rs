@@ -11,7 +11,7 @@ enum Kind {
 }
 
 fn kind(ctx: &egui::Context) -> Kind {
-    ctx.data(|d| d.get_temp(egui::Id::new("camera-raw-tool-bar")))
+    ctx.data(|d| d.get_temp(egui::Id::unique("camera-raw-tool-bar")))
         .unwrap_or_else(|| if crate::camera_raw_design::get(ctx).preview.as_ref().is_some_and(|v| v.grid) { Kind::Grid } else { Kind::None })
 }
 
@@ -23,7 +23,7 @@ pub(crate) fn sync(ctx: &egui::Context, workspace: &WorkspaceState, scope: &Came
     } else {
         Kind::None
     };
-    ctx.data_mut(|d| d.insert_temp(egui::Id::new("camera-raw-tool-bar"), value));
+    ctx.data_mut(|d| d.insert_temp(egui::Id::unique("camera-raw-tool-bar"), value));
 }
 
 pub(crate) fn height(ctx: &egui::Context) -> f32 {

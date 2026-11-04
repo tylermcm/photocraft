@@ -142,16 +142,16 @@ pub(super) fn show(
     let top = egui::pos2(top.x, bounds.top());
     let font = FontId::proportional(root.panel_font_size);
     let mixer = Rect::from_min_size(top, vec2(41.0, d.tabs_height));
-    let r = ui.interact(mixer, ui.id().with("mixer-tab"), Sense::click());
-    r.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, ui.is_enabled(), !tools.point_color, tr("Mixer")));
+    let r = ui.interact(mixer, ui.scope_id().with("mixer-tab"), Sense::click());
+    r.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, ui.is_enabled(), !tools.point_color, tr("Mixer")));
     if r.clicked() {
         tools.point_color = false;
         tools.picker = false;
     }
     ui.painter().text(top + vec2(0.0, 10.0), Align2::LEFT_CENTER, tr("Mixer"), font.clone(), if tools.point_color { t.text_faint } else { t.text });
     let point = Rect::from_min_size(top + vec2(42.5, 0.0), vec2(76.5, d.tabs_height));
-    let r = ui.interact(point, ui.id().with("point-color-tab"), Sense::click());
-    r.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, ui.is_enabled(), tools.point_color, tr("Point Color")));
+    let r = ui.interact(point, ui.scope_id().with("point-color-tab"), Sense::click());
+    r.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, ui.is_enabled(), tools.point_color, tr("Point Color")));
     if r.clicked() {
         tools.point_color = true;
     }
@@ -174,8 +174,8 @@ pub(super) fn show(
     }
     ui.painter().text(top + vec2(-2.0, d.adjust_top + d.adjust_height / 2.0), Align2::LEFT_CENTER, tr("Adjust"), font.clone(), t.text);
     let field = Rect::from_min_size(top + vec2(d.adjust_inset, d.adjust_top), vec2(d.adjust_width, d.adjust_height));
-    let r = ui.interact(field, ui.id().with("mixer-mode"), Sense::click());
-    r.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::ComboBox, ui.is_enabled(), tr("Adjust")));
+    let r = ui.interact(field, ui.scope_id().with("mixer-mode"), Sense::click());
+    r.widget_info(|| egui::WidgetInfo::labeled(egui::Role::ComboBox, ui.is_enabled(), tr("Adjust")));
     ui.painter().rect(field.shrink2(vec2(0.0, 1.5)), t.radius_sm, t.field, Stroke::new(1.0, t.field_border), egui::StrokeKind::Inside);
     ui.painter().text(field.left_center() + vec2(6.0, 0.0), Align2::LEFT_CENTER, if color { tr("Color") } else { "HSL" }, font, t.text);
     let c = field.right_center() - vec2(7.0, 0.0);
@@ -195,10 +195,10 @@ pub(super) fn show(
             let c = rect.center();
             let enabled = ui.is_enabled();
             let label = super::BANDS.get(k).copied().unwrap_or("All Colors");
-            let r = ui.interact(rect, ui.id().with(("mixer-band", k)), if enabled { Sense::click() } else { Sense::hover() });
+            let r = ui.interact(rect, ui.scope_id().with(("mixer-band", k)), if enabled { Sense::click() } else { Sense::hover() });
             r.widget_info(|| {
                 egui::WidgetInfo::selected(
-                    egui::WidgetType::SelectableLabel,
+                    egui::Role::Button,
                     enabled,
                     if k == 8 { tools.all_colors } else { !tools.all_colors && *band_state == k },
                     tr(label),

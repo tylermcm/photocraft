@@ -154,8 +154,8 @@ pub(super) fn header(ui: &mut Ui) {
     let (header, _) = ui.allocate_exact_size(vec2(width, d.heading_height), Sense::hover());
     super::info::heading(ui, header.shrink2(vec2(d.heading_inset, 0.0)).translate(vec2(0.0, d.heading_offset_y)), tl!("Presets"), 13.0);
     let create = Rect::from_center_size(pos2(header.right() - 58.0, header.center().y), vec2(22.0, 22.0));
-    let r = ui.interact(create, ui.id().with("create-camera-raw-preset"), Sense::hover());
-    r.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, false, tl!("Create Preset…")));
+    let r = ui.interact(create, ui.scope_id().with("create-camera-raw-preset"), Sense::hover());
+    r.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, false, tl!("Create Preset…")));
     r.on_hover_text(tr("Not available"));
     let p = create.center() - vec2(4.5, 5.0);
     ui.painter().add(egui::Shape::closed_line(
@@ -165,8 +165,8 @@ pub(super) fn header(ui: &mut Ui) {
     ui.painter().line_segment([p + vec2(0.0, 5.0), p + vec2(5.0, 5.0)], Stroke::new(1.2, t.text_faint));
     ui.painter().line_segment([p + vec2(5.0, 5.0), p + vec2(5.0, 10.0)], Stroke::new(1.2, t.text_faint));
     let menu = Rect::from_center_size(pos2(header.right() - 32.0, header.center().y), vec2(22.0, 22.0));
-    let r = ui.interact(menu, ui.id().with("camera-raw-preset-settings"), Sense::hover());
-    r.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, false, tl!("Settings")));
+    let r = ui.interact(menu, ui.scope_id().with("camera-raw-preset-settings"), Sense::hover());
+    r.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, false, tl!("Settings")));
     r.on_hover_text(tr("Not available"));
     for x in [-4.5, 0.0, 4.5] {
         ui.painter().circle_filled(menu.center() + vec2(x, 0.0), 1.2, t.text_faint);
@@ -178,8 +178,8 @@ pub(super) fn header(ui: &mut Ui) {
     ui.painter().rect_stroke(field, 0.0, Stroke::new(1.0, t.field_border.gamma_multiply(0.5)), egui::StrokeKind::Inside);
     ui.painter()
         .line_segment([amount.left_top() + vec2(10.0, 32.5), amount.right_top() + vec2(-13.0, 32.5)], Stroke::new(3.0, t.text_faint.gamma_multiply(0.5)));
-    let r = ui.interact(amount, ui.id().with("camera-raw-preset-amount"), Sense::hover());
-    r.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Slider, false, tl!("Amount")));
+    let r = ui.interact(amount, ui.scope_id().with("camera-raw-preset-amount"), Sense::hover());
+    r.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Slider, false, tl!("Amount")));
     r.on_hover_text(tr("Not available"));
     ui.painter().line_segment([amount.left_bottom(), amount.right_bottom()], Stroke::new(1.0, t.separator));
 }
@@ -203,7 +203,7 @@ pub(super) fn list(ui: &mut Ui, workspace: &mut WorkspaceState) {
         }
         let open = workspace.preset_groups.iter().any(|v| v == name);
         let (rect, response) = ui.allocate_exact_size(vec2(ui.available_width(), d.row_height), Sense::click());
-        response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::CollapsingHeader, ui.is_enabled(), open, *name));
+        response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, ui.is_enabled(), open, *name));
         if response.clicked() || response.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter) || i.key_pressed(egui::Key::Space)) {
             response.request_focus();
             if open {
@@ -219,7 +219,13 @@ pub(super) fn list(ui: &mut Ui, workspace: &mut WorkspaceState) {
             vec![c + vec2(-4.0, -5.0), c + vec2(-4.0, 5.0), c + vec2(4.0, 0.0)]
         };
         ui.painter().add(egui::Shape::convex_polygon(points, t.icon, Stroke::NONE));
-        ui.painter().text(pos2(rect.left() + d.label_inset, rect.center().y + d.label_offset_y), Align2::LEFT_CENTER, *name, FontId::proportional(d.font_size), t.text);
+        ui.painter().text(
+            pos2(rect.left() + d.label_inset, rect.center().y + d.label_offset_y),
+            Align2::LEFT_CENTER,
+            *name,
+            FontId::proportional(d.font_size),
+            t.text,
+        );
         if response.has_focus() {
             ui.painter().rect_stroke(rect.shrink(1.0), t.radius_sm, Stroke::new(1.0, t.accent), egui::StrokeKind::Inside);
         }

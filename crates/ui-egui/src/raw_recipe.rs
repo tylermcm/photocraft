@@ -49,7 +49,17 @@ fn recipe_bytes(params: &CameraRaw) -> Result<Vec<u8>, String> {
 /// not on their own), so a host can tell an edited photo from one whose recipe is only the defaults without knowing
 /// the settings' rules. Readers of this version that do not know it ignore it.
 pub fn to_json(params: &CameraRaw) -> Value {
-    json!({"version": VERSION, "cameraRaw": crate::camera_raw_ui::non_defaults(params), "identity": params.is_identity()})
+    let mut settings = crate::camera_raw_ui::non_defaults(params);
+    // Version 1 is the Image Triage contract. Keep its existing keys at this boundary;
+    // native CameraRaw serialization and processing use upstream's canonical fields.
+    if let Some(fields) = settings.as_object_mut() {
+        for (canonical, legacy) in [("shadowTint", "calibShadowTint"), ("calibrationHue", "calibHue"), ("calibrationSat", "calibSat")] {
+            if let Some(value) = fields.remove(canonical) {
+                fields.insert(legacy.into(), value);
+            }
+        }
+    }
+    json!({"version": VERSION, "cameraRaw": settings, "identity": params.is_identity()})
 }
 
 /// The settings in a recipe file's content. Unknown versions, wrong types and out-of-range values are
@@ -129,9 +139,9 @@ pub fn apply(px: &mut [[f32; 4]], w: usize, h: usize, params: &CameraRaw, raw_cu
 
 /// `doc` with `params` applied as [`apply`] does, at the size of the render.
 fn render_pixels(doc: &Document, params: &CameraRaw, developed: &Developed) -> photocraft_compose::Buffer {
-    let buffer = photocraft_compose::thumbnail_buffer(doc, RENDER_SIDE);
+    let mut buffer = photocraft_compose::thumbnail_buffer(doc, RENDER_SIDE);
     let (w, h) = (buffer.rect.width() as usize, buffer.rect.height() as usize);
-    let mut px = buffer.px;
+    let mut px = std::mem::take(&mut buffer.px);
     let full_width = developed.full_width.unwrap_or(doc.size.width).max(1);
     let float = doc.depth == photocraft_color::SampleType::F32;
     apply(&mut px, w, h, params, developed.curve.as_deref(), (w as f32 / full_width as f32).min(1.0), float);
@@ -249,6 +259,21 @@ fn render_in_background(app: &PhotocraftApp, document: DocId, targets: &Targets,
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn upstream_calibration_keeps_the_v1_host_recipe_contract() {
+        let p = photocraft_algo::camera_raw::CameraRaw {
+            shadow_tint: 12.0,
+            calibration_hue: [20.0, 0.0, 0.0],
+            calibration_sat: [0.0, -15.0, 0.0],
+            ..Default::default()
+        };
+        let recipe = super::to_json(&p);
+        assert_eq!(recipe["cameraRaw"]["calibShadowTint"], 12.0);
+        assert_eq!(recipe["cameraRaw"]["calibHue"], serde_json::json!([20.0, 0.0, 0.0]));
+        assert!(recipe["cameraRaw"].get("calibrationHue").is_none());
+        assert_eq!(super::from_json(&recipe).unwrap(), p);
+    }
+
     #[test]
     fn glow_and_point_color_survive_per_photo_recipe_reload() {
         let mut p = CameraRaw::default();

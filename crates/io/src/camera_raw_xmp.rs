@@ -3,10 +3,11 @@
 //! `x:xmpmeta/rdf:RDF/rdf:Description`, as attributes or as child elements.
 //!
 //! Loading applies only the settings the file holds, over the current ones, as Camera Raw's
-//! Load Settings does; settings PhotoCraft has no control for (lens corrections,
-//! geometry, defringe, …) are ignored and named in the report. Saving writes every supported
-//! Adobe-mapped control. Native Glow and Point Color settings round-trip in a private
-//! PhotoCraft namespace; Adobe applications do not interpret that extension.
+//! Load Settings does; settings PhotoCraft has no control for (lens corrections, geometry,
+//! defringe, …) are ignored and named in the report. The same reader fills the dialog from a
+//! raw file's sidecar (`IMG_0001.xmp` beside `IMG_0001.CR2`), and the writer keeps it. Saving writes every supported
+//! control, so loading the file in Photoshop reproduces the dialog.
+//! Native Glow and Point Color settings round-trip in a private PhotoCraft namespace.
 //!
 //! White balance: a Camera Raw Filter on a rendered image uses the relative
 //! `IncrementalTemperature` / `IncrementalTint` (−100..=100), which are PhotoCraft's Temperature
@@ -96,18 +97,19 @@ const SCALARS: &[(&str, Field, f32, f32)] = &[
     ("GrainAmount", |p| &mut p.grain_amount, 0.0, 100.0),
     ("GrainSize", |p| &mut p.grain_size, 0.0, 100.0),
     ("GrainFrequency", |p| &mut p.grain_roughness, 0.0, 100.0),
-    ("ShadowTint", |p| &mut p.calib_shadow_tint, -100.0, 100.0),
-    ("RedHue", |p| &mut p.calib_hue[0], -100.0, 100.0),
-    ("RedSaturation", |p| &mut p.calib_sat[0], -100.0, 100.0),
-    ("GreenHue", |p| &mut p.calib_hue[1], -100.0, 100.0),
-    ("GreenSaturation", |p| &mut p.calib_sat[1], -100.0, 100.0),
-    ("BlueHue", |p| &mut p.calib_hue[2], -100.0, 100.0),
-    ("BlueSaturation", |p| &mut p.calib_sat[2], -100.0, 100.0),
     ("PostCropVignetteAmount", |p| &mut p.vignette_amount, -100.0, 100.0),
     ("PostCropVignetteMidpoint", |p| &mut p.vignette_midpoint, 0.0, 100.0),
     ("PostCropVignetteRoundness", |p| &mut p.vignette_roundness, -100.0, 100.0),
     ("PostCropVignetteFeather", |p| &mut p.vignette_feather, 0.0, 100.0),
     ("PostCropVignetteHighlightContrast", |p| &mut p.vignette_highlights, 0.0, 100.0),
+    // Calibration
+    ("ShadowTint", |p| &mut p.shadow_tint, -100.0, 100.0),
+    ("RedHue", |p| &mut p.calibration_hue[0], -100.0, 100.0),
+    ("RedSaturation", |p| &mut p.calibration_sat[0], -100.0, 100.0),
+    ("GreenHue", |p| &mut p.calibration_hue[1], -100.0, 100.0),
+    ("GreenSaturation", |p| &mut p.calibration_sat[1], -100.0, 100.0),
+    ("BlueHue", |p| &mut p.calibration_hue[2], -100.0, 100.0),
+    ("BlueSaturation", |p| &mut p.calibration_sat[2], -100.0, 100.0),
 ];
 
 type Curve = fn(&mut CameraRaw) -> &mut Vec<[f32; 2]>;
@@ -227,7 +229,7 @@ pub fn load(params: &mut CameraRaw, bytes: &[u8]) -> Result<LoadReport, String> 
     let text = std::str::from_utf8(bytes).map_err(|_| "not a Camera Raw settings file (not UTF-8 text)".to_string())?;
     // Some writers put a byte order mark or an `<?xpacket?>` wrapper first; roxmltree takes both.
     let text = text.trim_start_matches('\u{feff}');
-    let doc = roxmltree::Document::parse(text).map_err(|e| format!("not a Camera Raw settings file ({e})"))?;
+    let doc = crate::xml::parse(text, roxmltree::ParsingOptions::default()).map_err(|e| format!("not a Camera Raw settings file ({e})"))?;
     let mut next = params.clone();
     let mut report = LoadReport::default();
     let mut found = false;
@@ -294,6 +296,25 @@ fn signed(v: f32, decimals: usize) -> String {
 
 fn escape(s: &str) -> String {
     s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
+}
+
+/// The XMP toolkit [`save`] names on `x:xmpmeta`.
+const TOOLKIT: &str = "PhotoCraft";
+const META_NS: &str = "adobe:ns:meta/";
+
+/// Did [`save`] write this file? True when its `x:xmpmeta` names PhotoCraft as the toolkit
+/// (`x:xmptk`). Lightroom, Bridge and Camera Raw put their own toolkit there when they write a
+/// file, so a sidecar another application touched since reads false. Never panics.
+pub fn is_photocraft_xmp(bytes: &[u8]) -> bool {
+    if bytes.len() > MAX_XMP_BYTES {
+        return false;
+    }
+    let Ok(text) = std::str::from_utf8(bytes) else { return false };
+    let Ok(doc) = roxmltree::Document::parse(text.trim_start_matches('\u{feff}')) else { return false };
+    doc.descendants()
+        .find(|n| n.is_element() && n.tag_name().namespace() == Some(META_NS) && n.tag_name().name() == "xmpmeta")
+        .and_then(|n| n.attribute((META_NS, "xmptk")))
+        == Some(TOOLKIT)
 }
 
 /// Write `params` as a Camera Raw settings file Photoshop's Load Settings… reads.
@@ -367,9 +388,24 @@ mod tests {
         use photocraft_algo::camera_raw::{LocalAdjust, LocalMask, MaskShape};
         let p = CameraRaw {
             masks: vec![
-                LocalMask { name: "Sky".into(), shape: MaskShape::raster(3, 2, &[0.0, 0.5, 1.0, 1.0, 0.5, 0.0]), invert: true, adjust: LocalAdjust { exposure: -0.7, ..Default::default() }, ..Default::default() },
-                LocalMask { shape: MaskShape::Radial { cx: 0.4, cy: 0.5, rx: 0.2, ry: 0.3, angle: 15.0, feather: 40.0 }, adjust: LocalAdjust { saturation: 25.0, ..Default::default() }, ..Default::default() },
-                LocalMask { shape: MaskShape::Linear { x0: 0.5, y0: 0.1, x1: 0.5, y1: 0.6 }, adjust: LocalAdjust { highlights: -30.0, ..Default::default() }, amount: 70.0, ..Default::default() },
+                LocalMask {
+                    name: "Sky".into(),
+                    shape: MaskShape::raster(3, 2, &[0.0, 0.5, 1.0, 1.0, 0.5, 0.0]),
+                    invert: true,
+                    adjust: LocalAdjust { exposure: -0.7, ..Default::default() },
+                    ..Default::default()
+                },
+                LocalMask {
+                    shape: MaskShape::Radial { cx: 0.4, cy: 0.5, rx: 0.2, ry: 0.3, angle: 15.0, feather: 40.0 },
+                    adjust: LocalAdjust { saturation: 25.0, ..Default::default() },
+                    ..Default::default()
+                },
+                LocalMask {
+                    shape: MaskShape::Linear { x0: 0.5, y0: 0.1, x1: 0.5, y1: 0.6 },
+                    adjust: LocalAdjust { highlights: -30.0, ..Default::default() },
+                    amount: 70.0,
+                    ..Default::default()
+                },
             ],
             ..Default::default()
         };
@@ -436,18 +472,28 @@ mod tests {
         assert!(p.point_curve.is_empty());
         assert_eq!(p.point_curve_red, vec![[0.0, 0.0], [128.0, 140.0], [255.0, 255.0]]);
         assert_eq!(p.dehaze, 12.0);
-        assert_eq!(p.calib_hue[0], -5.0);
-        // Lens vignetting and geometry have no counterpart.
-        assert_eq!(r.ignored, vec!["VignetteAmount".to_string()]);
+        // Lens vignetting, calibration and geometry have no counterpart.
+        assert_eq!(r.ignored, vec!["VignetteAmount".to_string()], "the Calibration panel's keys load now");
+        assert_eq!(p.calibration_hue[0], -5.0);
+    }
+
+    /// A settings file nested 20 000 deep overflowed the XML parser's recursion (an abort nothing
+    /// can catch); it is an error now. The small stack makes a regression abort instead of passing.
+    #[test]
+    fn deeply_nested_settings_are_an_error_not_a_stack_overflow() {
+        let xml = format!("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">{}{}</x:xmpmeta>", "<a>".repeat(20_000), "</a>".repeat(20_000));
+        let e =
+            std::thread::Builder::new().stack_size(512 * 1024).spawn(move || load(&mut CameraRaw::default(), xml.as_bytes()).err()).unwrap().join().unwrap();
+        assert!(e.as_deref().is_some_and(|m| m.contains("nested")), "{e:?}");
     }
 
     #[test]
     fn save_then_load_round_trips() {
         let mut p = CameraRaw {
             temperature: -12.0,
-            calib_shadow_tint: 15.0,
-            calib_hue: [-20.0, 0.0, 35.0],
-            calib_sat: [0.0, 40.0, -60.0],
+            shadow_tint: 15.0,
+            calibration_hue: [-20.0, 0.0, 35.0],
+            calibration_sat: [0.0, 40.0, -60.0],
             exposure: 1.25,
             contrast: 30.0,
             sharpen_radius: 1.4,
@@ -503,5 +549,25 @@ mod tests {
         let r = load(&mut p, xmp).unwrap();
         assert_eq!(p, before);
         assert_eq!(r.ignored, vec!["Contrast2012".to_string(), "ToneCurvePV2012".to_string()]);
+    }
+
+    #[test]
+    fn is_photocraft_xmp_reads_the_toolkit_marker() {
+        let own = save(&CameraRaw { contrast: 15.0, ..CameraRaw::default() });
+        assert!(is_photocraft_xmp(own.as_bytes()));
+        let wrapped = format!("\u{feff}<?xpacket begin=\"\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n{own}<?xpacket end=\"w\"?>");
+        assert!(is_photocraft_xmp(wrapped.as_bytes()), "an xpacket wrapper and a byte order mark");
+        assert!(!is_photocraft_xmp(FIXTURE), "Camera Raw's own toolkit");
+        for other in [
+            &b""[..],
+            b"<x:xmpmeta",
+            b"<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"/>",
+            b"<x:xmpmeta xmlns:x=\"adobe:ns:meta/\" xmptk=\"PhotoCraft\"/>",
+            b"<x:xmpmeta xmlns:x=\"other:ns/\" x:xmptk=\"PhotoCraft\"/>",
+            b"<x:xmpmeta xmlns:x=\"adobe:ns:meta/\" x:xmptk=\"PhotoCraft 2\"/>",
+            b"\xff\xfe",
+        ] {
+            assert!(!is_photocraft_xmp(other), "{}", String::from_utf8_lossy(other));
+        }
     }
 }

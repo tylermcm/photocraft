@@ -45,7 +45,7 @@ impl State {
     }
 }
 pub(crate) fn effective(ctx: &egui::Context) -> Option<Settings> {
-    ctx.data(|d| d.get_temp(egui::Id::new(KEY)))
+    ctx.data(|d| d.get_temp(egui::Id::unique(KEY)))
 }
 pub(crate) fn default_design() -> Design {
     serde_json::from_str(include_str!("../../../design/camera-raw/preferences-design.json")).unwrap_or_else(|_| {
@@ -82,7 +82,7 @@ fn apply(app: &mut PhotocraftApp, ctx: &egui::Context, next: Settings) {
     if next.single_panel {
         app.ui.camera_raw_workspace.panels.open.truncate(1);
     }
-    ctx.data_mut(|d| d.insert_temp(egui::Id::new(KEY), next.clone()));
+    ctx.data_mut(|d| d.insert_temp(egui::Id::unique(KEY), next.clone()));
     app.ui.camera_raw_preferences.settings = next;
     app.ui.camera_raw_preferences.applied = true;
 }
@@ -91,7 +91,7 @@ pub(super) fn sync(app: &mut PhotocraftApp, ctx: &egui::Context) {
         return;
     }
     app.ui.camera_raw_preferences.loaded = true;
-    ctx.data_mut(|d| d.remove_temp::<Settings>(egui::Id::new(KEY)));
+    ctx.data_mut(|d| d.remove_temp::<Settings>(egui::Id::unique(KEY)));
     if let Some(v) = app.session.prefs().dialogs.get(KEY) {
         let parsed = serde_json::from_value::<Settings>(v.clone()).map_err(|e| e.to_string()).and_then(|v| {
             v.validate()?;
@@ -158,22 +158,15 @@ fn draw(ui: &mut Ui, origin: egui::Pos2, d: &Design, p: &mut Settings) -> Option
     for e in &d.elements {
         let rect = r(origin, e.rect);
         let font = FontId::proportional(d.font_size);
-        let enabled = e.enabled
-            && ui.is_enabled()
-            && match e.kind {
-                Kind::Button => matches!(e.id.as_str(), "ok-button" | "cancel-button" | "general-page"),
-                Kind::Dropdown => matches!(e.binding, Binding::PanelMode | Binding::PrefZoom),
-                Kind::Check => e.binding == Binding::PrefNames,
-                _ => false,
-            };
+        let enabled = preference_enabled(e) && ui.is_enabled();
         let ink = if e.enabled { t.text } else { t.camera_raw_dialog_disabled };
         if e.id.ends_with("-page") {
             if e.id == "general-page" {
                 ui.painter().rect_filled(rect, 0.0, t.row_selected);
             }
             ui.painter().text(rect.left_center() + vec2(3.0, 0.0), Align2::LEFT_CENTER, text(&e.label), font, ink);
-            let response = ui.interact(rect, ui.id().with(&e.id), Sense::hover());
-            response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, enabled, e.id == "general-page", text(&e.label)));
+            let response = ui.interact(rect, ui.scope_id().with(&e.id), Sense::hover());
+            response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, enabled, e.id == "general-page", text(&e.label)));
             if !e.enabled {
                 response.on_hover_text(tr("Not available"));
             }
@@ -217,8 +210,8 @@ fn draw(ui: &mut Ui, origin: egui::Pos2, d: &Design, p: &mut Settings) -> Option
                 ui.painter().with_clip_rect(rect).text(rect.left_center() + vec2(d.label_inset, d.label_offset_y), Align2::LEFT_CENTER, label, font, ink);
             }
             Kind::Dropdown => {
-                let response = ui.interact(rect, ui.id().with(&e.id), if enabled { Sense::click() } else { Sense::hover() });
-                response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::ComboBox, enabled, text(&e.label)));
+                let response = ui.interact(rect, ui.scope_id().with(&e.id), if enabled { Sense::click() } else { Sense::hover() });
+                response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::ComboBox, enabled, text(&e.label)));
                 ui.painter().rect(rect, t.radius_sm, t.field, Stroke::new(1.0, t.field_border), egui::StrokeKind::Inside);
                 ui.painter().text(
                     rect.left_center() + vec2(if e.id == "theme-field" { 30.0 } else { d.field_inset }, d.field_offset_y),
@@ -256,8 +249,9 @@ fn draw(ui: &mut Ui, origin: egui::Pos2, d: &Design, p: &mut Settings) -> Option
             }
             Kind::Check => {
                 let lr = e.label_rect.map(|v| r(origin, v));
-                let response = ui.interact(lr.map_or(rect, |lr| lr.union(rect)), ui.id().with(&e.id), if enabled { Sense::click() } else { Sense::hover() });
-                response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, enabled, checked(e.binding, p), text(&e.label)));
+                let response =
+                    ui.interact(lr.map_or(rect, |lr| lr.union(rect)), ui.scope_id().with(&e.id), if enabled { Sense::click() } else { Sense::hover() });
+                response.widget_info(|| egui::WidgetInfo::selected(egui::Role::CheckBox, enabled, checked(e.binding, p), text(&e.label)));
                 if enabled && (response.clicked() || response.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Space))) {
                     response.request_focus();
                     if e.binding == Binding::PrefNames {
@@ -293,8 +287,8 @@ fn draw(ui: &mut Ui, origin: egui::Pos2, d: &Design, p: &mut Settings) -> Option
                 }
             }
             Kind::Button => {
-                let response = ui.interact(rect, ui.id().with(&e.id), if enabled { Sense::click() } else { Sense::hover() });
-                response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, text(&e.label)));
+                let response = ui.interact(rect, ui.scope_id().with(&e.id), if enabled { Sense::click() } else { Sense::hover() });
+                response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, enabled, text(&e.label)));
                 ui.painter().rect(rect, t.camera_raw_action_radius, t.dock, Stroke::new(1.0, ink), egui::StrokeKind::Inside);
                 ui.painter().text(rect.center(), Align2::CENTER_CENTER, text(&e.label), crate::theme::medium(d.action_size), ink);
                 if response.clicked() {
@@ -323,8 +317,8 @@ pub(super) fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
     }
     let state = &mut app.ui.camera_raw_preferences;
     let mut result = None;
-    egui::Modal::new(egui::Id::new("camera-raw-preferences")).frame(egui::Frame::NONE).backdrop_color(Tokens::get(ctx).scrim).show(ctx, |ui| {
-        ctx.set_sublayer(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("camera-raw-dialog")), ui.layer_id());
+    egui::Modal::new(egui::Id::unique("camera-raw-preferences")).frame(egui::Frame::NONE).backdrop_color(Tokens::get(ctx).scrim).show(ctx, |ui| {
+        ctx.set_sublayer(egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("camera-raw-dialog")), ui.layer_id());
         let size = vec2(d.width.min((ctx.content_rect().width() - 16.0).max(100.0)), d.height.min((ctx.content_rect().height() - 16.0).max(100.0)));
         ui.set_width(size.x);
         ui.set_height(size.y);
@@ -348,6 +342,16 @@ pub(super) fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
         state.close();
         app.ui.camera_raw_workspace.preferences = false;
     }
+}
+
+fn preference_enabled(e: &super::save_options::Element) -> bool {
+    e.enabled
+        && match e.kind {
+            Kind::Button => matches!(e.id.as_str(), "ok-button" | "cancel-button" | "general-page"),
+            Kind::Dropdown => matches!(e.binding, Binding::PanelMode | Binding::PrefZoom),
+            Kind::Check => e.binding == Binding::PrefNames,
+            _ => false,
+        }
 }
 
 #[cfg(test)]

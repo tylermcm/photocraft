@@ -128,7 +128,9 @@ impl MaskShape {
     /// The coverage map of a raster mask, `(w, h, bytes)`; `None` for other shapes or a damaged map.
     pub fn raster_bytes(&self) -> Option<(u32, u32, Vec<u8>)> {
         match self {
-            MaskShape::Raster { w, h, data } if *w > 0 && *h > 0 && *w <= MAX_RASTER_SIDE && *h <= MAX_RASTER_SIDE => decode_runs(data, *w as usize * *h as usize).map(|bytes| (*w, *h, bytes)),
+            MaskShape::Raster { w, h, data } if *w > 0 && *h > 0 && *w <= MAX_RASTER_SIDE && *h <= MAX_RASTER_SIDE => {
+                decode_runs(data, *w as usize * *h as usize).map(|bytes| (*w, *h, bytes))
+            }
             _ => None,
         }
     }
@@ -194,7 +196,15 @@ pub struct LocalMask {
 
 impl Default for LocalMask {
     fn default() -> Self {
-        Self { name: String::new(), enabled: true, shape: MaskShape::default(), invert: false, parts: Vec::new(), amount: 100.0, adjust: LocalAdjust::default() }
+        Self {
+            name: String::new(),
+            enabled: true,
+            shape: MaskShape::default(),
+            invert: false,
+            parts: Vec::new(),
+            amount: 100.0,
+            adjust: LocalAdjust::default(),
+        }
     }
 }
 
@@ -253,12 +263,35 @@ struct Layer {
 }
 
 enum Kind {
-    Linear { p0: [f32; 2], v: [f32; 2], len2: f32 },
-    Radial { c: [f32; 2], r: [f32; 2], cos: f32, sin: f32, inner: f32 },
-    Raster { w: usize, h: usize, bytes: Vec<u8>, size: [f32; 2] },
+    Linear {
+        p0: [f32; 2],
+        v: [f32; 2],
+        len2: f32,
+    },
+    Radial {
+        c: [f32; 2],
+        r: [f32; 2],
+        cos: f32,
+        sin: f32,
+        inner: f32,
+    },
+    Raster {
+        w: usize,
+        h: usize,
+        bytes: Vec<u8>,
+        size: [f32; 2],
+    },
     /// Decided per pixel from the picture itself (see [`Coverage::at_px`]).
-    Colour { color: [f32; 3], tolerance: f32, soft: f32 },
-    Luma { low: f32, high: f32, soft: f32 },
+    Colour {
+        color: [f32; 3],
+        tolerance: f32,
+        soft: f32,
+    },
+    Luma {
+        low: f32,
+        high: f32,
+        soft: f32,
+    },
     /// A raster that could not be read: covers nothing.
     Nothing,
 }
@@ -286,7 +319,9 @@ impl Layer {
                 Some(bytes) if *mw > 0 && *mh > 0 => Kind::Raster { w: *mw as usize, h: *mh as usize, bytes, size: [fw, fh] },
                 _ => Kind::Nothing,
             },
-            MaskShape::ColorRange { color, range, smooth } => Kind::Colour { color: *color, tolerance: (range / 100.0).clamp(0.0, 1.0) * 0.5 + 1e-3, soft: (smooth / 100.0).clamp(0.0, 1.0) },
+            MaskShape::ColorRange { color, range, smooth } => {
+                Kind::Colour { color: *color, tolerance: (range / 100.0).clamp(0.0, 1.0) * 0.5 + 1e-3, soft: (smooth / 100.0).clamp(0.0, 1.0) }
+            }
             MaskShape::LuminanceRange { low, high, smooth } => Kind::Luma { low: *low, high: *high, soft: (smooth / 100.0).clamp(0.0, 1.0) * 0.25 },
         };
         Layer { kind, invert }
@@ -303,7 +338,13 @@ impl Layer {
                 let d = (0..3).map(|i| (rgb[i] - color[i]).abs()).fold(0.0f32, f32::max);
                 // Full coverage inside the inner part of the tolerance, falling off to none at its edge.
                 let inner = tolerance * (1.0 - soft);
-                if d <= inner { 1.0 } else if d >= *tolerance { 0.0 } else { 1.0 - smooth_step((d - inner) / (tolerance - inner).max(1e-6)) }
+                if d <= inner {
+                    1.0
+                } else if d >= *tolerance {
+                    0.0
+                } else {
+                    1.0 - smooth_step((d - inner) / (tolerance - inner).max(1e-6))
+                }
             }
             Kind::Luma { low, high, soft } => {
                 let y = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
@@ -470,42 +511,54 @@ pub fn validate(p: &CameraRaw) -> Result<(), String> {
 }
 
 fn validate_shape(shape: &MaskShape, name: &str) -> Result<(), String> {
-        match shape {
-            MaskShape::Linear { x0, y0, x1, y1 } => {
-                if [x0, y0, x1, y1].iter().any(|v| !v.is_finite() || !(-2.0..=3.0).contains(*v)) {
-                    return Err(format!("{name}: gradient points must be finite and near the picture"));
-                }
-            }
-            MaskShape::Radial { cx, cy, rx, ry, angle, feather } => {
-                if [cx, cy].iter().any(|v| !v.is_finite() || !(-2.0..=3.0).contains(*v))
-                    || [rx, ry].iter().any(|v| !v.is_finite() || !(0.0..=4.0).contains(*v))
-                    || !angle.is_finite()
-                    || !(-360.0..=360.0).contains(angle)
-                    || !feather.is_finite()
-                    || !(0.0..=100.0).contains(feather)
-                {
-                    return Err(format!("{name}: ellipse out of range"));
-                }
-            }
-            MaskShape::Raster { w, h, data } => {
-                if *w == 0 || *h == 0 || *w > MAX_RASTER_SIDE || *h > MAX_RASTER_SIDE {
-                    return Err(format!("{name}: coverage map size out of range"));
-                }
-                if decode_runs(data, *w as usize * *h as usize).is_none() {
-                    return Err(format!("{name}: coverage map is damaged"));
-                }
-            }
-            MaskShape::ColorRange { color, range, smooth } => {
-                if color.iter().any(|v| !v.is_finite() || !(-0.5..=2.0).contains(v)) || !range.is_finite() || !(0.0..=100.0).contains(range) || !smooth.is_finite() || !(0.0..=100.0).contains(smooth) {
-                    return Err(format!("{name}: colour range out of bounds"));
-                }
-            }
-            MaskShape::LuminanceRange { low, high, smooth } => {
-                if !low.is_finite() || !high.is_finite() || !smooth.is_finite() || !(0.0..=1.0).contains(low) || !(0.0..=1.0).contains(high) || low > high || !(0.0..=100.0).contains(smooth) {
-                    return Err(format!("{name}: luminance range out of bounds"));
-                }
+    match shape {
+        MaskShape::Linear { x0, y0, x1, y1 } => {
+            if [x0, y0, x1, y1].iter().any(|v| !v.is_finite() || !(-2.0..=3.0).contains(*v)) {
+                return Err(format!("{name}: gradient points must be finite and near the picture"));
             }
         }
+        MaskShape::Radial { cx, cy, rx, ry, angle, feather } => {
+            if [cx, cy].iter().any(|v| !v.is_finite() || !(-2.0..=3.0).contains(*v))
+                || [rx, ry].iter().any(|v| !v.is_finite() || !(0.0..=4.0).contains(*v))
+                || !angle.is_finite()
+                || !(-360.0..=360.0).contains(angle)
+                || !feather.is_finite()
+                || !(0.0..=100.0).contains(feather)
+            {
+                return Err(format!("{name}: ellipse out of range"));
+            }
+        }
+        MaskShape::Raster { w, h, data } => {
+            if *w == 0 || *h == 0 || *w > MAX_RASTER_SIDE || *h > MAX_RASTER_SIDE {
+                return Err(format!("{name}: coverage map size out of range"));
+            }
+            if decode_runs(data, *w as usize * *h as usize).is_none() {
+                return Err(format!("{name}: coverage map is damaged"));
+            }
+        }
+        MaskShape::ColorRange { color, range, smooth } => {
+            if color.iter().any(|v| !v.is_finite() || !(-0.5..=2.0).contains(v))
+                || !range.is_finite()
+                || !(0.0..=100.0).contains(range)
+                || !smooth.is_finite()
+                || !(0.0..=100.0).contains(smooth)
+            {
+                return Err(format!("{name}: colour range out of bounds"));
+            }
+        }
+        MaskShape::LuminanceRange { low, high, smooth } => {
+            if !low.is_finite()
+                || !high.is_finite()
+                || !smooth.is_finite()
+                || !(0.0..=1.0).contains(low)
+                || !(0.0..=1.0).contains(high)
+                || low > high
+                || !(0.0..=100.0).contains(smooth)
+            {
+                return Err(format!("{name}: luminance range out of bounds"));
+            }
+        }
+    }
     Ok(())
 }
 

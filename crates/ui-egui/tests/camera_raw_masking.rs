@@ -11,7 +11,8 @@ fn fixture() -> Harness<'static, PhotocraftApp> {
         let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width":64,"height":48})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
-        camera_raw_ui::open(&mut app, &cc.egui_ctx).unwrap();
+        app.raw_workspace.enabled = true;
+        photocraft_ui_egui::raw_workspace::control(&mut app, &cc.egui_ctx, &json!({"open":true})).unwrap();
         app
     });
     h.run_steps(4);
@@ -27,15 +28,18 @@ fn invoke(h: &mut Harness<'_, PhotocraftApp>, v: Value) -> Result<Value, String>
     out
 }
 #[test]
-fn masking_cards_are_disabled_and_people_disclosure_does_not_edit_the_photo() {
+fn masking_tools_follow_available_backends_and_people_disclosure_does_not_edit_the_photo() {
     let mut h = fixture();
     let before = inspect(&h);
     let history = h.state().session.active().unwrap().history.past_len();
     h.get_by_label("Masking").click();
     h.run_steps(4);
     assert_eq!(inspect(&h)["cameraRaw"]["workspace"]["tab"], "masking");
-    for label in ["Subject", "Sky", "Background", "Landscape", "Objects", "Brush", "Linear Gradient", "Radial Gradient", "Range"] {
+    for label in ["Subject", "Background", "Landscape"] {
         assert_eq!(h.query_all_by_label(label).filter(|n| n.accesskit_node().is_disabled()).count(), 1, "{label}");
+    }
+    for label in ["Sky", "Objects", "Brush", "Linear Gradient", "Radial Gradient", "Range"] {
+        assert_eq!(h.query_all_by_label(label).filter(|n| !n.accesskit_node().is_disabled()).count(), 1, "{label}");
     }
     h.get_by_label("People").click();
     h.run_steps(4);

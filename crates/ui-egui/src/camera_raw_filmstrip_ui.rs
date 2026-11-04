@@ -131,10 +131,10 @@ struct State {
 }
 
 fn state(ctx: &egui::Context) -> State {
-    ctx.data(|d| d.get_temp(egui::Id::new("camera-raw-filmstrip"))).unwrap_or_default()
+    ctx.data(|d| d.get_temp(egui::Id::unique("camera-raw-filmstrip"))).unwrap_or_default()
 }
 fn store(ctx: &egui::Context, value: State) {
-    ctx.data_mut(|d| d.insert_temp(egui::Id::new("camera-raw-filmstrip"), value));
+    ctx.data_mut(|d| d.insert_temp(egui::Id::unique("camera-raw-filmstrip"), value));
 }
 
 /// Hosted launches negotiate with the parent before drawing a strip. Standalone
@@ -176,9 +176,11 @@ pub(crate) fn seed(ctx: &egui::Context, name: &str, texture: Option<&TextureHand
     store(ctx, s);
 }
 
-fn view_design(ctx:&egui::Context)->Design {
-    let mut d=crate::camera_raw_design::get(ctx).filmstrip.clone();
-    if let Some(p)=crate::camera_raw_ui::preferences::effective(ctx) {d.show_filenames=p.show_filenames;}
+fn view_design(ctx: &egui::Context) -> Design {
+    let mut d = crate::camera_raw_design::get(ctx).filmstrip.clone();
+    if let Some(p) = crate::camera_raw_ui::preferences::effective(ctx) {
+        d.show_filenames = p.show_filenames;
+    }
     d
 }
 pub(crate) fn inspect(ctx: &egui::Context) -> Value {
@@ -307,12 +309,12 @@ pub(crate) fn draw(ui: &mut Ui, rect: Rect) {
     if !s.enabled || s.collapsed || rect.height() <= 0.0 {
         return;
     }
-    let d=view_design(ui.ctx());
+    let d = view_design(ui.ctx());
     let t = Tokens::get(ui.ctx());
     s.rect = Some(rect);
     let painter = ui.painter_at(rect);
     painter.rect_filled(rect, 0.0, t.tab_strip);
-    let response = ui.interact(rect, ui.id().with("acr-filmstrip-scroll"), Sense::hover());
+    let response = ui.interact(rect, ui.scope_id().with("acr-filmstrip-scroll"), Sense::hover());
     let pitch = d.cell_width + d.gap;
     if response.hovered() {
         let scroll = ui.input(|i| i.smooth_scroll_delta);
@@ -327,8 +329,8 @@ pub(crate) fn draw(ui: &mut Ui, rect: Rect) {
             pos2(rect.left() + d.horizontal_padding + item.index as f32 * pitch - s.scroll, rect.top() + d.top_padding),
             vec2(d.cell_width, (rect.height() - d.top_padding - d.bottom_padding).max(1.0)),
         );
-        let response = ui.interact(cell.intersect(rect), ui.id().with(("acr-filmstrip-photo", &item.id)), Sense::click());
-        response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, item.index == s.current, &item.name));
+        let response = ui.interact(cell.intersect(rect), ui.scope_id().with(("acr-filmstrip-photo", &item.id)), Sense::click());
+        response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, item.index == s.current, &item.name));
         if response.clicked() {
             clicked = Some(item.index);
         }
@@ -410,7 +412,7 @@ pub(crate) fn navigation(ui: &mut Ui, navigation: Rect, before: &mut bool) {
             })
             .collect();
         ui.painter().add(egui::Shape::closed_line(points, Stroke::new(1.1, if star <= rating { t.text } else { t.filmstrip_review_icon })));
-        let response = ui.interact(Rect::from_center_size(c, vec2(22.0, 24.0)), ui.id().with(("acr-rating", star)), Sense::click());
+        let response = ui.interact(Rect::from_center_size(c, vec2(22.0, 24.0)), ui.scope_id().with(("acr-rating", star)), Sense::click());
         if response.clicked() {
             let current = s.current;
             request(&mut s, current, "rating", json!(if rating == star { 0 } else { star }));
@@ -420,7 +422,11 @@ pub(crate) fn navigation(ui: &mut Ui, navigation: Rect, before: &mut bool) {
     ui.painter().line_segment([pos2(x, review.top()), pos2(x, review.bottom())], Stroke::new(0.5, t.separator));
     let c = pos2(review.right() - 15.5, review.center().y);
     icons::reject(ui.painter(), c, t.filmstrip_review_icon);
-    if ui.interact(Rect::from_center_size(c, vec2(30.0, 24.0)), ui.id().with("acr-reject"), Sense::click()).on_hover_text(tl!("Toggle rejected")).clicked() {
+    if ui
+        .interact(Rect::from_center_size(c, vec2(30.0, 24.0)), ui.scope_id().with("acr-reject"), Sense::click())
+        .on_hover_text(tl!("Toggle rejected"))
+        .clicked()
+    {
         let current = s.current;
         request(&mut s, current, "reject", Value::Null);
     }
@@ -428,7 +434,7 @@ pub(crate) fn navigation(ui: &mut Ui, navigation: Rect, before: &mut bool) {
     let c = rect.center();
     ui.painter().rect_filled(Rect::from_center_size(c, vec2(12.0, 12.0)), 0.0, t.icon);
     icons::corner(ui.painter(), c, t.icon);
-    if ui.interact(rect, ui.id().with("acr-before"), Sense::click()).on_hover_text(tl!("Before (Y)")).clicked() {
+    if ui.interact(rect, ui.scope_id().with("acr-before"), Sense::click()).on_hover_text(tl!("Before (Y)")).clicked() {
         *before = !*before;
         s.comparison_split = false;
     }
@@ -437,7 +443,7 @@ pub(crate) fn navigation(ui: &mut Ui, navigation: Rect, before: &mut bool) {
     let rect = Rect::from_center_size(pos2(navigation.right() - 29.5, navigation.center().y), vec2(36.0, 38.0));
     let ink = if s.comparison_split { t.icon } else { t.filmstrip_review_icon };
     icons::comparison(ui.painter(), rect.center(), ink);
-    if ui.interact(rect, ui.id().with("acr-before-after-layout"), Sense::click()).on_hover_text(tl!("Before / After")).clicked() {
+    if ui.interact(rect, ui.scope_id().with("acr-before-after-layout"), Sense::click()).on_hover_text(tl!("Before / After")).clicked() {
         s.comparison_split = !s.comparison_split;
         *before = false;
     }

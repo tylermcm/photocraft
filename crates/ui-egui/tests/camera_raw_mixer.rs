@@ -12,7 +12,8 @@ fn fixture() -> Harness<'static, PhotocraftApp> {
         app.run("file.new", json!({"width":64,"height":48})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
         app.run("edit.fill", json!({"color":"#3366cc"})).unwrap();
-        camera_raw_ui::open(&mut app, &cc.egui_ctx).unwrap();
+        app.raw_workspace.enabled = true;
+        photocraft_ui_egui::raw_workspace::control(&mut app, &cc.egui_ctx, &json!({"open":true})).unwrap();
         app
     });
     let ctx = h.ctx.clone();
@@ -34,7 +35,7 @@ fn measured_mixer_keeps_band_selection_as_view_state_and_exposes_point_and_all_c
     assert!(!h.get_by_label("All Colors").accesskit_node().is_disabled());
     h.get_by_label("Mixer");
     h.get_by_role_and_label(Role::ComboBox, "Adjust");
-    h.get_by_label("Blue").click();
+    h.get_by_role_and_label(Role::Button, "Blue").click();
     h.run_steps(4);
     assert_eq!(inspect(&h)["cameraRaw"]["workspace"]["band"], 5);
     assert_eq!(inspect(&h)["cameraRaw"]["params"], before["cameraRaw"]["params"]);
@@ -44,7 +45,7 @@ fn measured_mixer_keeps_band_selection_as_view_state_and_exposes_point_and_all_c
 fn color_slider_edits_only_its_band_then_cancel_restores_the_document() {
     let mut h = fixture();
     let history = h.state().session.active().unwrap().history.past_len();
-    h.get_by_label("Blue").click();
+    h.get_by_role_and_label(Role::Button, "Blue").click();
     h.run_steps(4);
     let before_pixels = inspect(&h)["cameraRaw"]["histogram"].clone();
     let rect = h.get_by_role_and_label(Role::Slider, "Hue").rect();
@@ -78,8 +79,8 @@ fn adjust_mode_popup_preserves_the_existing_hsl_rows_without_editing_parameters(
     h.get_by_label("HSL").click();
     h.run_steps(4);
     assert_eq!(inspect(&h)["cameraRaw"]["workspace"]["mixer"], "hsl");
-    h.get_by_label("Red");
-    h.get_by_label("Magenta");
+    h.get_by_role_and_label(Role::Slider, "Red");
+    h.get_by_role_and_label(Role::Slider, "Magenta");
     assert_eq!(inspect(&h)["cameraRaw"]["params"], before["cameraRaw"]["params"]);
 }
 

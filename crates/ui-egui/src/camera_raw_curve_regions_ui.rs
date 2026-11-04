@@ -23,7 +23,7 @@ pub(super) fn show(ui: &mut Ui, splits: &mut [f32; 3]) -> bool {
         let value = if value.is_finite() { value.clamp(5.0, 95.0) } else { 50.0 };
         let center = pos2(egui::lerp(rect.x_range(), value / 100.0), rect.center().y);
         let hit = Rect::from_center_size(center, vec2(14.0, rect.height().max(14.0)));
-        let response = ui.interact(hit, ui.id().with(("curve-region", index)), Sense::click_and_drag());
+        let response = ui.interact(hit, ui.scope_id().with(("curve-region", index)), Sense::click_and_drag());
         let (left, right) = match index {
             0 => (tl!("Shadows"), tl!("Darks")),
             1 => (tl!("Darks"), tl!("Lights")),

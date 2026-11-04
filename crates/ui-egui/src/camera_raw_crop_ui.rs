@@ -270,8 +270,8 @@ pub(super) fn show(ui: &mut Ui, groups: &mut Vec<String>) {
             Kind::Disclosure => {
                 let Some(g) = group(&e.id) else { continue };
                 let open = opened(groups, g);
-                let response = ui.interact(r, ui.id().with(&e.id), Sense::click());
-                response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::CollapsingHeader, ui.is_enabled(), open, tr(&e.label)));
+                let response = ui.interact(r, ui.scope_id().with(&e.id), Sense::click());
+                response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, ui.is_enabled(), open, tr(&e.label)));
                 if response.clicked() || response.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Space) || i.key_pressed(egui::Key::Enter)) {
                     response.request_focus();
                     toggle = Some(g);
@@ -301,13 +301,9 @@ pub(super) fn show(ui: &mut Ui, groups: &mut Vec<String>) {
                     let c = r.right_center() - vec2(7.0, 0.0);
                     line(ui, vec![c + vec2(-3.0, -1.5), c + vec2(0.0, 1.5), c + vec2(3.0, -1.5)], t.icon);
                 }
-                let response = ui.interact(r, ui.id().with(&e.id), Sense::hover());
+                let response = ui.interact(r, ui.scope_id().with(&e.id), Sense::hover());
                 response.widget_info(|| {
-                    egui::WidgetInfo::labeled(
-                        if e.id == "preset-field" { egui::WidgetType::ComboBox } else { egui::WidgetType::DragValue },
-                        false,
-                        tr(&e.label),
-                    )
+                    egui::WidgetInfo::labeled(if e.id == "preset-field" { egui::Role::ComboBox } else { egui::Role::SpinButton }, false, tr(&e.label))
                 });
                 response.on_hover_text(tr("Not available"));
             }
@@ -327,15 +323,15 @@ pub(super) fn show(ui: &mut Ui, groups: &mut Vec<String>) {
             }
             Kind::Check => {
                 ui.painter().rect_stroke(r.shrink(3.0), t.radius_sm, Stroke::new(1.0, t.text_faint), egui::StrokeKind::Inside);
-                let response = ui.interact(r, ui.id().with(&e.id), Sense::hover());
-                response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, false, false, tr(&e.label)));
+                let response = ui.interact(r, ui.scope_id().with(&e.id), Sense::hover());
+                response.widget_info(|| egui::WidgetInfo::selected(egui::Role::CheckBox, false, false, tr(&e.label)));
                 response.on_hover_text(tr("Not available"));
             }
             Kind::Icon => {
                 icon(ui, r, &e.id);
                 if !e.label.is_empty() {
-                    let response = ui.interact(r, ui.id().with(&e.id), Sense::hover());
-                    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, false, tr(&e.label)));
+                    let response = ui.interact(r, ui.scope_id().with(&e.id), Sense::hover());
+                    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, false, tr(&e.label)));
                     response.on_hover_text(tr("Not available"));
                 }
             }

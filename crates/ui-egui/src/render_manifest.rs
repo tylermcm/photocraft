@@ -19,7 +19,8 @@ use sha2::{Digest, Sha256};
 pub const VERSION: u64 = 1;
 /// Bumped whenever the pictures made from the same edits change (render maths, colour handling, sizes), so
 /// a host knows pictures made before are out of date. Image Triage keeps the same number.
-pub const ALGORITHM: u64 = 2;
+// v0.20.1: upstream Calibration and RAW workflow defaults change recipe renders.
+pub const ALGORITHM: u64 = 3;
 
 /// What a host asked for: where the manifest goes, and the original photo's signature (`"<bytes>:<mtime_ns>"`).
 #[derive(Clone, Debug, Default, PartialEq)]

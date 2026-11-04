@@ -13,7 +13,8 @@ fn fixture() -> Harness<'static, PhotocraftApp> {
         app.run("file.new", json!({"width":64,"height":48})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
         app.run("edit.fill", json!({"color":"#808080"})).unwrap();
-        camera_raw_ui::open(&mut app, &cc.egui_ctx).unwrap();
+        app.raw_workspace.enabled = true;
+        photocraft_ui_egui::raw_workspace::control(&mut app, &cc.egui_ctx, &json!({"open":true})).unwrap();
         app
     });
     h.run_steps(4);
@@ -39,15 +40,9 @@ fn opening_dismissing_and_unavailable_rows_preserve_recipe_and_document() {
     let during = inspect(&h);
     assert!(during["cameraRawMenu"]["rect"].is_array());
     assert_eq!(during["cameraRaw"]["params"], before["cameraRaw"]["params"]);
-    for label in [
-        "Reset to Open",
-        "Reset to Default",
-        "Apply Previous Settings",
-        "Paste Edit Settings",
-        "Create Preset…",
-        "Render to DNG",
-        "Update AI Settings",
-    ] {
+    for label in
+        ["Reset to Open", "Reset to Default", "Apply Previous Settings", "Paste Edit Settings", "Create Preset…", "Render to DNG", "Update AI Settings"]
+    {
         assert!(h.get_by_role_and_label(Role::Button, label).accesskit_node().is_disabled(), "{label}");
     }
     h.key_press(egui::Key::Escape);

@@ -143,7 +143,7 @@ pub(crate) fn supports_bypass(title: &str) -> bool {
 }
 
 pub(crate) fn held_bypass_id() -> egui::Id {
-    egui::Id::new("camera-raw-held-section-bypass")
+    egui::Id::unique("camera-raw-held-section-bypass")
 }
 
 /// Neutralize one implemented processing stage in a copy, preserving the saved recipe.
@@ -191,9 +191,9 @@ pub(crate) fn preview_without(parameters: &CameraRaw, title: Option<&str>) -> Ca
             p.point_colors = defaults.point_colors;
         }
         Some("Calibration") => {
-            p.calib_shadow_tint = defaults.calib_shadow_tint;
-            p.calib_hue = defaults.calib_hue;
-            p.calib_sat = defaults.calib_sat;
+            p.shadow_tint = defaults.shadow_tint;
+            p.calibration_hue = defaults.calibration_hue;
+            p.calibration_sat = defaults.calibration_sat;
         }
         Some("Color Grading") => {
             p.grade_shadows = defaults.grade_shadows;
@@ -265,7 +265,7 @@ pub(crate) fn disclosed_slider(ui: &mut Ui, label: &str, value: &mut f32, range:
             ui.spacing_mut().item_spacing.x = design.disclosure_button_gap;
             let label = format!("{} {}", tr(label), tl!("Details"));
             let (rect, response) = ui.allocate_exact_size(Vec2::splat(design.disclosure_button_size), Sense::click());
-            response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, ui.is_enabled(), *expanded, &label));
+            response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, ui.is_enabled(), *expanded, &label));
             if response.clicked() {
                 *expanded = !*expanded;
             }
@@ -409,8 +409,8 @@ pub(crate) fn section(ui: &mut Ui, title: &str, state: &mut PanelState, body: im
     let eye_rect = Rect::from_center_size(center, vec2(18.0, 18.0));
     let enabled = ui.is_enabled() && supports_bypass(title);
     let label = format!("{} — {}", tr(title), tl!("Before"));
-    let eye = ui.interact(eye_rect, ui.id().with(("camera-raw-section-eye", title)), if enabled { Sense::click_and_drag() } else { Sense::hover() });
-    eye.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, label.clone()));
+    let eye = ui.interact(eye_rect, ui.scope_id().with(("camera-raw-section-eye", title)), if enabled { Sense::click_and_drag() } else { Sense::hover() });
+    eye.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, enabled, label.clone()));
     let held = enabled && eye.is_pointer_button_down_on();
     let ink = if held { t.text } else { t.text_faint.gamma_multiply(design.section_eye_opacity) };
     let points = (0..=32)
@@ -520,7 +520,7 @@ fn wheel(ui: &mut Ui, label: &str, value: &mut Wheel, side: f32, label_offset: f
     ui.vertical_centered(|ui| {
         let design = super::camera_raw_design::get(ui.ctx());
         let (label_rect, response) = ui.allocate_exact_size(vec2(side, ui.text_style_height(&egui::TextStyle::Body)), Sense::hover());
-        response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, ui.is_enabled(), tr(label)));
+        response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, ui.is_enabled(), tr(label)));
         ui.painter().text(
             label_rect.center() + vec2(0.0, label_offset),
             egui::Align2::CENTER_CENTER,
@@ -529,7 +529,7 @@ fn wheel(ui: &mut Ui, label: &str, value: &mut Wheel, side: f32, label_offset: f
             t.text,
         );
         let (rect, response) = ui.allocate_exact_size(vec2(side, side), Sense::click_and_drag());
-        response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Slider, ui.is_enabled(), format!("{} {}", tr(label), tl!("Color Wheel"))));
+        response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Slider, ui.is_enabled(), format!("{} {}", tr(label), tl!("Color Wheel"))));
         let radius = (side * 0.5 - 5.0).max(1.0);
         let center = rect.center();
         let pointer = response.interact_pointer_pos();
@@ -627,8 +627,8 @@ fn grading_selectors(ui: &mut Ui, current: &mut GradingView) {
         };
         let center = pos2(row.left() + design.grading_selector_start + index as f32 * (size + design.grading_selector_gap) + offset, row.center().y);
         let rect = Rect::from_center_size(center, vec2(size, size));
-        let response = ui.interact(rect, ui.id().with(("grading-view", label)), Sense::click()).on_hover_text(tr(label));
-        response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, ui.is_enabled(), *current == mode, tr(label)));
+        let response = ui.interact(rect, ui.scope_id().with(("grading-view", label)), Sense::click()).on_hover_text(tr(label));
+        response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, ui.is_enabled(), *current == mode, tr(label)));
         if response.clicked() {
             *current = mode;
         }
@@ -713,10 +713,26 @@ pub(crate) fn grading(ui: &mut Ui, p: &mut CameraRaw, state: &mut GradingView) -
     }
     ui.add_space(design.grading_footer_gap);
     ui.separator();
-    dirty |= slider_row_with(ui, tr("Blending"), &mut p.grade_blending, 0.0..=100.0, "", None, widgets::RowGestures { reset: Some(50.0), wheel_step: None, curve: None })
-        .changed();
-    dirty |= slider_row_with(ui, tr("Balance"), &mut p.grade_balance, -100.0..=100.0, "", None, widgets::RowGestures { reset: Some(0.0), wheel_step: None, curve: None })
-        .changed();
+    dirty |= slider_row_with(
+        ui,
+        tr("Blending"),
+        &mut p.grade_blending,
+        0.0..=100.0,
+        "",
+        None,
+        widgets::RowGestures { reset: Some(50.0), wheel_step: None, curve: None },
+    )
+    .changed();
+    dirty |= slider_row_with(
+        ui,
+        tr("Balance"),
+        &mut p.grade_balance,
+        -100.0..=100.0,
+        "",
+        None,
+        widgets::RowGestures { reset: Some(0.0), wheel_step: None, curve: None },
+    )
+    .changed();
     dirty
 }
 
@@ -818,10 +834,8 @@ pub(crate) fn rail(ui: &mut Ui, rect: Rect, state: &mut WorkspaceState, navigati
         state.tab = WorkspaceTab::Snapshots;
     }
     let presets_rect = Rect::from_center_size(pos2(rect.center().x, rect.top() + design.snapshots_rail_offset + 36.0), vec2(28.0, 28.0));
-    let r = ui.interact(presets_rect, ui.id().with("camera-raw-presets-tab"), Sense::click());
-    r.widget_info(|| {
-        egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, ui.is_enabled(), !state.info && state.tab == WorkspaceTab::Presets, tl!("Presets"))
-    });
+    let r = ui.interact(presets_rect, ui.scope_id().with("camera-raw-presets-tab"), Sense::click());
+    r.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, ui.is_enabled(), !state.info && state.tab == WorkspaceTab::Presets, tl!("Presets")));
     if !state.info && state.tab == WorkspaceTab::Presets {
         ui.painter().rect_filled(presets_rect.shrink(1.0), t.radius_sm, t.field);
         ui.painter().rect_stroke(presets_rect.shrink(1.0), t.radius_sm, Stroke::new(1.0, t.field_border), egui::StrokeKind::Inside);
@@ -842,8 +856,8 @@ pub(crate) fn rail(ui: &mut Ui, rect: Rect, state: &mut WorkspaceState, navigati
         state.tab = WorkspaceTab::Presets;
     }
     let menu_rect = Rect::from_center_size(pos2(rect.center().x, rect.top() + 308.0), vec2(28.0, 28.0));
-    let menu_response = ui.interact(menu_rect, ui.id().with("acr-more"), Sense::click());
-    menu_response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), tl!("Settings")));
+    let menu_response = ui.interact(menu_rect, ui.scope_id().with("acr-more"), Sense::click());
+    menu_response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, ui.is_enabled(), tl!("Settings")));
     for x in [-7.0, 0.0, 7.0] {
         ui.painter().circle_filled(menu_rect.center() + vec2(x, 0.0), 2.0, t.icon);
     }

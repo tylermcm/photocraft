@@ -235,12 +235,14 @@ impl Design {
                 return Err(format!("invalid Save Options element {}", e.id));
             }
         }
-        for (id, kind) in [("window-frame", Kind::Frame), ("title", Kind::Title),  ("cancel-button", Kind::Button)] {
+        for (id, kind) in [("window-frame", Kind::Frame), ("title", Kind::Title), ("cancel-button", Kind::Button)] {
             if !self.elements.iter().any(|e| e.id == id && e.kind == kind) {
                 return Err(format!("Save Options design requires {id}"));
             }
         }
-        if !self.elements.iter().any(|e|matches!(e.id.as_str(),"save-button"|"ok-button") && e.kind==Kind::Button) { return Err("dialog design requires a primary button".into()); }
+        if !self.elements.iter().any(|e| matches!(e.id.as_str(), "save-button" | "ok-button") && e.kind == Kind::Button) {
+            return Err("dialog design requires a primary button".into());
+        }
         Ok(())
     }
     fn valid_rect(&self, r: [f32; 4]) -> bool {
@@ -372,10 +374,10 @@ fn draw(ui: &mut Ui, origin: egui::Pos2, d: &Design, p: &mut Settings, name: &st
                 );
             }
             Kind::Dropdown | Kind::Field => {
-                let response = ui.interact(r, ui.id().with(&e.id), if active { Sense::click() } else { Sense::hover() });
+                let response = ui.interact(r, ui.scope_id().with(&e.id), if active { Sense::click() } else { Sense::hover() });
                 let caption = naming_index(e.binding).map_or_else(|| label(&e.label), |i| format!("{} {}", label(&e.label), i + 1));
                 response.widget_info(|| {
-                    egui::WidgetInfo::labeled(if e.kind == Kind::Dropdown { egui::WidgetType::ComboBox } else { egui::WidgetType::TextEdit }, active, &caption)
+                    egui::WidgetInfo::labeled(if e.kind == Kind::Dropdown { egui::Role::ComboBox } else { egui::Role::TextInput }, active, &caption)
                 });
                 let fill = if active && response.hovered() { t.hover } else { t.field };
                 ui.painter().rect(
@@ -427,31 +429,17 @@ fn draw(ui: &mut Ui, origin: egui::Pos2, d: &Design, p: &mut Settings, name: &st
             Kind::Check => {
                 let lr = e.label_rect.map(|v| rect(origin, v));
                 let hit = lr.map_or(r, |v| v.union(r));
-                let response = ui.interact(hit, ui.id().with(&e.id), if active { Sense::click() } else { Sense::hover() });
+                let response = ui.interact(hit, ui.scope_id().with(&e.id), if active { Sense::click() } else { Sense::hover() });
 
                 let caption = if matches!(e.binding, Binding::Account | Binding::Connected) { value(e.binding, p, name, folder) } else { label(&e.label) };
-                response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, active, checked(e.binding, p), &caption));
+                response.widget_info(|| egui::WidgetInfo::selected(egui::Role::CheckBox, active, checked(e.binding, p), &caption));
                 if response.clicked() || active && response.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Space)) {
                     response.request_focus();
                     set_checked(e.binding, p, !checked(e.binding, p));
                 }
                 let on = checked(e.binding, p);
-                ui.painter().rect(
-                    r,
-                    t.radius_sm,
-                    if on { if e.enabled { t.camera_raw_dialog_check_fill } else { ink } } else { if e.enabled { t.field } else { t.dock } },
-                    Stroke::new(
-                        1.0,
-                        if on && e.enabled {
-                            t.camera_raw_dialog_check_fill
-                        } else if e.enabled {
-                            t.camera_raw_dialog_check_border
-                        } else {
-                            t.camera_raw_dialog_disabled
-                        },
-                    ),
-                    egui::StrokeKind::Inside,
-                );
+                let (fill, border) = check_colors(on, e.enabled, ink, &t);
+                ui.painter().rect(r, t.radius_sm, fill, Stroke::new(1.0, border), egui::StrokeKind::Inside);
                 if on {
                     ui.painter().add(egui::Shape::line(
                         vec![r.center() + vec2(-3.0, 0.0), r.center() + vec2(-0.5, 2.5), r.center() + vec2(3.5, -2.5)],
@@ -472,8 +460,8 @@ fn draw(ui: &mut Ui, origin: egui::Pos2, d: &Design, p: &mut Settings, name: &st
                 }
             }
             Kind::Button => {
-                let response = ui.interact(r, ui.id().with(&e.id), if active { Sense::click() } else { Sense::hover() });
-                response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, active, label(&e.label)));
+                let response = ui.interact(r, ui.scope_id().with(&e.id), if active { Sense::click() } else { Sense::hover() });
+                response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, active, label(&e.label)));
                 ui.painter().rect(
                     r,
                     if e.id == "select-folder" { t.radius_sm } else { t.camera_raw_action_radius },
@@ -529,8 +517,8 @@ pub(super) fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
     let state = &mut app.ui.camera_raw_save_options;
     let draft = state.draft.get_or_insert_with(|| state.settings.clone());
     let mut close = false;
-    egui::Modal::new(egui::Id::new("camera-raw-save-options")).frame(egui::Frame::NONE).backdrop_color(Tokens::get(ctx).scrim).show(ctx, |ui| {
-        ctx.set_sublayer(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("camera-raw-dialog")), ui.layer_id());
+    egui::Modal::new(egui::Id::unique("camera-raw-save-options")).frame(egui::Frame::NONE).backdrop_color(Tokens::get(ctx).scrim).show(ctx, |ui| {
+        ctx.set_sublayer(egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("camera-raw-dialog")), ui.layer_id());
         ui.set_width(d.width.min((ctx.content_rect().width() - 16.0).max(100.0)));
         let h = (ctx.content_rect().height() - 16.0).max(100.0).min(d.height);
         ui.set_height(h);
@@ -546,6 +534,15 @@ pub(super) fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
     if close || ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
         state.close();
         app.ui.camera_raw_workspace.save_options = false;
+    }
+}
+
+fn check_colors(on: bool, enabled: bool, ink: egui::Color32, t: &Tokens) -> (egui::Color32, egui::Color32) {
+    match (on, enabled) {
+        (true, true) => (t.camera_raw_dialog_check_fill, t.camera_raw_dialog_check_fill),
+        (true, false) => (ink, t.camera_raw_dialog_disabled),
+        (false, true) => (t.field, t.camera_raw_dialog_check_border),
+        (false, false) => (t.dock, t.camera_raw_dialog_disabled),
     }
 }
 

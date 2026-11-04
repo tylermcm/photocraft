@@ -232,8 +232,8 @@ pub(super) fn show(ui: &mut Ui, groups: &mut Vec<String>, help: &mut bool) {
                 };
                 ui.painter().with_clip_rect(r).text(r.left_center(), Align2::LEFT_CENTER, tr(&e.label), font, t.text);
                 if e.id == "feedback-label" {
-                    let response = ui.interact(r, ui.id().with(&e.id), Sense::hover());
-                    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, false, tr(&e.label)));
+                    let response = ui.interact(r, ui.scope_id().with(&e.id), Sense::hover());
+                    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, false, tr(&e.label)));
                     response.on_hover_text(tr("Not available"));
                 }
             }
@@ -255,16 +255,16 @@ pub(super) fn show(ui: &mut Ui, groups: &mut Vec<String>, help: &mut bool) {
                 let label = d.elements.iter().find(|v| v.id == e.id.replace("checkbox", "label"));
                 let hit =
                     label.map(|v| r.union(Rect::from_min_max(panel.min + vec2(v.rect[0], v.rect[1]), panel.min + vec2(v.rect[2], v.rect[3])))).unwrap_or(r);
-                let response = ui.interact(hit, ui.id().with(&e.id), Sense::hover());
-                response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, false, e.checked, tr(&e.label)));
+                let response = ui.interact(hit, ui.scope_id().with(&e.id), Sense::hover());
+                response.widget_info(|| egui::WidgetInfo::selected(egui::Role::CheckBox, false, e.checked, tr(&e.label)));
                 response.on_hover_text(tr("Not available"));
             }
             Kind::Field => {
                 let rr = r.shrink2(vec2(1.0, 2.0));
                 ui.painter().rect(rr, t.radius_sm, t.field, Stroke::new(1.0, t.field_border), egui::StrokeKind::Inside);
                 ui.painter().text(rr.left_center() + vec2(4.0, 0.0), Align2::LEFT_CENTER, &e.display, FontId::proportional(d.font_size), t.text);
-                let response = ui.interact(r, ui.id().with(&e.id), Sense::hover());
-                response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::DragValue, false, tr(&e.label)));
+                let response = ui.interact(r, ui.scope_id().with(&e.id), Sense::hover());
+                response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::SpinButton, false, tr(&e.label)));
                 response.on_hover_text(tr("Not available"));
             }
             Kind::Track => {
@@ -288,8 +288,8 @@ pub(super) fn show(ui: &mut Ui, groups: &mut Vec<String>, help: &mut bool) {
                 let hit = label
                     .map(|v| r.union(Rect::from_min_max(panel.min + vec2(v.rect[0], v.rect[1] + dy), panel.min + vec2(v.rect[2], v.rect[3] + dy))))
                     .unwrap_or(r);
-                let response = ui.interact(hit, ui.id().with(&e.id), Sense::click());
-                response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::CollapsingHeader, ui.is_enabled(), opened, tr(&e.label)));
+                let response = ui.interact(hit, ui.scope_id().with(&e.id), Sense::click());
+                response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, ui.is_enabled(), opened, tr(&e.label)));
                 if response.clicked() || response.has_focus() && ui.input(|v| v.key_pressed(egui::Key::Space) || v.key_pressed(egui::Key::Enter)) {
                     response.request_focus();
                     toggle = GROUPS.get(i).copied();
@@ -318,11 +318,11 @@ pub(super) fn show(ui: &mut Ui, groups: &mut Vec<String>, help: &mut bool) {
                 icon(ui, r, &e.id);
                 if !e.label.is_empty() {
                     let enabled = e.id == "generative-info" && ui.is_enabled();
-                    let response = ui.interact(r, ui.id().with(&e.id), if enabled { Sense::click() } else { Sense::hover() });
+                    let response = ui.interact(r, ui.scope_id().with(&e.id), if enabled { Sense::click() } else { Sense::hover() });
                     if e.id.ends_with("-mode") {
-                        response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, false, e.id == "remove-mode", tr(&e.label)));
+                        response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, false, e.id == "remove-mode", tr(&e.label)));
                     } else {
-                        response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, tr(&e.label)));
+                        response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, enabled, tr(&e.label)));
                     }
                     if enabled && response.clicked() {
                         *help = true;
@@ -342,8 +342,8 @@ pub(super) fn show(ui: &mut Ui, groups: &mut Vec<String>, help: &mut bool) {
     }
     if *help {
         let ctx = ui.ctx().clone();
-        egui::Modal::new(egui::Id::new("camera-raw-remove-help")).show(&ctx, |ui| {
-            ctx.set_sublayer(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("camera-raw-dialog")), ui.layer_id());
+        egui::Modal::new(egui::Id::unique("camera-raw-remove-help")).show(&ctx, |ui| {
+            ctx.set_sublayer(egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("camera-raw-dialog")), ui.layer_id());
             ui.set_max_width(300.0);
             ui.label(tr("Remove, Heal and Clone are not available in Camera Raw yet."));
             ui.separator();

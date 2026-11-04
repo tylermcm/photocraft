@@ -47,7 +47,10 @@ pub type Tools = BTreeSet<String>;
 pub fn parse_tools(p: &Value) -> Result<Option<Tools>, String> {
     let Some(tools) = p.get("tools") else { return Ok(None) };
     let list = tools.as_array().ok_or("tools must be a list of job kinds")?;
-    list.iter().map(|kind| kind.as_str().map(str::to_string).ok_or_else(|| "tools must be a list of strings".to_string())).collect::<Result<Tools, _>>().map(Some)
+    list.iter()
+        .map(|kind| kind.as_str().map(str::to_string).ok_or_else(|| "tools must be a list of strings".to_string()))
+        .collect::<Result<Tools, _>>()
+        .map(Some)
 }
 
 /// A request the host never picks up (not running, or an older build) is given up on after this long.
@@ -194,7 +197,18 @@ impl HostJob {
         }
         self.last_id += 1;
         let (last_id, last_poll, tools) = (self.last_id, self.last_poll, self.tools.take());
-        *self = HostJob { last_id, id: last_id, kind, phase: Phase::Requested, requested_at: now, last_poll, extra, tag: tag.to_string(), tools, ..Default::default() };
+        *self = HostJob {
+            last_id,
+            id: last_id,
+            kind,
+            phase: Phase::Requested,
+            requested_at: now,
+            last_poll,
+            extra,
+            tag: tag.to_string(),
+            tools,
+            ..Default::default()
+        };
         self.message = tr("Waiting for Image Triage…").to_string();
         true
     }
@@ -340,14 +354,14 @@ impl HostJob {
         }
         let t = Tokens::get(ctx);
         let screen = ctx.content_rect();
-        egui::Area::new(egui::Id::new("camera-raw-host-job-scrim")).order(egui::Order::Foreground).fixed_pos(screen.min).show(ctx, |ui| {
+        egui::Area::new(egui::Id::unique("camera-raw-host-job-scrim")).order(egui::Order::Foreground).fixed_pos(screen.min).show(ctx, |ui| {
             let (r, _) = ui.allocate_exact_size(screen.size(), Sense::click_and_drag());
             ui.painter().rect_filled(r, 0.0, t.scrim);
         });
         let mut close = false;
         let mut cancel = false;
         egui::Window::new(tr("Camera Raw"))
-            .id(egui::Id::new("camera-raw-host-job"))
+            .id(egui::Id::unique("camera-raw-host-job"))
             .order(egui::Order::Tooltip)
             .collapsible(false)
             .resizable(false)
@@ -620,7 +634,10 @@ mod tests {
         job.control(&json!({}), 0.0).unwrap();
         assert!(job.request_mask(SUBJECT_MASK, json!({"input": "a.png", "output": "b.png"}), "background", 1.0));
         let state = job.control(&json!({}), 1.0).unwrap();
-        assert_eq!((state["pending"]["kind"].as_str(), state["pending"]["input"].as_str(), state["pending"]["output"].as_str()), (Some(SUBJECT_MASK), Some("a.png"), Some("b.png")));
+        assert_eq!(
+            (state["pending"]["kind"].as_str(), state["pending"]["input"].as_str(), state["pending"]["output"].as_str()),
+            (Some(SUBJECT_MASK), Some("a.png"), Some("b.png"))
+        );
         let id = job.id;
         job.control(&json!({"claim": id}), 1.0).unwrap();
         assert_eq!(job.take_mask_ready(), None, "not finished");

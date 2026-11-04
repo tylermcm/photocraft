@@ -36,9 +36,15 @@ fn no_masks_or_neutral_masks_change_nothing() {
     let neutral = CameraRaw { masks: vec![LocalMask::default()], ..Default::default() };
     assert!(neutral.is_identity(), "a mask with no adjustments does nothing");
     assert_eq!(run(&neutral, 0.4), grey(0.4));
-    let off = CameraRaw { masks: vec![LocalMask { enabled: false, adjust: LocalAdjust { exposure: 2.0, ..Default::default() }, ..Default::default() }], ..Default::default() };
+    let off = CameraRaw {
+        masks: vec![LocalMask { enabled: false, adjust: LocalAdjust { exposure: 2.0, ..Default::default() }, ..Default::default() }],
+        ..Default::default()
+    };
     assert!(off.is_identity() && run(&off, 0.4) == grey(0.4), "a switched-off mask changes nothing");
-    let zero = CameraRaw { masks: vec![LocalMask { amount: 0.0, adjust: LocalAdjust { exposure: 2.0, ..Default::default() }, ..Default::default() }], ..Default::default() };
+    let zero = CameraRaw {
+        masks: vec![LocalMask { amount: 0.0, adjust: LocalAdjust { exposure: 2.0, ..Default::default() }, ..Default::default() }],
+        ..Default::default()
+    };
     assert!(zero.is_identity());
     assert!(!brighten(MaskShape::default()).is_identity());
 }
@@ -305,7 +311,8 @@ fn a_part_can_be_inverted_and_parts_apply_in_order() {
 #[test]
 fn a_range_part_looks_at_the_picture() {
     // The whole picture, intersected with "bright pixels": only the bright half is lifted.
-    let mut p = with_part(MaskShape::Linear { x0: 0.5, y0: 2.5, x1: 0.5, y1: 3.0 }, MaskOp::Intersect, MaskShape::LuminanceRange { low: 0.5, high: 1.0, smooth: 0.0 });
+    let mut p =
+        with_part(MaskShape::Linear { x0: 0.5, y0: 2.5, x1: 0.5, y1: 3.0 }, MaskOp::Intersect, MaskShape::LuminanceRange { low: 0.5, high: 1.0, smooth: 0.0 });
     let mut px = two_tone();
     let before = px.clone();
     develop(&mut px, W, H, &p, false);

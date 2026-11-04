@@ -31,7 +31,7 @@ impl Store {
         if !self.creating {
             return;
         }
-        egui::Modal::new(egui::Id::new("acr-create-snapshot")).show(ctx, |ui| {
+        egui::Modal::new(egui::Id::unique("acr-create-snapshot")).show(ctx, |ui| {
             ui.label(tl!("Create Snapshot"));
             ui.add(egui::TextEdit::singleline(&mut self.name).char_limit(128));
             if ui.add_enabled(self.can_capture(), egui::Button::new(tl!("Create"))).clicked() && self.capture(p) {
@@ -70,8 +70,8 @@ pub(super) fn header(ui: &mut Ui, store: &mut Store, parameters: &CameraRaw) {
     );
     super::info::heading(ui, heading, label, design.tab_heading_font_size);
     let button = Rect::from_center_size(pos2(rect.right() - design.section_right_padding - 10.0, rect.center().y), vec2(22.0, 22.0));
-    let response = ui.interact(button, ui.id().with("create-camera-raw-snapshot"), Sense::click());
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled() && store.items.len() < MAX_SNAPSHOTS, tl!("Create Snapshot")));
+    let response = ui.interact(button, ui.scope_id().with("create-camera-raw-snapshot"), Sense::click());
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, ui.is_enabled() && store.items.len() < MAX_SNAPSHOTS, tl!("Create Snapshot")));
     let response = response.on_hover_text(tl!("Create Snapshot"));
     egui::Popup::menu(&response).show(|ui| {
         ui.set_width(220.0);
