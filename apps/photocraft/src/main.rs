@@ -57,6 +57,8 @@ mod mac_window;
 mod external_svg;
 #[cfg(any(target_os = "linux", test))]
 mod linux_libs;
+// Host-owned desktop service setup.
+mod hosted;
 mod logging;
 mod monitor_profile;
 mod photoshop_settings;
@@ -525,7 +527,7 @@ fn main() -> eframe::Result {
         Box::new(move |cc| {
             created_in_callback.store(true, std::sync::atomic::Ordering::Relaxed);
             let automation = control.as_ref().map(|(_, _, workspace)| workspace.clone());
-            let mut services = services::native(automation);
+            let mut services = hosted::services(services::native(automation), hosted);
             services.preset_store = presets;
             #[cfg(target_os = "linux")]
             let display = tablet::DisplayKind::of(cc);

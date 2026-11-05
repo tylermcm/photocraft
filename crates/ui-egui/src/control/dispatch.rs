@@ -103,7 +103,10 @@ fn execute_command(app: &mut PhotocraftApp, ctx: &egui::Context, req: &ControlRe
         && app.ui.dialogs.is_empty()
         && app.discard.is_none()
         && !crate::crop_ui::blocks(app, id);
-    if !continuation && !crate::menus::modal_allows(app, id) {
+    // Hosted Camera Raw owns the photo while the host still needs its document
+    // identity. This read-only engine query keeps the normal authorization below.
+    let hosted_inspection = req.method == "engine.execute" && id == "session.inspect" && app.raw_workspace.embedded();
+    if !continuation && !hosted_inspection && !crate::menus::modal_allows(app, id) {
         return err("command is unavailable while a modal dialog is open");
     }
     if !crate::control_files::hosted_save(app, id)
