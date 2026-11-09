@@ -206,7 +206,14 @@ pub fn white_black_points(px: &[[f32; 4]], w: usize, h: usize, p: &CameraRaw) ->
 /// stages don't run it), or Whites or Blacks is set without `points`. The points themselves
 /// leave Calibration out, so a caller may cache them across Calibration changes.
 pub fn per_pixel(p: &CameraRaw, w: usize, h: usize, float: bool, points: Option<(f32, f32)>) -> Option<PerPixel> {
-    if p.spatial() || !p.calibration_neutral() || p.glow.amount != 0.0 || !p.point_colors.is_empty() || !p.masks.is_empty() || p.super_resolution {
+    if p.spatial()
+        || !p.calibration_neutral()
+        || p.glow.amount != 0.0
+        || !p.point_colors.is_empty()
+        || !p.masks.is_empty()
+        || !p.retouch.is_empty()
+        || p.super_resolution
+    {
         return None;
     }
     let identity = p.is_identity();

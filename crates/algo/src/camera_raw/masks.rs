@@ -19,7 +19,7 @@ pub const MAX_PARTS: usize = 8;
 /// Longest encoded raster mask (characters): a worst case, noisy 1536 x 1024 map still has to fit.
 const MAX_RASTER_TEXT: usize = 6 * 1024 * 1024;
 
-/// The adjustments a mask applies, in Camera Raw's slider units. All zero is no change.
+/// The adjustments a mask applies, in Camera Raw's slider units. Defaults are neutral.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default, deny_unknown_fields)]
 pub struct LocalAdjust {
@@ -35,6 +35,31 @@ pub struct LocalAdjust {
     pub clarity: f32,
     pub dehaze: f32,
     pub saturation: f32,
+    pub vibrance: f32,
+    pub curve_highlights: f32,
+    pub curve_lights: f32,
+    pub curve_darks: f32,
+    pub curve_shadows: f32,
+    pub curve_splits: [f32; 3],
+    pub point_curve: Vec<[f32; 2]>,
+    pub point_curve_red: Vec<[f32; 2]>,
+    pub point_curve_green: Vec<[f32; 2]>,
+    pub point_curve_blue: Vec<[f32; 2]>,
+    pub hsl_hue: [f32; 8],
+    pub hsl_sat: [f32; 8],
+    pub hsl_lum: [f32; 8],
+    pub grade_shadows: super::Wheel,
+    pub grade_midtones: super::Wheel,
+    pub grade_highlights: super::Wheel,
+    pub grade_global: super::Wheel,
+    pub grade_blending: f32,
+    pub grade_balance: f32,
+    #[serde(rename = "calibShadowTint", alias = "shadowTint")]
+    pub shadow_tint: f32,
+    #[serde(rename = "calibHue", alias = "calibrationHue")]
+    pub calibration_hue: [f32; 3],
+    #[serde(rename = "calibSat", alias = "calibrationSat")]
+    pub calibration_sat: [f32; 3],
 }
 
 impl Default for LocalAdjust {
@@ -52,6 +77,28 @@ impl Default for LocalAdjust {
             clarity: 0.0,
             dehaze: 0.0,
             saturation: 0.0,
+            vibrance: CameraRaw::default().vibrance,
+            curve_highlights: CameraRaw::default().curve_highlights,
+            curve_lights: CameraRaw::default().curve_lights,
+            curve_darks: CameraRaw::default().curve_darks,
+            curve_shadows: CameraRaw::default().curve_shadows,
+            curve_splits: CameraRaw::default().curve_splits,
+            point_curve: CameraRaw::default().point_curve,
+            point_curve_red: CameraRaw::default().point_curve_red,
+            point_curve_green: CameraRaw::default().point_curve_green,
+            point_curve_blue: CameraRaw::default().point_curve_blue,
+            hsl_hue: CameraRaw::default().hsl_hue,
+            hsl_sat: CameraRaw::default().hsl_sat,
+            hsl_lum: CameraRaw::default().hsl_lum,
+            grade_shadows: CameraRaw::default().grade_shadows,
+            grade_midtones: CameraRaw::default().grade_midtones,
+            grade_highlights: CameraRaw::default().grade_highlights,
+            grade_global: CameraRaw::default().grade_global,
+            grade_blending: CameraRaw::default().grade_blending,
+            grade_balance: CameraRaw::default().grade_balance,
+            shadow_tint: CameraRaw::default().shadow_tint,
+            calibration_hue: CameraRaw::default().calibration_hue,
+            calibration_sat: CameraRaw::default().calibration_sat,
         }
     }
 }
@@ -76,7 +123,7 @@ impl LocalAdjust {
 
     /// True when no adjustment changes anything.
     pub fn neutral(&self) -> bool {
-        self.fields().iter().all(|(_, value, _)| *value == 0.0)
+        self.on(&CameraRaw::default()).is_identity()
     }
 
     /// The global settings that do exactly this adjustment, at `base`'s scale and encoding.
@@ -94,6 +141,29 @@ impl LocalAdjust {
             clarity: self.clarity,
             dehaze: self.dehaze,
             saturation: self.saturation,
+            vibrance: self.vibrance,
+            curve_highlights: self.curve_highlights,
+            curve_lights: self.curve_lights,
+            curve_darks: self.curve_darks,
+            curve_shadows: self.curve_shadows,
+            curve_splits: self.curve_splits,
+            point_curve: self.point_curve.clone(),
+            point_curve_red: self.point_curve_red.clone(),
+            point_curve_green: self.point_curve_green.clone(),
+            point_curve_blue: self.point_curve_blue.clone(),
+            hsl_hue: self.hsl_hue,
+            hsl_sat: self.hsl_sat,
+            hsl_lum: self.hsl_lum,
+            grade_shadows: self.grade_shadows,
+            grade_midtones: self.grade_midtones,
+            grade_highlights: self.grade_highlights,
+            grade_global: self.grade_global,
+            grade_blending: self.grade_blending,
+            grade_balance: self.grade_balance,
+            shadow_tint: self.shadow_tint,
+            calibration_hue: self.calibration_hue,
+            calibration_sat: self.calibration_sat,
+
             pixel_scale: base.pixel_scale,
             encoding_gamma: base.encoding_gamma,
             ..CameraRaw::default()
@@ -497,6 +567,39 @@ pub fn validate(p: &CameraRaw) -> Result<(), String> {
         for (field, value, limit) in mask.adjust.fields() {
             if !value.is_finite() || value.abs() > limit {
                 return Err(format!("{name}: {field} must be finite and within -{limit}..{limit}"));
+            }
+        }
+        let local = mask.adjust.on(&CameraRaw::default());
+        local.validate().map_err(|e| format!("{name}: {e}"))?;
+        for value in
+            [local.vibrance, local.curve_highlights, local.curve_lights, local.curve_darks, local.curve_shadows, local.grade_balance, local.shadow_tint]
+                .iter()
+                .chain(local.hsl_hue.iter())
+                .chain(local.hsl_sat.iter())
+                .chain(local.hsl_lum.iter())
+                .chain(local.calibration_hue.iter())
+                .chain(local.calibration_sat.iter())
+        {
+            if !value.is_finite() || value.abs() > 100.0 {
+                return Err(format!("{name}: local adjustment outside -100..100"));
+            }
+        }
+        if !local.grade_blending.is_finite() || !(0.0..=100.0).contains(&local.grade_blending) {
+            return Err(format!("{name}: blending outside 0..100"));
+        }
+        let splits = local.curve_splits;
+        if splits.iter().any(|v| !v.is_finite() || !(0.0..=100.0).contains(v)) || splits.windows(2).any(|s| s[0] >= s[1]) {
+            return Err(format!("{name}: invalid curve splits"));
+        }
+        for wheel in [local.grade_shadows, local.grade_midtones, local.grade_highlights, local.grade_global] {
+            if !wheel.hue.is_finite()
+                || !(0.0..=360.0).contains(&wheel.hue)
+                || !wheel.sat.is_finite()
+                || !(0.0..=100.0).contains(&wheel.sat)
+                || !wheel.lum.is_finite()
+                || !(-100.0..=100.0).contains(&wheel.lum)
+            {
+                return Err(format!("{name}: invalid grading wheel"));
             }
         }
         if mask.parts.len() > MAX_PARTS {

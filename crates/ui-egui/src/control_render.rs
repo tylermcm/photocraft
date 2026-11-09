@@ -95,6 +95,7 @@ fn develop(
     let (mut imported, white_balanced) =
         photocraft_io::raw::import_raw_tuned(&name, &bytes, &crate::raw_recipe::tuning(params)).map_err(|e| EngineError::Other(e.to_string()))?;
     ctx.check()?;
+    params.validate_retouch_size(imported.document.size.width as usize,imported.document.size.height as usize).map_err(EngineError::Other)?;
     let mut rest = crate::raw_recipe::after_develop(params, white_balanced);
     crate::camera_raw_ui::output_sharpening(defaults, &mut rest);
     // The same Camera Raw step and workflow defaults Open applies, on a separate session.

@@ -341,3 +341,52 @@ fn parts_are_validated_saved_and_cost_nothing_when_absent() {
     }
     assert!(many.validate().is_err());
 }
+
+#[test]
+fn extended_local_controls_match_global_and_preserve_uncovered_pixels() {
+    let cases = [
+        serde_json::json!({"vibrance":45.0}),
+        serde_json::json!({"pointCurve":[[0.0,0.0],[128.0,155.0],[255.0,255.0]],"curveLights":20.0}),
+        serde_json::json!({"hslHue":[20.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"hslSat":[30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0]}),
+        serde_json::json!({"gradeShadows":{"hue":240.0,"sat":30.0,"lum":10.0},"gradeBlending":60.0}),
+        serde_json::json!({"calibShadowTint":20.0,"calibHue":[20.0,-10.0,15.0],"calibSat":[5.0,10.0,-5.0]}),
+    ];
+    let base = vec![[0.6, 0.25, 0.15, 1.0]; W * H];
+    for value in cases {
+        let adjust: LocalAdjust = serde_json::from_value(value.clone()).unwrap();
+        let global: CameraRaw = serde_json::from_value(value).unwrap();
+        let local = CameraRaw { masks: vec![LocalMask { shape: EVERYWHERE.clone(), adjust: adjust.clone(), ..Default::default() }], ..Default::default() };
+        local.validate().unwrap();
+        assert!(!local.is_identity());
+        let mut expected = base.clone();
+        develop(&mut expected, W, H, &global, false);
+        let mut actual = base.clone();
+        develop(&mut actual, W, H, &local, false);
+        assert!(expected.iter().zip(&actual).all(|(a, b)| a.iter().zip(b).all(|(x, y)| (x - y).abs() < 1e-6)), "local/global mismatch");
+        let shape = MaskShape::raster_from_bytes(W as u32, H as u32, &vec![0; W * H]);
+        let empty = CameraRaw { masks: vec![LocalMask { shape, adjust, ..Default::default() }], ..Default::default() };
+        let mut actual = base.clone();
+        develop(&mut actual, W, H, &empty, false);
+        assert_eq!(base, actual);
+    }
+}
+
+#[test]
+fn extended_local_settings_validate_and_round_trip() {
+    for value in [
+        serde_json::json!({"gradeBlending":101}),
+        serde_json::json!({"hslHue":[0,0,0,0,0,0,0,101]}),
+        serde_json::json!({"pointCurve":[[0,0],[0,255]]}),
+        serde_json::json!({"curveSplits":[75,50,25]}),
+        serde_json::json!({"gradeGlobal":{"sat":101}}),
+    ] {
+        let adjust: LocalAdjust = serde_json::from_value(value).unwrap();
+        assert!(CameraRaw { masks: vec![LocalMask { adjust, ..Default::default() }], ..Default::default() }.validate().is_err());
+    }
+    let old: LocalAdjust = serde_json::from_str("{\"exposure\":1.0}").unwrap();
+    assert_eq!(old.vibrance, 0.0);
+    assert_eq!(old.grade_blending, 50.0);
+    let restored: LocalAdjust = serde_json::from_str(&serde_json::to_string(&old).unwrap()).unwrap();
+    assert_eq!(old, restored);
+    assert!(serde_json::from_str::<LocalAdjust>("{\"sharpenAmount\":20}").is_err());
+}
