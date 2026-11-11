@@ -38,9 +38,9 @@ fn inspect(h: &Harness<'_, PhotocraftApp>) -> Value {
 fn gear_opens_preferences_and_cancel_does_not_change_views_or_photo() {
     let mut h = fixture();
     let before = inspect(&h);
-    h.get_by_label("Camera Raw Settings").click();
+    h.get_by_label("RAW Develop Settings").click();
     h.run_steps(4);
-    h.get_by_label("Camera Raw Preferences…").click();
+    h.get_by_label("RAW Develop Preferences…").click();
     h.run_steps(4);
     assert!(inspect(&h)["cameraRaw"]["workspace"]["preferences"].as_bool().unwrap());
     assert!(inspect(&h)["cameraRawPreferences"]["rect"].is_array());
@@ -112,7 +112,7 @@ fn saved_profile_is_applied_on_startup_and_invalid_profile_is_reported() {
     assert_eq!(v["cameraRawPreferences"]["settings"]["clickZoom"], 0.5);
     let h = fixture_with_profile(Some(json!({"clickZoom":0})));
     assert!(h.state().ui.status_error);
-    assert!(h.state().ui.status.contains("Invalid Camera Raw preferences"));
+    assert!(h.state().ui.status.contains("Invalid RAW Develop preferences"));
     assert_eq!(inspect(&h)["cameraRawPreferences"]["applied"], false);
     assert_eq!(inspect(&h)["filmstrip"]["display"]["showFilenames"], false);
 }

@@ -87,7 +87,7 @@ pub(super) fn request_auto(d: &mut CameraRawDialog, st: &MaskUiState, kind: Auto
     if d.host_job.request_mask(job, asked, kind.tag(), now) {
         Ok(())
     } else {
-        Err(tr("Needs Image Triage. Open Camera Raw from Image Triage to use it.").to_string())
+        Err(tr("Needs Image Triage. Open RAW Develop from Image Triage to use it.").to_string())
     }
 }
 

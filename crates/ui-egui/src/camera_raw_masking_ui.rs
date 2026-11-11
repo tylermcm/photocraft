@@ -58,7 +58,7 @@ impl Design {
             || !(40.0..=100.0).contains(&self.people_body_height)
             || self.elements.len() > 96
         {
-            return Err("invalid Camera Raw Masking geometry".into());
+            return Err("invalid RAW Develop Masking geometry".into());
         }
         let mut ids = std::collections::HashSet::new();
         for e in &self.elements {
@@ -75,7 +75,7 @@ impl Design {
                 || r > self.width
                 || b > self.height
             {
-                return Err(format!("invalid Camera Raw Masking element {}", e.id));
+                return Err(format!("invalid RAW Develop Masking element {}", e.id));
             }
         }
         for (id, kind) in [
@@ -201,7 +201,7 @@ fn unavailable(ready: super::host_job::Ready) -> &'static str {
     if ready == super::host_job::Ready::NoTools {
         tr("Needs Editor tools in Image Triage (Set Up AI).")
     } else {
-        tr("Needs Image Triage. Open Camera Raw from Image Triage to use it.")
+        tr("Needs Image Triage. Open RAW Develop from Image Triage to use it.")
     }
 }
 
@@ -318,7 +318,7 @@ pub(super) fn show(
         egui::Modal::new(egui::Id::unique("camera-raw-masking-help")).show(&ctx, |ui| {
             ctx.set_sublayer(egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("camera-raw-dialog")), ui.layer_id());
             ui.set_max_width(300.0);
-            ui.label(tr("Local masking is not available in Camera Raw yet."));
+            ui.label(tr("Local masking is not available in RAW Develop yet."));
             ui.separator();
             ui.label(tr("K, G and J shortcuts are unavailable until local masks can preview and commit."));
             if ui.button(tr("Close")).clicked() {

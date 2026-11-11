@@ -67,14 +67,14 @@ pub fn to_json(params: &CameraRaw) -> Value {
 pub fn from_json(value: &Value) -> Result<CameraRaw, String> {
     match value.get("version").and_then(Value::as_u64) {
         Some(VERSION) => {}
-        Some(other) => return Err(format!("unsupported Camera Raw recipe version {other}")),
-        None => return Err("a Camera Raw recipe needs a version".into()),
+        Some(other) => return Err(format!("unsupported RAW Develop recipe version {other}")),
+        None => return Err("a RAW Develop recipe needs a version".into()),
     }
-    let settings = value.get("cameraRaw").ok_or("a Camera Raw recipe needs cameraRaw settings")?;
+    let settings = value.get("cameraRaw").ok_or("a RAW Develop recipe needs cameraRaw settings")?;
     if !settings.is_object() {
         return Err("cameraRaw must be an object".into());
     }
-    let params: CameraRaw = serde_json::from_value(settings.clone()).map_err(|e| format!("Camera Raw recipe: {e}"))?;
+    let params: CameraRaw = serde_json::from_value(settings.clone()).map_err(|e| format!("RAW Develop recipe: {e}"))?;
     params.validate_changes(&CameraRaw::default())?;
     Ok(params)
 }
@@ -83,6 +83,8 @@ pub fn from_json(value: &Value) -> Result<CameraRaw, String> {
 /// `app.render`'s).
 pub fn tuning(params: &CameraRaw) -> photocraft_io::raw::RawTuning {
     photocraft_io::raw::RawTuning {
+        // Host crop is replayed separately after development.
+        crop: None,
         temperature: params.temperature,
         tint: params.tint,
         exposure: params.exposure,
@@ -171,7 +173,7 @@ pub fn write_recipe(app: &PhotocraftApp, targets: &Targets, params: &CameraRaw) 
     let Some(path) = &targets.recipe else { return Ok(()) };
     let write = app.services.background_automation_write.clone().ok_or("background automation write authority is not configured")?;
     let bytes = recipe_bytes(params)?;
-    write(path, &bytes).map_err(|error| format!("could not keep the Camera Raw settings in {path}: {error}"))
+    write(path, &bytes).map_err(|error| format!("could not keep the RAW Develop settings in {path}: {error}"))
 }
 
 /// Writes `params` as the photo's recipe ([`write_recipe`]) and, once it is kept, starts rendering it for
@@ -236,21 +238,21 @@ fn render_in_background(app: &PhotocraftApp, document: DocId, targets: &Targets,
                 Ok(bytes) => {
                     let target = published.as_ref().map_or_else(|| display.clone(), |(_, n, _)| crate::render_manifest::versioned(&display, *n));
                     if let Err(error) = write(&target, &bytes) {
-                        log::warn!("could not write the Camera Raw render {target}: {error}");
+                        log::warn!("could not write the RAW Develop render {target}: {error}");
                         return;
                     }
                     if let Some((request, n, made)) = &published {
                         let manifest = crate::render_manifest::content(*n, made, request.source.as_deref(), &[("display", target.as_str(), bytes.as_slice())]);
                         if let Err(error) = crate::render_manifest::publish(&write, request, *n, &manifest) {
-                            log::warn!("could not publish the Camera Raw render: {error}");
+                            log::warn!("could not publish the RAW Develop render: {error}");
                         }
                     }
                 }
-                Err(error) => log::warn!("could not render the Camera Raw recipe: {error}"),
+                Err(error) => log::warn!("could not render the RAW Develop recipe: {error}"),
             }
         });
         if let Err(error) = spawned {
-            log::warn!("could not start the Camera Raw render: {error}");
+            log::warn!("could not start the RAW Develop render: {error}");
         }
     }
     #[cfg(target_arch = "wasm32")]

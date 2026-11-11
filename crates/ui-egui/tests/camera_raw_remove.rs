@@ -65,7 +65,7 @@ fn invalid_remove_views_are_atomic_and_help_owns_escape_and_clears_on_close() {
     h.get_by_label("About Remove").click();
     h.run_steps(4);
     assert_eq!(inspect(&h)["cameraRaw"]["workspace"]["removeHelp"], true);
-    h.get_by_label("Remove, Heal and Clone are not available in Camera Raw yet.");
+    h.get_by_label("Remove, Heal and Clone are not available in RAW Develop yet.");
     h.key_press(egui::Key::Y);
     h.run_steps(4);
     assert_eq!(inspect(&h)["cameraRaw"]["before"], before["cameraRaw"]["before"]);

@@ -205,11 +205,11 @@ fn rows(ui: &mut Ui, rect: Rect, d: &Design, a: Availability, focus: &mut Option
 /// Reject hostile clipboard scalars before they reach the dialog's proxy renderer.
 fn validate_clipboard(p: &CameraRaw) -> Result<(), String> {
     let value = serde_json::to_value(p).map_err(|e| e.to_string())?;
-    let fields = value.as_object().ok_or("Camera Raw settings must be an object")?;
+    let fields = value.as_object().ok_or("RAW Develop settings must be an object")?;
     let number = |key: &str, n: &serde_json::Value, lo: f64, hi: f64| -> Result<(), String> {
         let v = n.as_f64().filter(|v| v.is_finite() && (lo..=hi).contains(v));
         if v.is_none() {
-            return Err(format!("Camera Raw clipboard {key} must be in {lo}..={hi}"));
+            return Err(format!("RAW Develop clipboard {key} must be in {lo}..={hi}"));
         }
         Ok(())
     };
@@ -256,13 +256,13 @@ fn validate_clipboard(p: &CameraRaw) -> Result<(), String> {
                 if p.curve_splits.iter().any(|n| !n.is_finite() || !(5.0..=95.0).contains(n))
                     || p.curve_splits.windows(2).any(|w| w.last().copied().unwrap_or(0.0) - w.first().copied().unwrap_or(0.0) < 1.0)
                 {
-                    return Err("Camera Raw clipboard curve regions must stay ordered and at least one percent apart".into());
+                    return Err("RAW Develop clipboard curve regions must stay ordered and at least one percent apart".into());
                 }
             }
             "pointCurve" | "pointCurveRed" | "pointCurveGreen" | "pointCurveBlue" => {}
             "vignetteStyle" => {
                 if !matches!(v.as_str(), Some("highlightPriority" | "colorPriority" | "paintOverlay")) {
-                    return Err("Unsupported Camera Raw clipboard vignette style".into());
+                    return Err("Unsupported RAW Develop clipboard vignette style".into());
                 }
             }
             "seed" | "pixelScale" | "encodingGamma" | "glow" | "pointColors" | "superResolution" | "masks" | "retouch" => {}
@@ -274,15 +274,15 @@ fn validate_clipboard(p: &CameraRaw) -> Result<(), String> {
 
 fn paste(current: &CameraRaw, original: &CameraRaw, text: &str) -> Result<CameraRaw, String> {
     if text.len() > 4 * 1024 * 1024 {
-        return Err("Camera Raw clipboard exceeds 4 MiB".into());
+        return Err("RAW Develop clipboard exceeds 4 MiB".into());
     }
     let next = if text.trim_start().starts_with('{') {
-        let v: serde_json::Value = serde_json::from_str(text).map_err(|e| format!("Camera Raw clipboard: {e}"))?;
+        let v: serde_json::Value = serde_json::from_str(text).map_err(|e| format!("RAW Develop clipboard: {e}"))?;
         let known = serde_json::to_value(CameraRaw::default()).map_err(|e| e.to_string())?;
         if let Some(fields) = v.get("cameraRaw").and_then(serde_json::Value::as_object) {
             for key in fields.keys() {
                 if known.get(key).is_none() {
-                    return Err(format!("Unknown Camera Raw clipboard setting {key}"));
+                    return Err(format!("Unknown RAW Develop clipboard setting {key}"));
                 }
             }
         }
@@ -291,7 +291,7 @@ fn paste(current: &CameraRaw, original: &CameraRaw, text: &str) -> Result<Camera
         let mut next = current.clone();
         let report = photocraft_io::camera_raw_xmp::load(&mut next, text.as_bytes())?;
         if !report.ignored.is_empty() {
-            return Err(format!("Unsupported Camera Raw clipboard settings: {}", report.ignored.join(", ")));
+            return Err(format!("Unsupported RAW Develop clipboard settings: {}", report.ignored.join(", ")));
         }
         next
     };
@@ -308,10 +308,10 @@ fn transfer(mut params: CameraRaw, current: &CameraRaw, original: &CameraRaw) ->
 }
 
 fn apply(app: &mut PhotocraftApp, ctx: &egui::Context, params: CameraRaw) -> Result<(), String> {
-    let d = app.camera_raw.as_ref().ok_or("Camera Raw isn't open")?;
+    let d = app.camera_raw.as_ref().ok_or("RAW Develop isn't open")?;
     let params = transfer(params, &d.params, &d.original)?;
     super::menu(app, ctx, "filter.cameraRaw", &json!({"ui":{"set":serde_json::to_value(params).map_err(|e|e.to_string())?}}))
-        .ok_or("Camera Raw isn't open")??;
+        .ok_or("RAW Develop isn't open")??;
     app.ui.status_error = false;
     app.ui.status.clear();
     Ok(())
@@ -514,7 +514,7 @@ pub(super) fn show(app: &mut PhotocraftApp, ctx: &egui::Context, screen: Rect, a
     if app.ui.camera_raw_menu.paste_pending && app.ui.camera_raw_menu.paste_deadline.is_none_or(|t| ctx.input(|i| i.time) > t) {
         app.ui.camera_raw_menu.paste_pending = false;
         app.ui.camera_raw_menu.paste_deadline = None;
-        error = Some("Clipboard did not provide Camera Raw settings".into());
+        error = Some("Clipboard did not provide RAW Develop settings".into());
     }
     if let Some(error) = error {
         app.ui.status_error = true;

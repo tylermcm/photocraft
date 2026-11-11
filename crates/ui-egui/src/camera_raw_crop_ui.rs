@@ -59,7 +59,7 @@ impl Design {
             || !(10.0..=24.0).contains(&self.heading_size)
             || self.elements.len() > 128
         {
-            return Err("invalid Camera Raw Crop geometry".into());
+            return Err("invalid RAW Develop Crop geometry".into());
         }
         let mut ids = std::collections::HashSet::new();
         for e in &self.elements {
@@ -77,7 +77,7 @@ impl Design {
                 || r > self.width
                 || b > self.height
             {
-                return Err(format!("invalid Camera Raw Crop element {}", e.id));
+                return Err(format!("invalid RAW Develop Crop element {}", e.id));
             }
         }
         for (id, kind) in [

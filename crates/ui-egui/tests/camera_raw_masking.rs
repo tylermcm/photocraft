@@ -66,7 +66,7 @@ fn help_owns_escape_and_parent_close_clears_it_and_invalid_views_are_atomic() {
     h.get_by_label("Click here to learn more about Masking and keyboard shortcuts.").click();
     h.run_steps(4);
     assert_eq!(inspect(&h)["cameraRaw"]["workspace"]["maskingHelp"], true);
-    h.get_by_label("Local masking is not available in Camera Raw yet.");
+    h.get_by_label("Local masking is not available in RAW Develop yet.");
     h.key_press(egui::Key::Y);
     h.run_steps(4);
     assert_eq!(inspect(&h)["cameraRaw"]["before"], before["cameraRaw"]["before"]);

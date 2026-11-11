@@ -10,7 +10,7 @@ pub fn menu(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &Val
         return None;
     }
     let Some(fields) = params.as_object() else {
-        return Some(Err("Camera Raw params must be an object".into()));
+        return Some(Err("RAW Develop params must be an object".into()));
     };
     if fields.is_empty() {
         return Some(open(app, ctx).map(|_| {
@@ -38,22 +38,24 @@ pub fn menu(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &Val
     }
     let ui = params.get("ui")?;
     let Some(fields) = ui.as_object() else {
-        return Some(Err("Camera Raw ui must be an object".into()));
+        return Some(Err("RAW Develop ui must be an object".into()));
     };
     for (key, value) in fields {
         match key.as_str() {
             "set" | "scope" | "view" | "demosaic" | "workspace" | "saveOptions" | "preferences" => {}
             "reset" if matches!(value.as_str(), Some("open" | "default")) => {}
-            "reset" => return Some(Err("Camera Raw reset must be open or default".into())),
-            "before" | "commit" | "cancel" | "saveSettings" | "loadSettings" | "undo" | "redo" | "auto" | "applyPreferences" if value.is_boolean() => {}
-            "before" | "commit" | "cancel" | "saveSettings" | "loadSettings" | "undo" | "redo" | "auto" | "applyPreferences" => {
-                return Some(Err(format!("Camera Raw {key} must be a boolean")));
+            "reset" => return Some(Err("RAW Develop reset must be open or default".into())),
+            "before" | "commit" | "cancel" | "done" | "saveSettings" | "loadSettings" | "undo" | "redo" | "auto" | "applyPreferences" if value.is_boolean() => {
             }
-            _ => return Some(Err(format!("unknown Camera Raw ui property {key}"))),
+            "before" | "commit" | "cancel" | "done" | "saveSettings" | "loadSettings" | "undo" | "redo" | "auto" | "applyPreferences" => {
+                return Some(Err(format!("RAW Develop {key} must be a boolean")));
+            }
+            _ => return Some(Err(format!("unknown RAW Develop ui property {key}"))),
         }
     }
-    if ui.get("commit").and_then(Value::as_bool) == Some(true) && ui.get("cancel").and_then(Value::as_bool) == Some(true) {
-        return Some(Err("Camera Raw cannot commit and cancel together".into()));
+    let ends = ["commit", "cancel", "done"].into_iter().filter(|k| ui.get(*k).and_then(Value::as_bool) == Some(true)).count();
+    if ends > 1 {
+        return Some(Err("RAW Develop takes one of commit, cancel and done".into()));
     }
     if ui.get("applyPreferences").and_then(Value::as_bool) == Some(true) {
         if fields.len() != 1 {
@@ -64,7 +66,7 @@ pub fn menu(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &Val
     for (key, run) in [("saveSettings", save_settings as fn(&mut PhotocraftApp) -> Result<Value, String>), ("loadSettings", load_settings)] {
         if ui.get(key).and_then(Value::as_bool) == Some(true) {
             if fields.len() > 1 {
-                return Some(Err(format!("Camera Raw {key} must be sent on its own")));
+                return Some(Err(format!("RAW Develop {key} must be sent on its own")));
             }
             return Some(run(app));
         }
@@ -90,6 +92,9 @@ pub(super) fn menu_update(app: &mut PhotocraftApp, ctx: &egui::Context, ui: &Val
     // Stage both filter and presentation updates. No texture, preference or dialog mutation
     // occurs until every part of the request has passed validation.
     let d = app.camera_raw.as_ref()?;
+    if ui.get("done").and_then(Value::as_bool) == Some(true) && d.target != super::open::Target::OpenRaw {
+        return Some(Err("Done is for raws being opened".into()));
+    }
     let next_params = match prepared_params(d, ui) {
         Ok(params) => params,
         Err(error) => return Some(Err(error)),
@@ -203,6 +208,9 @@ pub(super) fn menu_update(app: &mut PhotocraftApp, ctx: &egui::Context, ui: &Val
     if ui.get("commit").and_then(Value::as_bool) == Some(true) {
         return Some(commit(app));
     }
+    if ui.get("done").and_then(Value::as_bool) == Some(true) {
+        return Some(Ok(super::filmstrip::done(app)));
+    }
     Some(Ok(app
         .camera_raw
         .as_ref()
@@ -217,15 +225,15 @@ fn prepared_params(d: &super::CameraRawDialog, ui: &Value) -> Result<CameraRaw, 
         _ => d.params.clone(),
     };
     if ui.get("reset").is_some() && ui.get("set").is_some() {
-        return Err("Camera Raw reset and set must be separate requests".into());
+        return Err("RAW Develop reset and set must be separate requests".into());
     }
     if ui.get("auto").and_then(Value::as_bool) == Some(true) {
         photocraft_algo::camera_raw::auto_tone(&d.proxy, &mut next);
     }
     if let Some(set) = ui.get("set") {
-        let set = set.as_object().ok_or("Camera Raw set must be an object")?;
+        let set = set.as_object().ok_or("RAW Develop set must be an object")?;
         let mut current = serde_json::to_value(&next).map_err(|e| e.to_string())?;
-        let fields = current.as_object_mut().ok_or("Camera Raw settings must be an object")?;
+        let fields = current.as_object_mut().ok_or("RAW Develop settings must be an object")?;
         for (key, value) in set {
             let canonical = match key.as_str() {
                 "calibShadowTint" => "shadowTint",
@@ -234,15 +242,15 @@ fn prepared_params(d: &super::CameraRawDialog, ui: &Value) -> Result<CameraRaw, 
                 _ => key.as_str(),
             };
             if canonical != key && set.contains_key(canonical) {
-                return Err(format!("Camera Raw setting {canonical} was supplied twice"));
+                return Err(format!("RAW Develop setting {canonical} was supplied twice"));
             }
             if !fields.contains_key(canonical) {
-                return Err(format!("unknown Camera Raw setting {key}"));
+                return Err(format!("unknown RAW Develop setting {key}"));
             }
             fields.insert(canonical.into(), value.clone());
         }
-        next = serde_json::from_value(current).map_err(|e| format!("bad Camera Raw settings: {e}"))?;
-        next.validate_changes(&d.original).map_err(|e| format!("bad Camera Raw settings: {e}"))?;
+        next = serde_json::from_value(current).map_err(|e| format!("bad RAW Develop settings: {e}"))?;
+        next.validate_changes(&d.original).map_err(|e| format!("bad RAW Develop settings: {e}"))?;
     }
     Ok(next)
 }

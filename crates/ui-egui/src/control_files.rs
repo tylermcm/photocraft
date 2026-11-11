@@ -45,7 +45,7 @@ pub fn open_with_mode(app: &mut PhotocraftApp, path: &str, replace: bool) -> Res
 
 pub fn open_with_camera_raw(app: &mut PhotocraftApp, path: &str, replace: bool, camera_raw: Option<crate::raw_workspace::OpenSpec>) -> Result<Started, String> {
     if camera_raw.is_some() && !app.raw_workspace.enabled {
-        return Err("cameraRaw needs the Camera Raw workspace".into());
+        return Err("cameraRaw needs the RAW Develop workspace".into());
     }
     // Camera Raw workspace: the photo being left keeps what was adjusted, then the next one opens. When Camera Raw is
     // showing a raw and the next photo is one too, the dialog stays up and the next photo takes it over, so the window

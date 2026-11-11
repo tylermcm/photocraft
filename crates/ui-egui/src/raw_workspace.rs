@@ -283,7 +283,7 @@ pub fn wait_prepared(shared: &SharedPrefetch, path: &str, signature: &str, give_
 /// `app.open` of it with the same signature is nearly instant. Replies at once.
 pub fn request_prefetch(app: &mut PhotocraftApp, path: &str, signature: &str) -> Result<Value, String> {
     if !app.raw_workspace.enabled {
-        return Err("prefetch needs the Camera Raw workspace".into());
+        return Err("prefetch needs the RAW Develop workspace".into());
     }
     let read = app.services.background_automation_read.clone().ok_or("background automation read authority is not configured")?;
     let shared = app.jobs.workspace_prefetch.clone();
@@ -409,6 +409,7 @@ pub fn queue_dialog(app: &mut PhotocraftApp, document: Option<DocId>) {
         full_size: pending.full_size,
         developed_with: method,
         demosaic: method,
+        crop: None,
     });
 }
 
@@ -501,7 +502,8 @@ fn settle_any(app: &mut PhotocraftApp) -> Result<(), String> {
 /// every frame before the dialog is drawn; does nothing unless a document is ready and nothing else
 /// holds the dialog.
 pub fn auto_open(app: &mut PhotocraftApp, ctx: &egui::Context) {
-    if !app.raw_workspace.enabled || app.camera_raw.is_some() || app.pending_raw_open.is_some() {
+    // Standalone RAW opens belong to upstream's shelf, not the host's layer-filter route.
+    if !app.raw_workspace.enabled || app.camera_raw.is_some() || app.pending_raw_open.is_some() || !app.raw_shelf.is_empty() {
         return;
     }
     let Some(state) = app.session.active() else {
@@ -520,19 +522,6 @@ pub fn auto_open(app: &mut PhotocraftApp, ctx: &egui::Context) {
         // editor is the right place for it.
         app.ui.status = error;
         app.ui.status_error = true;
-    }
-}
-
-/// The first time the editor draws a document's canvas (Open does, at a moment the user is waiting) it needs the GPU compositor,
-/// whose shaders the driver compiles for about 12 s on an Intel UHD 620; built on the drawing thread, the whole window stops for
-/// that long. In the workspace the build runs on a worker thread instead and the canvas draws on the CPU until it is ready.
-///
-/// It starts then, not ahead of time while browsing: the compile takes a core and the driver's own threads, which slowed every
-/// photo swap that overlapped it (prepared 165 -> 189 ms, unprepared 1.72 -> 1.99 s on that laptop), and browsing must never wait
-/// for background work. Called every frame; cheap.
-pub fn gpu_builds_in_background(app: &mut PhotocraftApp) {
-    if app.raw_workspace.enabled {
-        app.gpu_background_build(true);
     }
 }
 
@@ -579,6 +568,27 @@ mod tests {
         auto_open(&mut app, &ctx);
         assert!(app.camera_raw.is_none(), "closing Camera Raw must leave the full editor, not reopen it");
         assert_eq!(app.session.documents().len(), documents);
+    }
+
+    #[test]
+    fn standalone_raw_shelf_is_not_taken_over_by_host_auto_open() {
+        let (mut app, ctx) = app_with_document();
+        let document = app.session.active().unwrap().doc.id;
+        app.raw_workspace.enabled = true;
+        camera_raw_ui::queue_open_dialog(&mut app, document, "queued.dng", None, None, &[]).unwrap();
+        auto_open(&mut app, &ctx);
+        assert!(app.camera_raw.is_none(), "the upstream RAW shelf must open its own dialog");
+        assert_eq!(app.raw_shelf.len(), 1);
+        assert!(app.pending_raw_open.is_none());
+        ctx.run_ui(Default::default(), |ui| camera_raw_ui::show(&mut app, ui.ctx())).textures_delta.clear();
+        assert!(app.camera_raw.is_some());
+        assert_eq!(app.session.active().unwrap().doc.id, document);
+        camera_raw_ui::cancel(&mut app);
+        assert!(app.raw_shelf.is_empty());
+        auto_open(&mut app, &ctx);
+        ctx.run_ui(Default::default(), |ui| camera_raw_ui::show(&mut app, ui.ctx())).textures_delta.clear();
+        assert!(app.camera_raw.is_none(), "Cancel must not reopen the shelf or its document");
+        assert_eq!(app.session.active().unwrap().doc.id, document);
     }
 
     fn history(app: &PhotocraftApp) -> usize {
@@ -1586,17 +1596,6 @@ mod tests {
         app.raw_workspace.enabled = true;
         app.services.background_automation_read = None;
         assert!(request_prefetch(&mut app, "IMG.dng", "10:1").is_err());
-    }
-
-    #[test]
-    fn the_workspace_asks_the_gpu_canvas_to_build_in_the_background_only_when_it_is_on() {
-        // No GPU canvas in a unit test: the call must be harmless either way.
-        let (mut app, _ctx) = app_with_document();
-        app.raw_workspace.enabled = false;
-        gpu_builds_in_background(&mut app);
-        app.raw_workspace.enabled = true;
-        gpu_builds_in_background(&mut app);
-        assert!(!app.warm_gpu_compositor(), "without a GPU canvas there is nothing to build");
     }
 
     #[test]

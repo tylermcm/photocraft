@@ -283,12 +283,12 @@ pub(crate) fn disclosed_slider(ui: &mut Ui, label: &str, value: &mut f32, range:
 }
 
 pub(crate) fn prepare(current: &WorkspaceState, value: &Value) -> Result<WorkspaceState, String> {
-    let Some(fields) = value.as_object() else { return Err("Camera Raw workspace must be an object".into()) };
+    let Some(fields) = value.as_object() else { return Err("RAW Develop workspace must be an object".into()) };
     let mut merged = serde_json::to_value(current).map_err(|e| e.to_string())?;
-    let Some(target) = merged.as_object_mut() else { return Err("invalid Camera Raw workspace".into()) };
+    let Some(target) = merged.as_object_mut() else { return Err("invalid RAW Develop workspace".into()) };
     for (key, value) in fields {
         if !target.contains_key(key) {
-            return Err(format!("unknown Camera Raw workspace property {key}"));
+            return Err(format!("unknown RAW Develop workspace property {key}"));
         }
         if key == "panels"
             && let (Some(old), Some(new)) = (target.get_mut(key).and_then(Value::as_object_mut), value.as_object())
@@ -300,9 +300,9 @@ pub(crate) fn prepare(current: &WorkspaceState, value: &Value) -> Result<Workspa
             target.insert(key.clone(), value.clone());
         }
     }
-    let next: WorkspaceState = serde_json::from_value(merged).map_err(|e| format!("invalid Camera Raw workspace: {e}"))?;
+    let next: WorkspaceState = serde_json::from_value(merged).map_err(|e| format!("invalid RAW Develop workspace: {e}"))?;
     if next.preferences && next.save_options {
-        return Err("Camera Raw Preferences and Save Options must be opened separately".into());
+        return Err("RAW Develop Preferences and Save Options must be opened separately".into());
     }
     if next.hsl_channel >= 3
         || next.band >= 8
@@ -312,38 +312,38 @@ pub(crate) fn prepare(current: &WorkspaceState, value: &Value) -> Result<Workspa
         || !next.grid_opacity.is_finite()
         || !(0.0..=1.0).contains(&next.grid_opacity)
     {
-        return Err("Camera Raw band must be 0–7, grid size 12–200, and opacity 0–1".into());
+        return Err("RAW Develop band must be 0–7, grid size 12–200, and opacity 0–1".into());
     }
     if next.panels.open.len() > SECTIONS.len()
         || next.panels.open.iter().any(|name| !SECTIONS.contains(&name.as_str()))
         || next.panels.open.iter().enumerate().any(|(i, name)| next.panels.open.iter().take(i).any(|old| old == name))
         || next.panels.single && next.panels.open.len() > 1
     {
-        return Err("Camera Raw panels must be unique supported names (at most one in single-panel mode)".into());
+        return Err("RAW Develop panels must be unique supported names (at most one in single-panel mode)".into());
     }
     let remove_groups = &crate::camera_raw_ui::remove::GROUPS;
     if next.remove_groups.len() > remove_groups.len()
         || next.remove_groups.iter().any(|v| !remove_groups.contains(&v.as_str()))
         || next.remove_groups.iter().enumerate().any(|(i, v)| next.remove_groups.iter().take(i).any(|old| old == v))
     {
-        return Err("Camera Raw removeGroups must contain unique observed group names".into());
+        return Err("RAW Develop removeGroups must contain unique observed group names".into());
     }
     let crop_groups = &crate::camera_raw_ui::crop::GROUPS;
     if next.crop_groups.len() > crop_groups.len()
         || next.crop_groups.iter().any(|v| !crop_groups.contains(&v.as_str()))
         || next.crop_groups.iter().enumerate().any(|(i, v)| next.crop_groups.iter().take(i).any(|old| old == v))
     {
-        return Err("Camera Raw cropGroups must contain unique observed group names".into());
+        return Err("RAW Develop cropGroups must contain unique observed group names".into());
     }
     let groups = &crate::camera_raw_ui::presets::GROUPS;
     if next.preset_groups.len() > groups.len()
         || next.preset_groups.iter().any(|v| !groups.contains(&v.as_str()))
         || next.preset_groups.iter().enumerate().any(|(i, v)| next.preset_groups.iter().take(i).any(|old| old == v))
     {
-        return Err("Camera Raw presetGroups must contain unique observed category names".into());
+        return Err("RAW Develop presetGroups must contain unique observed category names".into());
     }
     if next.bypass_section.as_deref().is_some_and(|name| !supports_bypass(name)) {
-        return Err("Camera Raw bypassSection must name an implemented processing section".into());
+        return Err("RAW Develop bypassSection must name an implemented processing section".into());
     }
     Ok(next)
 }

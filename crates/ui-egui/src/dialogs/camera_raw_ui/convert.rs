@@ -1,6 +1,7 @@
 use super::open::Coverage;
 use super::{CameraRaw, CameraRawDialog, LayerId, MAX_SAMPLERS, PhotocraftApp, RgbHistogram, Value, json};
 use super::{OpenAs, host_job, proxy_geometry, proxy_pixels, settings_menu, snapshots};
+use super::{PROXY_SIDE, Rect};
 
 /// Camera Raw Defaults › Sharpen For: output sharpening, folded into the Camera Raw step `rest`
 /// as the workflow's Sharpen For is. Returns what it applied.
@@ -51,6 +52,51 @@ pub(crate) fn apply_session_raw_conversions(session: &mut photocraft_engine::Ses
         session.execute(id, params).map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+/// What the preview develops, and its size: the engine filter domain, including pixels outside the
+/// canvas, since spatial Camera Raw stages (vignette, grain, local contrast) must agree with the
+/// committed result.
+pub(super) fn preview_area(canvas: Rect, surf: &photocraft_raster::Surface) -> Result<(Rect, usize, usize), String> {
+    let area = canvas.union(&surf.content_bounds());
+    let width = area.x1.checked_sub(area.x0).filter(|n| (1..=1_048_576).contains(n));
+    let height = area.y1.checked_sub(area.y0).filter(|n| (1..=1_048_576).contains(n));
+    let (Some(w), Some(h)) = (width, height) else {
+        return Err("RAW Develop preview bounds are too large".into());
+    };
+    let (w, h) = (w as usize, h as usize);
+    if w.checked_mul(h).is_none_or(|pixels| pixels > 512_000_000) {
+        return Err("RAW Develop preview bounds are too large".into());
+    }
+    Ok((area, w, h))
+}
+
+/// `area` of `surf` (`w`×`h`) box-averaged down to at most [`PROXY_SIDE`] pixels on its long side:
+/// the proxy, its size, and the side of the blocks averaged.
+pub(super) fn box_proxy(surf: &photocraft_raster::Surface, area: Rect, w: usize, h: usize) -> (Vec<[f32; 4]>, usize, usize, usize) {
+    let k = w.max(h).div_ceil(PROXY_SIDE).max(1);
+    let (pw, ph) = (w.div_ceil(k), h.div_ceil(k));
+    let mut proxy = vec![[0.0f32; 4]; pw * ph];
+    let mut row = vec![[0.0f32; 4]; w];
+    for py in 0..ph {
+        // Box-average k×k blocks.
+        let mut acc = vec![[0.0f32; 5]; pw];
+        for dy in 0..k {
+            let y = area.y0 + (py * k + dy).min(h - 1) as i32;
+            surf.read_rgba_into(Rect::new(area.x0, y, area.x1, y + 1), &mut row);
+            for (x, q) in row.iter().enumerate() {
+                let a = &mut acc[x / k];
+                for c in 0..4 {
+                    a[c] += q[c];
+                }
+                a[4] += 1.0;
+            }
+        }
+        for (x, a) in acc.iter().enumerate() {
+            proxy[py * pw + x] = [a[0] / a[4], a[1] / a[4], a[2] / a[4], a[3] / a[4]];
+        }
+    }
+    (proxy, pw, ph, k)
 }
 
 pub(super) fn open_pixels_prepared(

@@ -237,9 +237,9 @@ impl HostJob {
         if self.phase == Phase::Requested && now - self.requested_at > CLAIM_TIMEOUT_S {
             self.phase = Phase::Failed;
             self.message = if is_mask_kind(self.kind) {
-                tr("Image Triage did not respond. Masks that need AI are made by Image Triage when Camera Raw is opened from it.").to_string()
+                tr("Image Triage did not respond. Masks that need AI are made by Image Triage when RAW Develop is opened from it.").to_string()
             } else {
-                tr("Image Triage did not respond. Super Resolution is applied by Image Triage when Camera Raw is opened from it.").to_string()
+                tr("Image Triage did not respond. Super Resolution is applied by Image Triage when RAW Develop is opened from it.").to_string()
             };
         }
     }
@@ -342,7 +342,7 @@ impl HostJob {
         }
     }
 
-    /// The popup: a scrim over the dialog, then a small "Camera Raw" window, as in Photoshop.
+    /// The popup: a scrim over the dialog, then a small "RAW Develop" window, as in Photoshop.
     pub fn show(&mut self, ctx: &egui::Context) {
         let now = ctx.input(|i| i.time);
         self.tick(now);
@@ -360,7 +360,7 @@ impl HostJob {
         });
         let mut close = false;
         let mut cancel = false;
-        egui::Window::new(tr("Camera Raw"))
+        egui::Window::new(tr("RAW Develop"))
             .id(egui::Id::unique("camera-raw-host-job"))
             .order(egui::Order::Tooltip)
             .collapsible(false)

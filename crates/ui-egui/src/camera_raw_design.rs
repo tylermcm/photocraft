@@ -520,7 +520,7 @@ mod live {
             Ok(true) => {}
             Err(error) => {
                 if state.error.as_ref() != Some(&error) {
-                    log::warn!("Camera Raw layout: {error}");
+                    log::warn!("RAW Develop layout: {error}");
                 }
                 state.error = Some(error);
                 return;

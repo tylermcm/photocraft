@@ -34,7 +34,7 @@ impl RedEyeDesign {
             || self.overlay_top < self.divider_top + 8.0
             || self.height < self.overlay_top + 20.0
         {
-            return Err("Camera Raw Red Eye geometry must be finite, ordered and contained in its panel".into());
+            return Err("RAW Develop Red Eye geometry must be finite, ordered and contained in its panel".into());
         }
         Ok(())
     }

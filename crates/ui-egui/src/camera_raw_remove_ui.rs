@@ -65,7 +65,7 @@ impl Design {
             || !(20.0..=80.0).contains(&self.unavailable_height)
             || self.elements.len() > 96
         {
-            return Err("invalid Camera Raw Remove geometry".into());
+            return Err("invalid RAW Develop Remove geometry".into());
         }
         let mut ids = std::collections::HashSet::new();
         for e in &self.elements {
@@ -83,7 +83,7 @@ impl Design {
                 || r > self.width
                 || b > self.height
             {
-                return Err(format!("invalid Camera Raw Remove element {}", e.id));
+                return Err(format!("invalid RAW Develop Remove element {}", e.id));
             }
         }
         for (id, kind) in [
@@ -345,7 +345,7 @@ pub(super) fn show(ui: &mut Ui, groups: &mut Vec<String>, help: &mut bool) {
         egui::Modal::new(egui::Id::unique("camera-raw-remove-help")).show(&ctx, |ui| {
             ctx.set_sublayer(egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("camera-raw-dialog")), ui.layer_id());
             ui.set_max_width(300.0);
-            ui.label(tr("Remove, Heal and Clone are not available in Camera Raw yet."));
+            ui.label(tr("Remove, Heal and Clone are not available in RAW Develop yet."));
             ui.separator();
             ui.label(tr("Automatic distraction removal is not available in this build."));
             if ui.button(tr("Close")).clicked() {

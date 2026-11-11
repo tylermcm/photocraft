@@ -75,7 +75,7 @@ impl Design {
             (self.bottom_padding, 0.0, 30.0),
         ] {
             if !v.is_finite() || !(lo..=hi).contains(&v) {
-                return Err("invalid Camera Raw Color Mixer geometry".into());
+                return Err("invalid RAW Develop Color Mixer geometry".into());
             }
         }
         if self.tabs_height > self.adjust_top
@@ -87,7 +87,7 @@ impl Design {
             || self.hues.iter().any(|v| !v.is_finite() || !(0.0..360.0).contains(v))
             || self.saturations.iter().any(|v| !v.is_finite() || !(0.0..=1.0).contains(v))
         {
-            return Err("Camera Raw Color Mixer controls must be ordered and bounded".into());
+            return Err("RAW Develop Color Mixer controls must be ordered and bounded".into());
         }
         Ok(())
     }

@@ -81,7 +81,7 @@ pub(super) fn edit_bar(ui: &mut Ui, d: &mut CameraRawDialog, info: bool) {
             d.dirty = true;
         }
         let auto = bw.translate(vec2(-38.0, 0.0));
-        button(ui, auto, tl!("Auto"), false, false).on_hover_text(tl!("Automatic Camera Raw tone adjustment is not available"));
+        button(ui, auto, tl!("Auto"), false, false).on_hover_text(tl!("Automatic RAW Develop tone adjustment is not available"));
         ui.painter().line_segment([pos2(hdr.left() - 4.0, y), pos2(hdr.left() - 4.0, y + 20.0)], Stroke::new(1.0, t.separator));
     }
     ui.painter().line_segment([rect.left_bottom(), rect.right_bottom()], Stroke::new(1.0, t.separator));
@@ -268,11 +268,11 @@ pub(super) fn top_actions(ui: &mut Ui, title: Rect, action: &mut Option<&'static
         Stroke::new(1.8, t.icon),
     ));
     egui::Popup::menu(&response).show(|ui| settings_menu(ui, action));
-    let settings = icons::button_with_icon_size(&mut child, "settings", design.title_action_size, 18.0, false, tl!("Camera Raw Settings"));
+    let settings = icons::button_with_icon_size(&mut child, "settings", design.title_action_size, 18.0, false, tl!("RAW Develop Settings"));
     let divider = settings.rect.right() + design.title_action_gap * 0.5;
     child.painter().line_segment([pos2(divider, title.center().y - 10.0), pos2(divider, title.center().y + 10.0)], Stroke::new(1.0, t.separator));
     egui::Popup::menu(&settings).show(|ui| {
-        if ui.button(format!("{}…", crate::i18n::tr_ctx(crate::i18n::current(), "cameraRaw", "Camera Raw Preferences"))).clicked() {
+        if ui.button(format!("{}…", crate::i18n::tr_ctx(crate::i18n::current(), "cameraRaw", "RAW Develop Preferences"))).clicked() {
             *action = Some("preferences");
             ui.close();
         }

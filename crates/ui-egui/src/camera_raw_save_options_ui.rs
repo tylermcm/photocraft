@@ -51,7 +51,7 @@ impl State {
     }
 }
 pub(super) fn prepare(current: &Settings, value: &Value) -> Result<Settings, String> {
-    let fields = value.as_object().ok_or("Camera Raw saveOptions must be an object")?;
+    let fields = value.as_object().ok_or("RAW Develop saveOptions must be an object")?;
     let mut next = serde_json::to_value(current).map_err(|e| e.to_string())?;
     let dst = next.as_object_mut().ok_or("invalid Save Options draft")?;
     for (key, v) in fields {
@@ -282,7 +282,7 @@ fn value(binding: Binding, p: &Settings, name: &str, folder: &str) -> String {
         Binding::Destination => tr("Save in Same Location").into(),
         Binding::Extension => if p.uppercase_extension { ".DNG" } else { ".dng" }.into(),
         Binding::Format => tr("Digital Negative").into(),
-        Binding::Compatibility => tr("Camera Raw 16.0 and later").into(),
+        Binding::Compatibility => tr("RAW Develop 16.0 and later").into(),
         Binding::JpegPreview => tr("Medium Size").into(),
         Binding::LossyCount => tr("Preserve Pixel Count").into(),
         Binding::CredentialsStorage => tr("Publish to Content Credentials cloud").into(),

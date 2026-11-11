@@ -89,10 +89,26 @@ impl AuthorizedWorkspace {
     /// resolution and file creation relative to the held directory handle, so
     /// a non-existent final target is supported without ambient path access.
     pub fn write(&self, path: &str, bytes: &[u8]) -> Result<(), AutomationError> {
-        self.write_checked(path, bytes, false)
+        self.write_stream(path, &mut |w| w.write_all(bytes))
+    }
+
+    /// [`Self::write`] with the file's bytes produced by `write` straight into the temporary
+    /// file (it may seek back to patch lengths), so a large PSD/PSB is never held in memory
+    /// whole (#5333). The same refusals, the same atomic replace.
+    pub fn write_stream(&self, path: &str, write: &mut photocraft_format::atomic::StreamWriter<'_>) -> Result<(), AutomationError> {
+        self.write_stream_checked(path, write, None)
     }
 
     fn write_checked(&self, path: &str, bytes: &[u8], host_output: bool) -> Result<(), AutomationError> {
+        self.write_stream_checked(path, &mut |w| w.write_all(bytes), host_output.then_some(bytes))
+    }
+
+    fn write_stream_checked(
+        &self,
+        path: &str,
+        write: &mut photocraft_format::atomic::StreamWriter<'_>,
+        host_bytes: Option<&[u8]>,
+    ) -> Result<(), AutomationError> {
         let relative = request_path(path, self.write.as_ref())?;
         let root = self.write.as_ref().ok_or_else(|| AutomationError::BadRequest(format!("{DENIED}: write authority is absent")))?;
         let leaf = relative.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
@@ -110,7 +126,7 @@ impl AuthorizedWorkspace {
         if exists
             && !written_kind(&leaf)
             && !holds_image(&root.dir, &relative)
-            && !(host_output && host_sidecars::replacement_allowed(&root.dir, &relative, bytes))
+            && !host_bytes.is_some_and(|bytes| host_sidecars::replacement_allowed(&root.dir, &relative, bytes))
         {
             return Err(AutomationError::BadRequest(format!(
                 "automation write refused: `{path}` already exists and is not an image or document file PhotoCraft writes; save to a new name"
@@ -120,9 +136,13 @@ impl AuthorizedWorkspace {
         let tmp = parent.join(photocraft_format::atomic::temp_name(&leaf));
         let mut options = OpenOptions::new();
         options.write(true).create_new(true);
-        let written = root.dir.open_with(&tmp, &options).and_then(|file| {
+        let opened = root.dir.open_with(&tmp, &options);
+        // Removes the temporary file on every way out but a rename, a panicking writer included
+        // (unwinding closes the handle inside the closure first), and only one this call made.
+        let mut cleanup = TempRemoval { dir: &root.dir, path: &tmp, armed: opened.is_ok() };
+        let written = opened.and_then(|file| {
             let mut file = file.into_std();
-            file.write_all(bytes)?;
+            write(&mut file)?;
             #[cfg(unix)]
             {
                 use std::os::fd::AsFd;
@@ -140,9 +160,9 @@ impl AuthorizedWorkspace {
         });
         let renamed = written.and_then(|()| photocraft_format::atomic::retry_rename(RenameRetry::platform(), || root.dir.rename(&tmp, &root.dir, &relative)));
         if let Err(e) = renamed {
-            let _ = root.dir.remove_file(&tmp);
             return Err(file_error("write", path, e));
         }
+        cleanup.armed = false;
         // Flush the directory entry (Unix); best effort, the new bytes are already in place.
         #[cfg(unix)]
         {
@@ -152,6 +172,21 @@ impl AuthorizedWorkspace {
             }
         }
         Ok(())
+    }
+}
+
+/// Removes a temporary file on drop unless `armed` was cleared after its rename.
+struct TempRemoval<'a> {
+    dir: &'a Dir,
+    path: &'a Path,
+    armed: bool,
+}
+
+impl Drop for TempRemoval<'_> {
+    fn drop(&mut self) {
+        if self.armed {
+            let _ = self.dir.remove_file(self.path);
+        }
     }
 }
 
@@ -478,6 +513,7 @@ fn command_uses_ambient_path(id: &str, params: &Value) -> bool {
         | "brush.presets.importAbr"
         | "brush.presets.importImage"
         | "gradient.presets.importGrd"
+        | "shape.presets.importCsh"
         | "plugin.install"
         | "swatches.import"
         | "style.presets.importAsl"

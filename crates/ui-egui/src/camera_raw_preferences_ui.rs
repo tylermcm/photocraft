@@ -21,7 +21,7 @@ impl Default for Settings {
 impl Settings {
     fn validate(&self) -> Result<(), String> {
         if !self.click_zoom.is_finite() || ![0.5, 1.0, 2.0].contains(&self.click_zoom) {
-            return Err("Camera Raw clickZoom must be 0.5, 1 or 2".into());
+            return Err("RAW Develop clickZoom must be 0.5, 1 or 2".into());
         }
         Ok(())
     }
@@ -58,18 +58,18 @@ pub(crate) fn validate_design(d: &Design) -> Result<(), String> {
     d.validate()?;
     for id in ["general-page", "panel-behavior-field", "filenames-checkbox", "click-zoom-field", "ok-button"] {
         if !d.elements.iter().any(|e| e.id == id) {
-            return Err(format!("Camera Raw Preferences is missing {id}"));
+            return Err(format!("RAW Develop Preferences is missing {id}"));
         }
     }
     Ok(())
 }
 pub(super) fn prepare(current: &Settings, value: &Value) -> Result<Settings, String> {
-    let input = value.as_object().ok_or("Camera Raw preferences must be an object")?;
+    let input = value.as_object().ok_or("RAW Develop preferences must be an object")?;
     let mut next = serde_json::to_value(current).map_err(|e| e.to_string())?;
-    let target = next.as_object_mut().ok_or("invalid Camera Raw preferences")?;
+    let target = next.as_object_mut().ok_or("invalid RAW Develop preferences")?;
     for (k, v) in input {
         if !target.contains_key(k) {
-            return Err(format!("unsupported Camera Raw preference {k}"));
+            return Err(format!("unsupported RAW Develop preference {k}"));
         }
         target.insert(k.clone(), v.clone());
     }
@@ -101,13 +101,13 @@ pub(super) fn sync(app: &mut PhotocraftApp, ctx: &egui::Context) {
             Ok(v) => apply(app, ctx, v),
             Err(e) => {
                 app.ui.status_error = true;
-                app.ui.status = format!("Invalid Camera Raw preferences: {e}");
+                app.ui.status = format!("Invalid RAW Develop preferences: {e}");
             }
         }
     }
 }
 pub(super) fn confirm(app: &mut PhotocraftApp, ctx: &egui::Context) -> Result<(), String> {
-    let next = app.ui.camera_raw_preferences.draft.clone().ok_or("Camera Raw Preferences is not open")?;
+    let next = app.ui.camera_raw_preferences.draft.clone().ok_or("RAW Develop Preferences is not open")?;
     next.validate()?;
     let value = serde_json::to_value(&next).map_err(|e| e.to_string())?;
     apply(app, ctx, next);

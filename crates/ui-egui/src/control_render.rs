@@ -89,13 +89,13 @@ fn develop(
 ) -> photocraft_engine::Result<photocraft_doc::Document> {
     let (name, bytes) = read(source).map_err(EngineError::Other)?;
     if !photocraft_io::raw::is_raw(&bytes) {
-        return Err(EngineError::Other(format!("{source}: a Camera Raw recipe applies to raw photos only")));
+        return Err(EngineError::Other(format!("{source}: a RAW Develop recipe applies to raw photos only")));
     }
     ctx.check()?;
     let (mut imported, white_balanced) =
         photocraft_io::raw::import_raw_tuned(&name, &bytes, &crate::raw_recipe::tuning(params)).map_err(|e| EngineError::Other(e.to_string()))?;
     ctx.check()?;
-    params.validate_retouch_size(imported.document.size.width as usize,imported.document.size.height as usize).map_err(EngineError::Other)?;
+    params.validate_retouch_size(imported.document.size.width as usize, imported.document.size.height as usize).map_err(EngineError::Other)?;
     let mut rest = crate::raw_recipe::after_develop(params, white_balanced);
     crate::camera_raw_ui::output_sharpening(defaults, &mut rest);
     // The same Camera Raw step and workflow defaults Open applies, on a separate session.
@@ -257,7 +257,7 @@ mod tests {
         // Open in the dialog, with the same settings.
         app.open_bytes("IMG.dng", &raw).unwrap();
         let ctx = egui::Context::default();
-        let pending = app.pending_raw_open.take().unwrap();
+        let pending = app.raw_shelf.remove(0).raw;
         crate::camera_raw_ui::open_raw(&mut app, &ctx, pending).unwrap();
         app.camera_raw.as_mut().unwrap().params = params.clone();
         crate::camera_raw_ui::commit(&mut app).unwrap();

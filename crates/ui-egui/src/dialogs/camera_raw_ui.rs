@@ -73,6 +73,7 @@ pub(crate) mod tool_panels;
 mod controls;
 mod convert;
 pub(crate) use convert::{apply_session_raw_conversions, output_sharpening};
+mod filmstrip;
 mod host_controls;
 mod menu;
 mod open;
@@ -84,6 +85,7 @@ pub use controls::show;
 pub(crate) use controls::commit;
 #[cfg(test)]
 use convert::open_pixels;
+pub use filmstrip::HeldRaw;
 pub use menu::menu;
 use open::Coverage;
 #[cfg(test)]
@@ -302,7 +304,7 @@ impl CameraRawDialog {
             let (tx, rx) = std::sync::mpsc::channel::<Result<ProxyFrame, String>>();
             let repaint = ctx.clone();
             let spawned = std::thread::Builder::new().name("camera-raw-proxy".into()).spawn(move || {
-                let frame = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| job.run())).map_err(|_| "Camera Raw preview failed".to_string());
+                let frame = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| job.run())).map_err(|_| "RAW Develop preview failed".to_string());
                 // The dialog may have closed or rendered on its own meanwhile; then nobody listens.
                 if tx.send(frame).is_ok() {
                     repaint.request_repaint();
@@ -328,7 +330,7 @@ impl CameraRawDialog {
         let frame = match rx.try_recv() {
             Ok(frame) => frame,
             Err(std::sync::mpsc::TryRecvError::Empty) => return Ok(()),
-            Err(std::sync::mpsc::TryRecvError::Disconnected) => Err("Camera Raw preview worker stopped".to_string()),
+            Err(std::sync::mpsc::TryRecvError::Disconnected) => Err("RAW Develop preview worker stopped".to_string()),
         };
         self.pending = None;
         self.publish(ctx, frame?);
@@ -397,56 +399,14 @@ struct ProxyGeometry {
 }
 
 fn proxy_geometry(canvas: Rect, surf: &photocraft_raster::Surface) -> Result<ProxyGeometry, String> {
-    // Use the engine filter domain, including pixels outside the canvas: spatial Camera Raw
-    // stages (vignette, grain, local contrast) must agree with the committed result.
-    let area = canvas.union(&surf.content_bounds());
-    let width = area.x1.checked_sub(area.x0).filter(|n| (1..=1_048_576).contains(n));
-    let height = area.y1.checked_sub(area.y0).filter(|n| (1..=1_048_576).contains(n));
-    let (Some(w), Some(h)) = (width, height) else {
-        return Err("Camera Raw preview bounds are too large".into());
-    };
-    let (w, h) = (w as usize, h as usize);
-    if w.checked_mul(h).is_none_or(|pixels| pixels > 512_000_000) {
-        return Err("Camera Raw preview bounds are too large".into());
-    }
+    let (area, w, h) = convert::preview_area(canvas, surf)?;
     let k = w.max(h).div_ceil(PROXY_SIDE).max(1);
     let (pw, ph) = (w.div_ceil(k), h.div_ceil(k));
     Ok(ProxyGeometry { area, w, h, k, pw, ph })
 }
 
 fn proxy_pixels(surf: &photocraft_raster::Surface, g: &ProxyGeometry) -> Vec<[f32; 4]> {
-    let ProxyGeometry { area, w, h, k, pw, ph } = *g;
-    let mut proxy = vec![[0.0f32; 4]; pw * ph];
-    // One proxy row: the box average of its k source rows. Rows are independent, so they are built in
-    // parallel (a 45 MP photo's proxy took 2.5-4 s on one core, with the whole editor frozen meanwhile).
-    let build_row = |py: usize, out: &mut [[f32; 4]]| {
-        let mut row = vec![[0.0f32; 4]; w];
-        let mut acc = vec![[0.0f32; 5]; pw];
-        for dy in 0..k {
-            let y = area.y0 + (py * k + dy).min(h - 1) as i32;
-            surf.read_rgba_into(Rect::new(area.x0, y, area.x1, y + 1), &mut row);
-            for (x, q) in row.iter().enumerate() {
-                let a = &mut acc[x / k];
-                for c in 0..4 {
-                    a[c] += q[c];
-                }
-                a[4] += 1.0;
-            }
-        }
-        for (o, a) in out.iter_mut().zip(&acc) {
-            *o = [a[0] / a[4], a[1] / a[4], a[2] / a[4], a[3] / a[4]];
-        }
-    };
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        use rayon::prelude::*;
-        proxy.par_chunks_mut(pw).enumerate().for_each(|(py, out)| build_row(py, out));
-    }
-    #[cfg(target_arch = "wasm32")]
-    for (py, out) in proxy.chunks_mut(pw).enumerate() {
-        build_row(py, out);
-    }
-    proxy
+    convert::box_proxy(surf, g.area, g.w, g.h).0
 }
 
 pub(crate) fn proxy_for(document: &photocraft_doc::Document) -> Option<ProxyData> {
