@@ -15,6 +15,7 @@ struct Grid {
     y0: i32,
     width: usize,
     sites: Vec<Site>,
+    nonfinite: bool,
 }
 
 fn key(p: i32, origin: f32, cell: f32) -> i32 {
@@ -55,12 +56,14 @@ impl Grid {
         sites.try_reserve_exact(len).ok()?;
         let cc = ncol(ctx, n);
         let sub = subtractive(ctx);
+        let mut nonfinite = false;
         for gy in y0..=y1 {
             for gx in x0..=x1 {
                 let point = cell_point(gx, gy, cell, seed, origin);
                 let (sx, sy) = (point.0.floor() as i32, point.1.floor() as i32);
                 let mut color = [0.0; MAXC];
                 let sampled = sample(sx, sy, color.get_mut(..n)?);
+                nonfinite |= color.iter().take(n).any(|value| !value.is_finite());
                 let radius = if dots {
                     let j = (hash01(gx, gy, 17, seed) - 0.5) * 0.08;
                     for value in color.iter_mut().take(cc) {
@@ -73,7 +76,7 @@ impl Grid {
                 sites.push(Site { point, color, radius, sampled });
             }
         }
-        Some(Self { x0, y0, width, sites })
+        Some(Self { x0, y0, width, sites, nonfinite })
     }
 
     fn neighbours(&self, cx: i32, cy: i32) -> Option<[usize; 9]> {
@@ -207,6 +210,11 @@ pub(super) fn crystallize(src: &Image, out: Rect, ctx: &Ctx, cell_size: f32, see
     .intersect(&src.rect)
     .intersect(&b);
     let mut grid = Grid::new(src, out.union(&win), ctx, cell, seed, false)?;
+    // Cached arithmetic may choose a different NaN sign/payload. Preserve
+    // the scalar result without scanning unsampled pixels on ordinary tiles.
+    if grid.nonfinite {
+        return Some(super::crystallize_direct(src, out, ctx, cell_size, seed));
+    }
     let origin = (b.x0 as f32, b.y0 as f32);
     if grid.sites.iter().any(|s| !s.sampled) {
         let mut acc = Vec::new();
@@ -237,6 +245,9 @@ pub(super) fn crystallize(src: &Image, out: Rect, ctx: &Ctx, cell_size: f32, see
                     let alpha = if ctx.alpha { src.get(x, y, n - 1) } else { 1.0 };
                     for (c, value) in sum.iter_mut().enumerate().take(n) {
                         let s = src.get(x, y, c);
+                        if !s.is_finite() {
+                            return Some(super::crystallize_direct(src, out, ctx, cell_size, seed));
+                        }
                         *value += if ctx.alpha && c + 1 < n { s * alpha } else { s };
                     }
                     *sum.get_mut(n)? += 1.0;
@@ -332,6 +343,9 @@ pub(super) fn pointillize(src: &Image, out: Rect, ctx: &Ctx, cell_size: f32, see
         return None;
     }
     let grid = Grid::new(src, out, ctx, cell, seed, true)?;
+    if grid.nonfinite {
+        return Some(super::pointillize_direct(src, out, ctx, cell_size, seed, background));
+    }
     pointillize_grid(src, out, ctx, cell, background, &grid)
 }
 
@@ -476,7 +490,7 @@ pub(crate) fn tile(
         surface.read_pixel(x, y, color);
         ctx.bounds.contains(sx, sy)
     })?;
-    if !dots && grid.sites.iter().any(|s| !s.sampled) {
+    if grid.nonfinite || (!dots && grid.sites.iter().any(|s| !s.sampled)) {
         return None;
     }
     let original = Image::read(surface, out);

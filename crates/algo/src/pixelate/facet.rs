@@ -34,7 +34,14 @@ pub(super) fn run(src: &Image, out: Rect, ctx: &Ctx) -> Option<Vec<f32>> {
     let mut lum = Vec::new();
     lum.try_reserve_exact(len).ok()?;
     for y in win.y0..win.y1 {
-        lum.extend(row(y)?.chunks_exact(n).map(|px| luma(ctx, px)));
+        for px in row(y)?.chunks_exact(n) {
+            // Cached/vectorized arithmetic can select a different NaN sign or
+            // payload. Keep the original scalar kernel for non-finite input.
+            if px.iter().any(|value| !value.is_finite()) {
+                return None;
+            }
+            lum.push(luma(ctx, px));
+        }
     }
     let qw = w.checked_sub(2)?;
     let mut quadrants: [Vec<Quadrant>; 3] = std::array::from_fn(|_| Vec::new());
