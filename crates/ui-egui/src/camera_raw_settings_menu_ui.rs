@@ -265,7 +265,7 @@ fn validate_clipboard(p: &CameraRaw) -> Result<(), String> {
                     return Err("Unsupported Camera Raw clipboard vignette style".into());
                 }
             }
-            "seed" | "pixelScale" | "encodingGamma" | "glow" | "pointColors" | "superResolution" | "masks" | "retouch" => {}
+            "seed" | "pixelScale" | "encodingGamma" | "glow" | "pointColors" | "superResolution" | "masks" | "retouch" | "redEye" => {}
             _ => number(key, v, -100.0, 100.0)?,
         }
     }
@@ -525,6 +525,17 @@ pub(super) fn show(app: &mut PhotocraftApp, ctx: &egui::Context, screen: Rect, a
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn clipboard_preserves_red_eye_and_rejects_invalid_corrections() {
+        let original = CameraRaw::default();
+        let mut p = original.clone();
+        p.red_eye.push(photocraft_algo::camera_raw::RedEyeCorrection { point: [0.5, 0.5], pupil_size: 50.0, darken: 50.0 });
+        let text = serde_json::to_string(&crate::raw_recipe::to_json(&p)).unwrap();
+        assert_eq!(paste(&original, &original, &text).unwrap(), p);
+        p.red_eye[0].pupil_size = 0.0;
+        let text = serde_json::to_string(&crate::raw_recipe::to_json(&p)).unwrap();
+        assert!(paste(&original, &original, &text).is_err());
+    }
     #[test]
     fn clipboard_preserves_retouch_and_rejects_invalid_strokes() {
         let original = CameraRaw::default();
