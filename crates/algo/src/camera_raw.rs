@@ -104,9 +104,11 @@ impl Wheel {
 
 mod finishing;
 mod masks;
+mod red_eye;
 mod retouch;
 pub use finishing::{Glow, GlowStyle, PointColor};
 pub use masks::{LocalAdjust, LocalMask, MAX_MASKS, MAX_PARTS, MAX_RASTER_SIDE, MaskOp, MaskPart, MaskShape};
+pub use red_eye::RedEyeCorrection;
 pub use retouch::RetouchStroke;
 
 /// Camera Raw settings in Adobe Camera Raw's slider units.
@@ -166,6 +168,7 @@ pub struct CameraRaw {
     pub masks: Vec<LocalMask>,
     #[serde(default)]
     pub retouch: Vec<RetouchStroke>,
+    pub red_eye: Vec<RedEyeCorrection>,
     /// Detail > Super Resolution. Not a pixel operation of `develop`: the host upsizes the finished render.
     pub super_resolution: bool,
     // Effects
@@ -243,6 +246,7 @@ impl Default for CameraRaw {
             point_colors: Vec::new(),
             masks: Vec::new(),
             retouch: Vec::new(),
+            red_eye: Vec::new(),
             super_resolution: false,
             grain_amount: 0.0,
             grain_size: 25.0,
@@ -626,6 +630,7 @@ impl CameraRaw {
         finishing::validate(self)?;
         masks::validate(self)?;
         retouch::validate(&self.retouch)?;
+        red_eye::validate(&self.red_eye)?;
         for (name, curve) in [
             ("pointCurve", &self.point_curve),
             ("pointCurveRed", &self.point_curve_red),
@@ -642,6 +647,7 @@ impl CameraRaw {
         finishing::validate(self)?;
         masks::validate(self)?;
         retouch::validate(&self.retouch)?;
+        red_eye::validate(&self.red_eye)?;
         for (name, curve, kept) in [
             ("pointCurve", &self.point_curve, &stored.point_curve),
             ("pointCurveRed", &self.point_curve_red, &stored.point_curve_red),
@@ -696,6 +702,7 @@ impl CameraRaw {
             && self.point_colors.iter().all(PointColor::neutral)
             && !self.masks.iter().any(LocalMask::active)
             && !self.retouch.iter().any(|s| s.opacity > 0.0)
+            && !self.red_eye.iter().any(|p| p.darken > 0.0)
             && !self.super_resolution
             && self.grain_amount == 0.0
             && self.vignette_amount == 0.0
@@ -897,6 +904,9 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bo
     }
     if !p.retouch.is_empty() {
         retouch::apply(px, w, h, &p.retouch);
+    }
+    if !p.red_eye.is_empty() {
+        red_eye::apply(px, w, h, &p.red_eye, p.pixel_scale);
     }
     // Local masks come last: they adjust the finished global result.
     if !p.masks.is_empty() && masks::validate(p).is_ok() {

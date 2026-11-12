@@ -212,6 +212,7 @@ pub fn per_pixel(p: &CameraRaw, w: usize, h: usize, float: bool, points: Option<
         || !p.point_colors.is_empty()
         || !p.masks.is_empty()
         || !p.retouch.is_empty()
+        || !p.red_eye.is_empty()
         || p.super_resolution
     {
         return None;

@@ -1641,7 +1641,7 @@ fn host_methods(app: &mut PhotocraftApp, ctx: &egui::Context, req: &ControlReque
     }
     Some(match req.method.as_str() {
         "app.handoff" => ok(
-            json!({"version": 2, "replace": true, "hiddenStart": true, "cameraRaw": 1, "cameraRawPrefetch": 1, "cameraRawSwitch": 1, "cameraRawFinishing": 1, "cameraRawCalibration": 1, "cameraRawSuperResolution": 1, "cameraRawHostJob": 1, "cameraRawHostTools": 1, "cameraRawMasks": 1, "cameraRawRetouch": 1, "stashWithoutPreview": 1, "renderManifest": 1, "fullRender": 1, "filmstrip": 1}),
+            json!({"version": 2, "replace": true, "hiddenStart": true, "cameraRaw": 1, "cameraRawPrefetch": 1, "cameraRawSwitch": 1, "cameraRawFinishing": 1, "cameraRawCalibration": 1, "cameraRawSuperResolution": 1, "cameraRawHostJob": 1, "cameraRawHostTools": 1, "cameraRawMasks": 1, "cameraRawRetouch": 1, "cameraRawRedEye": 1, "stashWithoutPreview": 1, "renderManifest": 1, "fullRender": 1, "filmstrip": 1}),
         ),
         "ui.cameraRaw" => run_waiting(app, wait, |app| crate::raw_workspace::control(app, ctx, p)),
         "ui.filmstrip" => wrap(crate::camera_raw_filmstrip_ui::control(ctx, p).map(|mut reply| {
