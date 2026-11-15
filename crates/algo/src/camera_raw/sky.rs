@@ -1,7 +1,8 @@
 //! Sky replacement: a sky picture composited behind a sky matte, with the matte's edge refined,
 //! the new sky matched to the scene, and the foreground relit by it.
 //!
-//! The recipe carries only a sky *id*, the matte (a raster mask, like any other) and the sliders.
+//! A sky id that is an absolute file path is decoded on first use, so the worker, the hosted editor and a full render all
+//! find it without being told. The recipe carries only a sky *id*, the matte (a raster mask, like any other) and the sliders.
 //! The decoded sky picture reaches the stage through [`register`], which the host calls before
 //! rendering (the algo crate decodes no files). A recipe whose sky is not registered leaves the
 //! picture untouched, so an old recipe never fails on a machine without that sky.
@@ -35,13 +36,16 @@ pub fn register(id: &str, w: usize, h: usize, px: Vec<[f32; 4]>) -> Result<(), S
     if w == 0 || h == 0 || w > MAX_SKY_SIDE || h > MAX_SKY_SIDE || w.checked_mul(h) != Some(px.len()) {
         return Err("sky picture has an unusable size".into());
     }
-    let mut reg = REGISTRY.lock().unwrap_or_else(|e| e.into_inner());
+    insert(&mut REGISTRY.lock().unwrap_or_else(|e| e.into_inner()), id, SkyImage { w, h, px });
+    Ok(())
+}
+
+fn insert(reg: &mut VecDeque<(String, Arc<SkyImage>)>, id: &str, img: SkyImage) {
     reg.retain(|(k, _)| k != id);
-    reg.push_back((id.to_string(), Arc::new(SkyImage { w, h, px })));
+    reg.push_back((id.to_string(), Arc::new(img)));
     while reg.len() > MAX_REGISTERED {
         reg.pop_front();
     }
-    Ok(())
 }
 
 /// Forgets sky `id`.
@@ -54,8 +58,37 @@ pub fn is_registered(id: &str) -> bool {
     REGISTRY.lock().unwrap_or_else(|e| e.into_inner()).iter().any(|(k, _)| k == id)
 }
 
+/// Longest side a sky loaded from a file is reduced to: skies fill a frame softly, so more is wasted memory.
+const LOADED_SIDE: usize = 3000;
+
+/// Decodes the picture at `path` (any format the codecs read) as a sky and registers it under `path`.
+pub fn load_file(path: &str) -> Result<(), String> {
+    let p = std::path::Path::new(path);
+    if !p.is_absolute() {
+        return Err("a sky file needs an absolute path".into());
+    }
+    if std::fs::metadata(p).map_err(|e| e.to_string())?.len() > 256 << 20 {
+        return Err("sky file is too large".into());
+    }
+    let bytes = std::fs::read(p).map_err(|e| e.to_string())?;
+    let img = photocraft_codecs::decode(&bytes).map_err(|e| e.to_string())?;
+    let (w, h) = (img.width() as usize, img.height() as usize);
+    let flat = img.to_rgba_f32();
+    let (w, h, flat) = if w.max(h) > LOADED_SIDE {
+        let k = LOADED_SIDE as f64 / w.max(h) as f64;
+        let (nw, nh) = (((w as f64 * k).round() as usize).max(1), ((h as f64 * k).round() as usize).max(1));
+        (nw, nh, crate::seam::resize_bilinear(w, h, 4, &flat, nw, nh))
+    } else {
+        (w, h, flat)
+    };
+    let px: Vec<[f32; 4]> = flat.chunks_exact(4).map(|c| [c[0], c[1], c[2], 1.0]).collect();
+    register(path, w, h, px)
+}
+
 fn lookup(id: &str) -> Option<Arc<SkyImage>> {
-    REGISTRY.lock().unwrap_or_else(|e| e.into_inner()).iter().find(|(k, _)| k == id).map(|(_, v)| v.clone())
+    let find = || REGISTRY.lock().unwrap_or_else(|e| e.into_inner()).iter().find(|(k, _)| k == id).map(|(_, v)| v.clone());
+    // A sky that is a file path loads itself the first time a render asks for it.
+    find().or_else(|| std::path::Path::new(id).is_absolute().then(|| load_file(id).ok()).flatten().and_then(|_| find()))
 }
 
 /// Sky Replacement settings. Neutral (`amount` 0, no source or no matte) does nothing.
@@ -458,13 +491,17 @@ mod tests {
     fn registry_rejects_bad_pictures_and_keeps_a_bounded_set() {
         assert!(register("", 1, 1, vec![[0.0; 4]]).is_err());
         assert!(register("bad", 2, 2, vec![[0.0; 4]]).is_err());
+        let mut reg = VecDeque::new();
         for i in 0..MAX_REGISTERED + 3 {
-            register(&format!("t-cap-{i}"), 1, 1, vec![[0.0; 4]]).unwrap();
+            insert(&mut reg, &format!("c{i}"), SkyImage { w: 1, h: 1, px: vec![[0.0; 4]] });
         }
-        assert!(!is_registered("t-cap-0"));
-        assert!(is_registered(&format!("t-cap-{}", MAX_REGISTERED + 2)));
-        unregister(&format!("t-cap-{}", MAX_REGISTERED + 2));
-        assert!(!is_registered(&format!("t-cap-{}", MAX_REGISTERED + 2)));
+        assert_eq!(reg.len(), MAX_REGISTERED);
+        assert_eq!(reg.front().unwrap().0, "c3");
+        insert(&mut reg, "c3", SkyImage { w: 1, h: 1, px: vec![[0.0; 4]] });
+        assert_eq!(reg.back().unwrap().0, "c3");
+        register("t-unreg", 1, 1, vec![[0.0; 4]]).unwrap();
+        unregister("t-unreg");
+        assert!(!is_registered("t-unreg"));
     }
 
     #[test]
@@ -475,5 +512,32 @@ mod tests {
         let mut a = scene();
         apply(&mut a, W, H, &s);
         assert!(a[2 * W + 32][0] > 0.95 && (a[44 * W + 32][0] - 0.4).abs() < 0.02);
+    }
+}
+
+#[cfg(test)]
+mod file_tests {
+    use super::*;
+
+    #[test]
+    fn a_path_id_loads_itself_and_renders() {
+        let dir = std::env::temp_dir().join(format!("sky-file-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("flat.png");
+        let mut img = photocraft_codecs::Image::new(8, 8, photocraft_codecs::ChannelLayout::Rgba, photocraft_codecs::SampleType::U8).unwrap();
+        for p in img.data_mut().chunks_exact_mut(4) {
+            p.copy_from_slice(&[255, 0, 0, 255]);
+        }
+        std::fs::write(&file, photocraft_codecs::encode(&img, photocraft_codecs::Format::Png, &Default::default()).unwrap()).unwrap();
+        let id = file.to_string_lossy().to_string();
+        assert!(!is_registered(&id));
+        let cov = vec![1.0f32; 16 * 16];
+        let s = SkyReplace { source: id.clone(), mask: Some(MaskShape::raster(16, 16, &cov)), amount: 100.0, ..SkyReplace::default() };
+        let mut a = vec![[0.0, 0.0, 1.0, 1.0]; 16 * 16];
+        apply(&mut a, 16, 16, &s);
+        assert!(is_registered(&id));
+        assert!(a[100][0] > 0.95 && a[100][2] < 0.05, "{:?}", a[100]);
+        assert!(load_file("relative.png").is_err());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
