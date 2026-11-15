@@ -7,6 +7,7 @@ fn stroke(kind: &str) -> RetouchStroke {
         feather: 50.0,
         opacity: 100.0,
         source: if ["clone", "heal"].contains(&kind) { Some([0.2, 0.2]) } else { None },
+        patch: None,
     }
 }
 #[test]

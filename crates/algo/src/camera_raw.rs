@@ -115,7 +115,7 @@ pub mod sky;
 pub use finishing::{Glow, GlowStyle, PointColor};
 pub use masks::{LocalAdjust, LocalMask, MAX_MASKS, MAX_PARTS, MAX_RASTER_SIDE, MaskOp, MaskPart, MaskShape};
 pub use red_eye::RedEyeCorrection;
-pub use retouch::RetouchStroke;
+pub use retouch::{RetouchPatch, RetouchStroke};
 pub use sky::SkyReplace;
 
 /// Camera Raw settings in Adobe Camera Raw's slider units.

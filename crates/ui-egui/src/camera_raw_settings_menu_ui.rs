@@ -547,6 +547,7 @@ mod tests {
             feather: 50.0,
             opacity: 100.0,
             source: Some([0.2, 0.3]),
+            patch: None,
         });
         let text = serde_json::to_string(&crate::raw_recipe::to_json(&p)).unwrap();
         assert_eq!(paste(&original, &original, &text).unwrap(), p);
