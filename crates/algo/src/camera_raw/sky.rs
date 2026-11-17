@@ -469,7 +469,8 @@ fn adjust_sky(laid: &mut Vec<[f32; 3]>, matte: &[f32], s: &SkyReplace, w: usize,
 }
 
 /// The new sky reflected in the water: for each column the water is mirrored about its shoreline (where the water starts), and
-/// what the mirror sees of the sky is changed from the old sky to the new one. The water's own ripples and colour stay.
+/// what the mirror sees of the sky is changed from the old sky to the new one. The change is a ratio (new sky over old sky, both
+/// as the mirror sees them): water reflects only part of the light and has its own colour and ripples, and all of that stays.
 fn reflect(px: &mut [[f32; 4]], original: &[[f32; 3]], laid: &[[f32; 3]], matte: &[f32], water: &[f32], s: &SkyReplace, w: usize, h: usize) {
     let strength = s.reflection / 100.0 * s.amount / 100.0 * 0.85;
     let mut shore: Vec<f32> = (0..w).map(|x| (0..h).find(|&y| water[y * w + x] > 0.5).map(|y| y as f32).unwrap_or(f32::NAN)).collect();
@@ -497,16 +498,17 @@ fn reflect(px: &mut [[f32; 4]], original: &[[f32; 3]], laid: &[[f32; 3]], matte:
             }
             let new = sample3(laid, w, h, x as f32, ym);
             let old = sample3(original, w, h, x as f32, ym);
-            *d = std::array::from_fn(|k| (new[k] - old[k]) * sky_there);
+            *d = std::array::from_fn(|k| (((new[k].max(0.0) + 0.02) / (old[k].max(0.0) + 0.02)).clamp(0.2, 5.0) - 1.0) * sky_there);
         }
     });
-    let sigma = (0.002 + s.water_blur / 100.0 * 0.02) * w.max(h) as f32;
+    // Even calm water breaks a reflection up a little; Water Blur is for rippled water.
+    let sigma = (0.004 + s.water_blur / 100.0 * 0.02) * w.max(h) as f32;
     let delta = if sigma >= 0.3 { gauss3(&delta, w, h, sigma) } else { delta };
     for (i, q) in px.iter_mut().enumerate() {
         let f = water[i] * strength;
         if f > 0.0 {
             for k in 0..3 {
-                q[k] += delta[i][k] * f;
+                q[k] *= 1.0 + delta[i][k] * f;
             }
         }
     }
