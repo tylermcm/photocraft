@@ -48,6 +48,7 @@ mod cameras;
 mod color;
 mod cr2;
 mod cr3;
+pub mod denoised;
 mod demosaic;
 mod develop;
 mod dng;
@@ -247,7 +248,21 @@ pub fn is_raw(bytes: &[u8]) -> bool {
 }
 
 /// Reads the undeveloped sensor data and metadata.
+///
+/// A file carrying AI-denoised samples (see [`denoised`]) decodes as its original raw with the
+/// denoised region blended in.
 pub fn decode(bytes: &[u8], limits: &Limits) -> Result<Sensor, RawError> {
+    match denoised::trailer(bytes) {
+        Some(t) => {
+            let mut sensor = decode_original(denoised::original(bytes), limits)?;
+            denoised::apply_trailer(&mut sensor, &t);
+            Ok(sensor)
+        }
+        None => decode_original(bytes, limits),
+    }
+}
+
+fn decode_original(bytes: &[u8], limits: &Limits) -> Result<Sensor, RawError> {
     let format = identify(bytes).ok_or(RawError::NotRaw)?;
     match format {
         RawFormat::Cr3 => Err(RawError::unsupported("Canon CR3 (ISO BMFF / CRX) is not decoded yet")),
