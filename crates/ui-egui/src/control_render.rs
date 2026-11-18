@@ -88,6 +88,16 @@ fn develop(
     ctx: &photocraft_engine::jobs::JobCtx,
 ) -> photocraft_engine::Result<photocraft_doc::Document> {
     let (name, bytes) = read(source).map_err(EngineError::Other)?;
+    // AI Denoise's companion file (photocraft_raw::denoised): the original raw it names, read through the same root, with the
+    // denoised samples appended in memory as the decoder reads them.
+    let (name, bytes) = match photocraft_io::raw::denoised::companion(&bytes).map_err(|e| EngineError::Other(format!("{source}: {e}")))? {
+        Some(c) => {
+            let original = photocraft_io::raw::denoised::resolve_original(source, &c.original);
+            let (name, raw) = read(&original).map_err(EngineError::Other)?;
+            (name, photocraft_io::raw::denoised::expand(&raw, &c.trailer))
+        }
+        None => (name, bytes),
+    };
     if !photocraft_io::raw::is_raw(&bytes) {
         return Err(EngineError::Other(format!("{source}: a RAW Develop recipe applies to raw photos only")));
     }

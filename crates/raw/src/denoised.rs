@@ -1,4 +1,5 @@
-//! AI-denoised raw files: the original raw file with denoised sensor data appended.
+//! AI-denoised raw files: the original raw file with denoised sensor data appended, or a small companion
+//! file beside the raw that holds only the denoised data (see [`companion`] and [`expand`]).
 //!
 //! A denoiser outside PhotoCraft (Image Triage's AI Denoise) reads the sensor through
 //! [`denoise_input`], denoises the CFA samples and appends them to a copy of the original file as a
@@ -163,11 +164,7 @@ pub fn denoise_input(s: &Sensor) -> Result<DenoiseInput, String> {
     let r = s.crop;
     let cfa = s.cfa.as_ref().expect("checked: Bayer");
     let pattern: String = cfa.phase(r.x, r.y).iter().map(|c| ['R', 'G', 'B'][usize::from(*c).min(2)]).collect();
-    let neutral = s
-        .color
-        .xy_to_neutral([0.3127, 0.3290])
-        .or_else(|| s.camera_wb.map(|m| m.map(|v| 1.0 / v)))
-        .unwrap_or([1.0, 1.0, 1.0]);
+    let neutral = s.color.xy_to_neutral([0.3127, 0.3290]).or_else(|| s.camera_wb.map(|m| m.map(|v| 1.0 / v))).unwrap_or([1.0, 1.0, 1.0]);
     let g = neutral[1].max(1e-9);
     let daylight_multipliers = neutral.map(|n| (g / n.max(1e-9)) as f32);
     let mut samples = Vec::with_capacity(r.width * r.height);
@@ -179,6 +176,208 @@ pub fn denoise_input(s: &Sensor) -> Result<DenoiseInput, String> {
         }
     }
     Ok(DenoiseInput { region: r, pattern, daylight_multipliers, samples })
+}
+
+// ---- the companion file -------------------------------------------------------------------------------------------------
+//
+// The denoised samples kept beside a raw instead of in a copy of it, as Camera Raw keeps its AI results in a `.acr` file beside
+// the photo: a host passes the companion where it would pass the raw, and the reader of the file (PhotoCraft's `app.render`, a
+// preview worker) reads the original raw it names and decodes the two together ([`expand`]). Nothing else changes: the decoder
+// sees the original raw with the trailer above, built in memory.
+//
+// The samples are kept on a square-root scale (how sensor noise grows with the signal), quantised to `bits`, split into the four
+// CFA planes of the region, predicted from their neighbours in the plane (the median edge detector of lossless JPEG) and the
+// differences zlib-compressed: about 22 MB for a 45 MP sensor at 10 bits, against 91 MB as half floats beside a copy of the raw.
+//
+// ```text
+// magic          b"PCDNCMP1"
+// version        u32 = 1
+// amount         f32, 0 … 100, at byte 12 (a host changes it in place)
+// x, y, w, h     u32: the region (even width and height, starting on the 2×2 pattern's first sample)
+// sensor w, h    u32
+// bits           u32, 8 … 14
+// original       u32 length, then UTF-8: the raw's path relative to the companion's folder, `/`-separated
+// residuals      u64 length, then zlib: one i8 per sample, plane by plane ((0,0), (0,1), (1,0), (1,1)), row-major;
+//                -128 means "the next escape"
+// escapes        u64 length, then zlib: i16 little-endian, in order
+// ```
+
+pub const COMPANION_MAGIC: &[u8; 8] = b"PCDNCMP1";
+/// Where a companion's amount (f32) is, from the start of the file.
+pub const COMPANION_AMOUNT_AT: usize = 12;
+const ESCAPE: i8 = -128;
+
+/// A companion file: the original raw it belongs to and the denoised samples.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Companion {
+    /// The original raw's path, relative to the companion's folder.
+    pub original: String,
+    pub trailer: Trailer,
+}
+
+/// `true` when `bytes` are a companion file (whether or not it is well-formed).
+pub fn is_companion(bytes: &[u8]) -> bool {
+    bytes.starts_with(COMPANION_MAGIC)
+}
+
+fn inflate(data: &[u8], limit: usize) -> Result<Vec<u8>, String> {
+    use std::io::Read;
+    let mut out = Vec::new();
+    flate2::read::ZlibDecoder::new(data).take(limit as u64 + 1).read_to_end(&mut out).map_err(|e| format!("the denoise companion is damaged ({e})"))?;
+    if out.len() > limit {
+        return Err("the denoise companion is damaged (too much data)".into());
+    }
+    Ok(out)
+}
+
+fn median_prediction(left: i32, up: i32, up_left: i32) -> i32 {
+    let (hi, lo) = (left.max(up), left.min(up));
+    if up_left >= hi {
+        lo
+    } else if up_left <= lo {
+        hi
+    } else {
+        left + up - up_left
+    }
+}
+
+fn section<'a>(bytes: &'a [u8], at: &mut usize) -> Option<&'a [u8]> {
+    let len = usize::try_from(u64::from_le_bytes(bytes.get(*at..*at + 8)?.try_into().ok()?)).ok()?;
+    let end = at.checked_add(8)?.checked_add(len)?;
+    let data = bytes.get(*at + 8..end)?;
+    *at = end;
+    Some(data)
+}
+
+/// The companion in `bytes`; `Ok(None)` when they are not one, `Err` when they are one but cannot be read.
+pub fn companion(bytes: &[u8]) -> Result<Option<Companion>, String> {
+    if !is_companion(bytes) {
+        return Ok(None);
+    }
+    let bad = || "the denoise companion is damaged".to_string();
+    let u = |at: usize| u32_at(bytes, at).map(|v| v as usize).ok_or_else(bad);
+    if u(8)? != 1 {
+        return Err("the denoise companion was written by a newer version".into());
+    }
+    let amount = f32::from_le_bytes(bytes.get(12..16).ok_or_else(bad)?.try_into().map_err(|_| bad())?);
+    let region = Rect::new(u(16)?, u(20)?, u(24)?, u(28)?);
+    let (sensor_width, sensor_height, bits) = (u(32)?, u(36)?, u(40)?);
+    let name_len = u(44)?;
+    if !(8..=14).contains(&bits) || name_len > 4096 || !amount.is_finite() {
+        return Err(bad());
+    }
+    let (w, h) = (region.width, region.height);
+    let count = w.checked_mul(h).filter(|n| *n > 0 && *n <= 200_000_000 && w % 2 == 0 && h % 2 == 0).ok_or_else(bad)?;
+    let mut at = 48;
+    let original = std::str::from_utf8(bytes.get(at..at + name_len).ok_or_else(bad)?).map_err(|_| bad())?.to_string();
+    at += name_len;
+    let residuals = inflate(section(bytes, &mut at).ok_or_else(bad)?, count)?;
+    let escapes = inflate(section(bytes, &mut at).ok_or_else(bad)?, count * 2)?;
+    if residuals.len() != count || escapes.len() % 2 != 0 {
+        return Err(bad());
+    }
+    let mut escapes = escapes.chunks_exact(2).map(|c| i32::from(i16::from_le_bytes([c[0], c[1]])));
+    let top = ((1u32 << bits) - 1) as f32;
+    let (pw, ph) = (w / 2, h / 2);
+    let mut samples = vec![0f32; count];
+    let mut codes = vec![0i32; pw * ph];
+    let mut next = 0;
+    for (sy, sx) in [(0, 0), (0, 1), (1, 0), (1, 1)] {
+        for py in 0..ph {
+            for px in 0..pw {
+                let left = if px > 0 { codes[py * pw + px - 1] } else { 0 };
+                let up = if py > 0 { codes[(py - 1) * pw + px] } else { 0 };
+                let up_left = if px > 0 && py > 0 { codes[(py - 1) * pw + px - 1] } else { 0 };
+                let r = residuals[next] as i8;
+                next += 1;
+                let r = if r == ESCAPE { escapes.next().ok_or_else(bad)? } else { i32::from(r) };
+                let code = median_prediction(left, up, up_left) + r;
+                codes[py * pw + px] = code;
+                let v = code as f32 / top;
+                samples[(2 * py + sy) * w + 2 * px + sx] = v * v;
+            }
+        }
+    }
+    Ok(Some(Companion { original, trailer: Trailer { amount: amount.clamp(0.0, 100.0), region, sensor_width, sensor_height, samples } }))
+}
+
+/// The original raw's path for a companion at `companion_path`: its relative `original` taken from the companion's folder.
+/// Both kinds of separator are accepted; the result uses `/`.
+pub fn resolve_original(companion_path: &str, original: &str) -> String {
+    let mut parts: Vec<&str> = companion_path.split(['/', '\\']).collect();
+    parts.pop();
+    for part in original.split(['/', '\\']) {
+        match part {
+            "" | "." => {}
+            ".." if parts.last().is_some_and(|p| !p.is_empty() && *p != ".." && !p.ends_with(':')) => {
+                parts.pop();
+            }
+            other => parts.push(other),
+        }
+    }
+    parts.join("/")
+}
+
+/// The original raw's bytes with `t` appended: what [`crate::decode`] reads as the denoised photo.
+pub fn expand(original: &[u8], t: &Trailer) -> Vec<u8> {
+    let trailer = encode_trailer(t);
+    let mut out = Vec::with_capacity(original.len() + trailer.len());
+    out.extend_from_slice(original);
+    out.extend_from_slice(&trailer);
+    out
+}
+
+/// A companion of `t` for the raw at `original` (relative to the companion's folder), at `bits` (tests and other hosts).
+pub fn encode_companion(original: &str, t: &Trailer, bits: u32) -> Vec<u8> {
+    use std::io::Write;
+    let (w, h) = (t.region.width, t.region.height);
+    let top = ((1u32 << bits) - 1) as f32;
+    let code = |v: f32| (v.clamp(0.0, 1.0).sqrt() * top).round() as i32;
+    let (pw, ph) = (w / 2, h / 2);
+    let mut residuals = Vec::with_capacity(w * h);
+    let mut escapes = Vec::new();
+    let mut codes = vec![0i32; pw * ph];
+    for (sy, sx) in [(0, 0), (0, 1), (1, 0), (1, 1)] {
+        for py in 0..ph {
+            for px in 0..pw {
+                codes[py * pw + px] = code(t.samples[(2 * py + sy) * w + 2 * px + sx]);
+            }
+        }
+        for py in 0..ph {
+            for px in 0..pw {
+                let left = if px > 0 { codes[py * pw + px - 1] } else { 0 };
+                let up = if py > 0 { codes[(py - 1) * pw + px] } else { 0 };
+                let up_left = if px > 0 && py > 0 { codes[(py - 1) * pw + px - 1] } else { 0 };
+                let r = codes[py * pw + px] - median_prediction(left, up, up_left);
+                if (-127..=127).contains(&r) {
+                    residuals.push(r as i8 as u8);
+                } else {
+                    residuals.push(ESCAPE as u8);
+                    escapes.extend_from_slice(&(r as i16).to_le_bytes());
+                }
+            }
+        }
+    }
+    let zip = |data: &[u8]| {
+        let mut e = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::new(6));
+        e.write_all(data).expect("writing to memory");
+        e.finish().expect("writing to memory")
+    };
+    let mut out = Vec::new();
+    out.extend_from_slice(COMPANION_MAGIC);
+    out.extend_from_slice(&1u32.to_le_bytes());
+    out.extend_from_slice(&t.amount.to_le_bytes());
+    for v in [t.region.x, t.region.y, w, h, t.sensor_width, t.sensor_height] {
+        out.extend_from_slice(&(v as u32).to_le_bytes());
+    }
+    out.extend_from_slice(&bits.to_le_bytes());
+    out.extend_from_slice(&(original.len() as u32).to_le_bytes());
+    out.extend_from_slice(original.as_bytes());
+    for part in [zip(&residuals), zip(&escapes)] {
+        out.extend_from_slice(&(part.len() as u64).to_le_bytes());
+        out.extend_from_slice(&part);
+    }
+    out
 }
 
 /// IEEE 754 half to single precision.
@@ -335,5 +534,53 @@ mod tests {
         s.cfa = None;
         s.samples = 1;
         assert!(denoise_input(&s).is_err());
+    }
+
+    fn smooth_trailer(amount: f32) -> Trailer {
+        let (w, h) = (64usize, 48usize);
+        let samples = (0..w * h)
+            .map(|i| {
+                let (x, y) = ((i % w) as f32, (i / w) as f32);
+                (0.02 + 0.5 * (x / w as f32) * (y / h as f32) + if i % 2 == 0 { 0.05 } else { 0.0 }).min(1.0)
+            })
+            .collect();
+        Trailer { amount, region: Rect::new(2, 2, w, h), sensor_width: 80, sensor_height: 60, samples }
+    }
+
+    #[test]
+    fn a_companion_round_trips_within_its_precision_and_finds_its_raw() {
+        let t = smooth_trailer(65.0);
+        let bytes = encode_companion("../../IMG_1.NEF", &t, 10);
+        assert!(is_companion(&bytes) && bytes.len() < t.samples.len());
+        let c = companion(&bytes).unwrap().unwrap();
+        assert_eq!((c.original.as_str(), c.trailer.amount, c.trailer.region), ("../../IMG_1.NEF", 65.0, t.region));
+        let worst = c.trailer.samples.iter().zip(&t.samples).map(|(a, b)| (a - b).abs()).fold(0.0, f32::max);
+        assert!(worst < 1e-3, "worst error {worst}");
+        // the amount sits at a fixed place, so a host can change it in place
+        let mut moved = bytes.clone();
+        moved[COMPANION_AMOUNT_AT..COMPANION_AMOUNT_AT + 4].copy_from_slice(&30f32.to_le_bytes());
+        assert_eq!(companion(&moved).unwrap().unwrap().trailer.amount, 30.0);
+        assert_eq!(resolve_original("K:\\Photos\\.image_triage_edits\\denoised\\IMG_1.denoise", &c.original), "K:/Photos/IMG_1.NEF");
+        assert_eq!(resolve_original(".image_triage_edits/denoised/IMG_1.denoise", &c.original), "IMG_1.NEF");
+    }
+
+    #[test]
+    fn an_expanded_companion_decodes_like_the_appended_trailer() {
+        let t = smooth_trailer(100.0);
+        let c = companion(&encode_companion("x.NEF", &t, 12)).unwrap().unwrap();
+        let raw = b"original raw bytes".to_vec();
+        let expanded = expand(&raw, &c.trailer);
+        assert_eq!(original(&expanded), &raw[..]);
+        assert_eq!(trailer(&expanded).unwrap().region, t.region);
+    }
+
+    #[test]
+    fn a_damaged_companion_is_refused_and_other_files_are_not_companions() {
+        let bytes = encode_companion("x.NEF", &smooth_trailer(50.0), 10);
+        assert!(companion(b"II*\0 a tiff").unwrap().is_none());
+        assert!(companion(&bytes[..bytes.len() - 10]).is_err());
+        let mut newer = bytes.clone();
+        newer[8] = 2;
+        assert!(companion(&newer).unwrap_err().contains("newer"));
     }
 }
