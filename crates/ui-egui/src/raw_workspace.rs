@@ -192,11 +192,11 @@ impl OpenSpec {
                 Some(_) => Err(format!("cameraRaw.{name} must be a nonempty string")),
             }
         };
-        let recipe = match object.get("recipe") {
-            None | Some(Value::Null) => None,
-            Some(recipe) => Some(raw_recipe::from_json(recipe)?),
+        let (recipe, extra) = match object.get("recipe") {
+            None | Some(Value::Null) => (None, serde_json::Map::new()),
+            Some(recipe) => (Some(raw_recipe::from_json(recipe)?), raw_recipe::unknown_settings(recipe)),
         };
-        let targets = Targets { recipe: text("recipePath")?, display: text("displayPath")?, manifest: None };
+        let targets = Targets { recipe: text("recipePath")?, display: text("displayPath")?, manifest: None, extra };
         if targets.recipe.as_ref().is_some_and(|p| !p.to_ascii_lowercase().ends_with(".json")) {
             return Err("cameraRaw.recipePath must be a .json file".into());
         }
@@ -855,7 +855,7 @@ mod tests {
 
     fn spec(recipe: Option<f32>) -> OpenSpec {
         let mut spec = OpenSpec {
-            targets: Targets { recipe: Some("IMG.dng.cameraraw.json".into()), display: Some("IMG.dng.photocraft.display.jpg".into()), manifest: None },
+            targets: Targets { recipe: Some("IMG.dng.cameraraw.json".into()), display: Some("IMG.dng.photocraft.display.jpg".into()), manifest: None, ..Default::default() },
             ..Default::default()
         };
         if let Some(exposure) = recipe {
@@ -931,6 +931,33 @@ mod tests {
             std::thread::sleep(std::time::Duration::from_millis(20));
         }
         assert!(written(&writes, &display).is_some_and(|b| b.starts_with(&[0xFF, 0xD8])), "render written");
+    }
+
+    #[test]
+    fn done_keeps_the_hosts_own_settings_in_the_recipe() {
+        // Image Triage keeps its crop and AI Denoise in the recipe beside the Camera Raw settings; leaving the photo here
+        // after an edit must write them back as they were, or the photo silently loses them.
+        let (mut app, writes) = host_app(vec![("IMG.dng", synthetic_raw())]);
+        let ctx = egui::Context::default();
+        let host_crop = json!({"x": 0.1, "y": 0.0, "w": 0.8, "h": 1.0, "angle": 2.5, "vertical": -20.0, "upright": "guided",
+                               "guides": [[0.1, 0.1, 0.12, 0.9]]});
+        let denoise = json!({"enabled": true, "amount": 60});
+        let opened = OpenSpec::parse(&json!({
+            "recipe": {"version": 1, "cameraRaw": {"exposure": 1.0, "hostCrop": host_crop, "aiDenoise": denoise, "calibHue": [5.0, 0.0, 0.0]}},
+            "recipePath": "IMG.dng.cameraraw.json", "displayPath": "IMG.dng.photocraft.display.jpg",
+        }))
+        .unwrap();
+        assert_eq!(opened.targets.extra.keys().collect::<Vec<_>>(), ["aiDenoise", "hostCrop"], "a version 1 name is a known setting");
+        open_in_camera_raw(&mut app, &ctx, opened);
+        adjust(&mut app, &ctx, 2.0);
+        let state = control(&mut app, &ctx, &json!({"done": true})).unwrap();
+        let recipe: Value = serde_json::from_slice(&written(&writes, "IMG.dng.cameraraw.json").expect("recipe written")).unwrap();
+        assert_eq!(recipe["cameraRaw"]["exposure"], 2.0);
+        assert_eq!(recipe["cameraRaw"]["hostCrop"], host_crop);
+        assert_eq!(recipe["cameraRaw"]["aiDenoise"], denoise);
+        assert_eq!(recipe["cameraRaw"]["calibHue"], json!([5.0, 0.0, 0.0]));
+        assert_eq!(recipe["identity"], false);
+        assert_eq!(state["result"]["recipe"], recipe, "the recipe the host is told about is the one written");
     }
 
     #[test]
@@ -1411,7 +1438,7 @@ mod tests {
     fn open_photo(app: &mut PhotocraftApp, ctx: &egui::Context, path: &str) {
         use photocraft_engine::jobs::Started;
         let mut spec = spec(None);
-        spec.targets = Targets { recipe: Some(format!("{path}.cameraraw.json")), display: Some(format!("{path}.photocraft.display.jpg")), manifest: None };
+        spec.targets = Targets { recipe: Some(format!("{path}.cameraraw.json")), display: Some(format!("{path}.photocraft.display.jpg")), manifest: None, ..Default::default() };
         let started = crate::control_files::open_with_camera_raw(app, path, true, Some(spec)).unwrap();
         let Started::Job(job) = started else { panic!("expected a background open") };
         app.session.wait_job(job).unwrap();
@@ -1439,7 +1466,7 @@ mod tests {
 
         // The host asks for the next photo while the first one's dialog is up.
         let mut spec = spec(None);
-        spec.targets = Targets { recipe: Some("B.dng.cameraraw.json".into()), display: None, manifest: None };
+        spec.targets = Targets { recipe: Some("B.dng.cameraraw.json".into()), display: None, manifest: None, ..Default::default() };
         let started = crate::control_files::open_with_camera_raw(&mut app, "B.dng", true, Some(spec)).unwrap();
         let Started::Job(job) = started else { panic!("expected a background open") };
         let dialog = app.camera_raw.as_ref().expect("the dialog did not close");
@@ -1460,7 +1487,7 @@ mod tests {
         PhotocraftApp::setup_context(&ctx, crate::theme::ThemeKind::Pro);
         open_photo(&mut app, &ctx, "A.dng");
         let mut spec = spec(None);
-        spec.targets = Targets { recipe: Some("B.dng.cameraraw.json".into()), display: None, manifest: None };
+        spec.targets = Targets { recipe: Some("B.dng.cameraraw.json".into()), display: None, manifest: None, ..Default::default() };
         let started = crate::control_files::open_with_camera_raw(&mut app, "B.dng", true, Some(spec)).unwrap();
         let Started::Job(job) = started else { panic!("expected a background open") };
         app.session.wait_job(job).unwrap();

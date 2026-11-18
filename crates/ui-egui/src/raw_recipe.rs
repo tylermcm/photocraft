@@ -37,11 +37,30 @@ pub struct Targets {
     /// The photo's render manifest: the render is then written under a name of its own and published in it
     /// (see `render_manifest`).
     pub manifest: Option<crate::render_manifest::Request>,
+    /// The recipe's settings this build does not know (a host's own, such as Image Triage's crop and AI Denoise): written back
+    /// unchanged with every recipe, so leaving a photo here never loses them (see [`unknown_settings`]).
+    pub extra: serde_json::Map<String, Value>,
 }
 
-fn recipe_bytes(params: &CameraRaw) -> Result<Vec<u8>, String> {
-    serde_json::to_vec_pretty(&to_json(params)).map_err(|e| e.to_string())
+fn recipe_bytes(params: &CameraRaw, extra: &serde_json::Map<String, Value>) -> Result<Vec<u8>, String> {
+    serde_json::to_vec_pretty(&to_json_with(params, extra)).map_err(|e| e.to_string())
 }
+
+/// The settings in a recipe's content (`{"version", "cameraRaw": {...}}`) that are not Camera Raw settings of this build: a
+/// host keeps its own beside them (Image Triage's `hostCrop` and `aiDenoise`). [`from_json`] ignores them, so whoever writes
+/// the recipe again must carry them over ([`Targets::extra`]).
+pub fn unknown_settings(recipe: &Value) -> serde_json::Map<String, Value> {
+    let Some(settings) = recipe.get("cameraRaw").and_then(Value::as_object) else { return serde_json::Map::new() };
+    let known = serde_json::to_value(CameraRaw::default()).unwrap_or(json!({}));
+    settings
+        .iter()
+        .filter(|(key, _)| known.get(key.as_str()).is_none() && !LEGACY_NAMES.iter().any(|(_, legacy)| legacy == key))
+        .map(|(key, value)| (key.clone(), value.clone()))
+        .collect()
+}
+
+/// Settings this boundary writes under their version 1 names (the canonical name first).
+const LEGACY_NAMES: [(&str, &str); 3] = [("shadowTint", "calibShadowTint"), ("calibrationHue", "calibHue"), ("calibrationSat", "calibSat")];
 
 /// The recipe file's content for `params`: only the settings that differ from the defaults.
 ///
@@ -49,17 +68,26 @@ fn recipe_bytes(params: &CameraRaw) -> Result<Vec<u8>, String> {
 /// not on their own), so a host can tell an edited photo from one whose recipe is only the defaults without knowing
 /// the settings' rules. Readers of this version that do not know it ignore it.
 pub fn to_json(params: &CameraRaw) -> Value {
+    to_json_with(params, &serde_json::Map::new())
+}
+
+/// [`to_json`] with `extra` (settings this build does not know, from [`unknown_settings`]) carried over unchanged. With any,
+/// `identity` is false: whether they change the photo is for the host that owns them to say.
+pub fn to_json_with(params: &CameraRaw, extra: &serde_json::Map<String, Value>) -> Value {
     let mut settings = crate::camera_raw_ui::non_defaults(params);
     // Version 1 is the Image Triage contract. Keep its existing keys at this boundary;
     // native CameraRaw serialization and processing use upstream's canonical fields.
     if let Some(fields) = settings.as_object_mut() {
-        for (canonical, legacy) in [("shadowTint", "calibShadowTint"), ("calibrationHue", "calibHue"), ("calibrationSat", "calibSat")] {
+        for (canonical, legacy) in LEGACY_NAMES {
             if let Some(value) = fields.remove(canonical) {
                 fields.insert(legacy.into(), value);
             }
         }
+        for (key, value) in extra {
+            fields.entry(key.clone()).or_insert_with(|| value.clone());
+        }
     }
-    json!({"version": VERSION, "cameraRaw": settings, "identity": params.is_identity()})
+    json!({"version": VERSION, "cameraRaw": settings, "identity": params.is_identity() && extra.is_empty()})
 }
 
 /// The settings in a recipe file's content. Unknown versions, wrong types and out-of-range values are
@@ -172,7 +200,7 @@ pub fn render_display(doc: &Document, params: &CameraRaw, developed: &Developed)
 pub fn write_recipe(app: &PhotocraftApp, targets: &Targets, params: &CameraRaw) -> Result<(), String> {
     let Some(path) = &targets.recipe else { return Ok(()) };
     let write = app.services.background_automation_write.clone().ok_or("background automation write authority is not configured")?;
-    let bytes = recipe_bytes(params)?;
+    let bytes = recipe_bytes(params, &targets.extra)?;
     write(path, &bytes).map_err(|error| format!("could not keep the RAW Develop settings in {path}: {error}"))
 }
 
@@ -190,7 +218,7 @@ fn render_in_background(app: &PhotocraftApp, document: DocId, targets: &Targets,
     let Some(doc) = app.session.documents().iter().find(|st| st.doc.id == document).map(|st| st.doc.clone()) else { return };
     // With a manifest: numbered now, so a save of the photo asked for after this render wins over it whenever either lands, and
     // made against the recipe as written (a render without a recipe written has nothing to be checked against).
-    let published = match (&targets.manifest, &targets.recipe, recipe_bytes(params)) {
+    let published = match (&targets.manifest, &targets.recipe, recipe_bytes(params, &targets.extra)) {
         (Some(request), Some(_), Ok(bytes)) => {
             let generation = crate::render_manifest::generation();
             Some((request.clone(), generation, crate::render_manifest::Made::Recipe { sha256: crate::render_manifest::sha256_hex(&bytes) }))
@@ -348,6 +376,23 @@ mod tests {
     }
 
     #[test]
+    fn settings_this_build_does_not_know_are_carried_over() {
+        let recipe = json!({"version": 1, "cameraRaw": {"exposure": 0.5, "calibSat": [0.0, 3.0, 0.0], "shadowTint": 4.0,
+                                                       "hostCrop": {"w": 0.5}, "aiDenoise": {"enabled": false}}});
+        let extra = unknown_settings(&recipe);
+        assert_eq!(extra.keys().collect::<Vec<_>>(), ["aiDenoise", "hostCrop"]);
+        assert!(unknown_settings(&json!({"version": 1})).is_empty());
+        let params = from_json(&recipe).unwrap();
+        let written = to_json_with(&params, &extra);
+        assert_eq!(written["cameraRaw"]["hostCrop"], json!({"w": 0.5}));
+        assert_eq!(written["cameraRaw"]["aiDenoise"], json!({"enabled": false}));
+        assert_eq!(written["identity"], false, "the host says whether its own settings change the photo");
+        assert_eq!(from_json(&written).unwrap(), params);
+        assert_eq!(unknown_settings(&written), extra, "a second save carries them over again");
+        assert_eq!(to_json_with(&params, &serde_json::Map::new()), to_json(&params));
+    }
+
+    #[test]
     fn persist_writes_the_recipe_and_renders_it() {
         let writes = Arc::new(Mutex::new(Vec::<(String, Vec<u8>)>::new()));
         let recorded = writes.clone();
@@ -363,7 +408,7 @@ mod tests {
         let id = doc.id;
         app.session.add_document(doc, None);
         let params = CameraRaw { exposure: 1.0, ..Default::default() };
-        let targets = Targets { recipe: Some("a.cameraraw.json".into()), display: Some("a.display.jpg".into()), manifest: None };
+        let targets = Targets { recipe: Some("a.cameraraw.json".into()), display: Some("a.display.jpg".into()), manifest: None, ..Default::default() };
         persist(&mut app, id, &targets, &params, &Developed::default()).unwrap();
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(20);
         while writes.lock().unwrap().len() < 2 && std::time::Instant::now() < deadline {
@@ -395,6 +440,7 @@ mod tests {
             recipe: Some("m.cameraraw.json".into()),
             display: Some("m.photocraft.display.jpg".into()),
             manifest: Some(crate::render_manifest::Request { manifest: manifest.clone(), source: Some("1:2".into()) }),
+            ..Default::default()
         };
         persist(&mut app, id, &targets, &CameraRaw { exposure: 1.0, ..Default::default() }, &Developed::default()).unwrap();
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(20);
@@ -429,7 +475,7 @@ mod tests {
         let doc = grey_document(0.25);
         let id = doc.id;
         app.session.add_document(doc, None);
-        let targets = Targets { recipe: None, display: Some("coalesce.display.jpg".into()), manifest: None };
+        let targets = Targets { recipe: None, display: Some("coalesce.display.jpg".into()), manifest: None, ..Default::default() };
         // Both are requested before either can run (the first holds the turn while it renders).
         for exposure in [0.5f32, 2.0] {
             persist(&mut app, id, &targets, &CameraRaw { exposure, ..Default::default() }, &Developed::default()).unwrap();
@@ -463,7 +509,7 @@ mod tests {
         let doc = grey_document(0.5);
         let id = doc.id;
         app.session.add_document(doc, None);
-        let targets = Targets { recipe: Some("a.json".into()), display: Some("a.display.jpg".into()), manifest: None };
+        let targets = Targets { recipe: Some("a.json".into()), display: Some("a.display.jpg".into()), manifest: None, ..Default::default() };
         let error = persist(&mut app, id, &targets, &CameraRaw { exposure: 1.0, ..Default::default() }, &Developed::default()).unwrap_err();
         assert!(error.contains("disk full") && error.contains("a.json"), "{error}");
         std::thread::sleep(std::time::Duration::from_millis(300));
@@ -480,7 +526,7 @@ mod tests {
         persist(
             &mut app,
             id,
-            &Targets { recipe: None, display: Some("blocked-render.display.jpg".into()), manifest: None },
+            &Targets { recipe: None, display: Some("blocked-render.display.jpg".into()), manifest: None, ..Default::default() },
             &CameraRaw::default(),
             &Developed::default(),
         )
@@ -490,7 +536,7 @@ mod tests {
     #[test]
     fn a_recipe_without_write_authority_is_an_error() {
         let app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
-        assert!(write_recipe(&app, &Targets { recipe: Some("a.json".into()), display: None, manifest: None }, &CameraRaw::default()).is_err());
+        assert!(write_recipe(&app, &Targets { recipe: Some("a.json".into()), display: None, manifest: None, ..Default::default() }, &CameraRaw::default()).is_err());
         write_recipe(&app, &Targets::default(), &CameraRaw::default()).unwrap();
     }
 }

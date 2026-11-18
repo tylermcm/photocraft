@@ -488,7 +488,7 @@ fn developed(d: &CameraRawDialog) -> crate::raw_recipe::Developed {
 }
 
 pub(crate) fn recipe(app: &PhotocraftApp) -> Option<Value> {
-    app.camera_raw.as_ref().map(|d| crate::raw_recipe::to_json(&d.params))
+    app.camera_raw.as_ref().map(|d| crate::raw_recipe::to_json_with(&d.params, &d.raw_open.as_ref().map(|raw| raw.targets.extra.clone()).unwrap_or_default()))
 }
 
 pub(crate) fn source(app: &PhotocraftApp) -> Option<&str> {
@@ -516,7 +516,7 @@ pub(crate) fn done(app: &mut PhotocraftApp) -> Result<Value, String> {
     app.ui.camera_raw_menu.previous = Some(params.clone());
     settings_menu::close_view(&mut app.ui);
     app.camera_raw = None;
-    Ok(json!({"open": false, "changed": changed, "recipe": crate::raw_recipe::to_json(&params)}))
+    Ok(json!({"open": false, "changed": changed, "recipe": crate::raw_recipe::to_json_with(&params, &raw.targets.extra)}))
 }
 
 fn slider_default(
