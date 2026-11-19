@@ -436,12 +436,33 @@ fn knot(t: f32, k: &[f32; KNOTS]) -> f32 {
 }
 
 /// Applies Shadows and Highlights (−100 … 100) to straight RGBA pixels encoded with `enc`.
-pub(crate) fn apply(px: &mut [[f32; 4]], w: usize, h: usize, shadows: f32, highlights: f32, enc: Encoding) {
-    let Some(tone) = LocalTone::new(shadows, highlights) else { return };
+pub(crate) fn apply(px: &mut [[f32; 4]], w: usize, h: usize, shadows: f32, highlights: f32, enc: Encoding) -> Option<ToneMap> {
+    let map = tone_map(px, w, h, shadows, highlights, enc)?;
+    apply_map(px, w, &map, (0, 0, w, h), enc);
+    Some(map)
+}
+
+/// Shadows and Highlights measured over a whole photo: the change in log luminance as a linear function of it,
+/// `a · log2 L + b`, on a copy `w × h` (at most [`WORK_SIDE`] across). A photo that small keeps its change itself (`a` 0).
+#[derive(Clone, Debug, PartialEq)]
+pub struct ToneMap {
+    pub a: Vec<f32>,
+    pub b: Vec<f32>,
+    pub w: usize,
+    pub h: usize,
+}
+
+fn log_luma(px: &[[f32; 4]], w: usize, h: usize, enc: Encoding) -> Plane {
+    Plane { w, h, v: px.iter().map(|q| (luma([0, 1, 2].map(|c| enc.decode(q[c]))).max(0.0) + LOG_FLOOR).log2()).collect() }
+}
+
+/// The tone map of `px` (`w × h`, the whole photo); `None` when Shadows and Highlights are both off.
+pub(crate) fn tone_map(px: &[[f32; 4]], w: usize, h: usize, shadows: f32, highlights: f32, enc: Encoding) -> Option<ToneMap> {
+    let tone = LocalTone::new(shadows, highlights)?;
     if w < 2 || h < 2 {
-        return;
+        return None;
     }
-    let u = Plane { w, h, v: px.iter().map(|q| (luma([0, 1, 2].map(|c| enc.decode(q[c]))).max(0.0) + LOG_FLOOR).log2()).collect() };
+    let u = log_luma(px, w, h, enc);
     // The filter on a copy at most WORK_SIDE across (box-averaged in log).
     let f = w.max(h).div_ceil(WORK_SIDE).max(1);
     let small = if f == 1 { Plane { w, h, v: u.v.clone() } } else { shrink(&u, f) };
@@ -449,16 +470,29 @@ pub(crate) fn apply(px: &mut [[f32; 4]], w: usize, h: usize, shadows: f32, highl
     for pass in &tone.passes {
         o = pass.run(&o);
     }
-    // The change in log luminance, at full size.
-    let change: Vec<f32> = if f == 1 {
-        o.v.iter().zip(&u.v).map(|(a, b)| a - b).collect()
-    } else {
-        let d: Vec<f32> = o.v.iter().zip(&small.v).map(|(a, b)| a - b).collect();
-        guided_upsample(&small, &d, &u)
-    };
+    let d: Vec<f32> = o.v.iter().zip(&small.v).map(|(a, b)| a - b).collect();
+    if f == 1 {
+        return Some(ToneMap { a: vec![0.0; w * h], b: d, w, h });
+    }
+    let (a, b) = guided_coefficients(&small, &d);
+    Some(ToneMap { a, b, w: small.w, h: small.h })
+}
+
+/// Shadows and Highlights from `map` on `px` (`w` across), which sits at `(x, y)` in a `full_w × full_h` photo.
+pub(crate) fn apply_map(px: &mut [[f32; 4]], w: usize, map: &ToneMap, (ox, oy, full_w, full_h): (usize, usize, usize, usize), enc: Encoding) {
+    if w == 0 || !px.len().is_multiple_of(w) {
+        return;
+    }
+    let h = px.len() / w;
+    let u = log_luma(px, w, h, enc);
+    let (fx, fy) = (map.w as f32 / full_w as f32, map.h as f32 / full_h as f32);
     par_rows(px, w, 1, |y, row| {
+        let sy = ((y + oy) as f32 + 0.5) * fy - 0.5;
         for (x, q) in row.iter_mut().enumerate() {
-            let gain = change[y * w + x].exp2();
+            let sx = ((x + ox) as f32 + 0.5) * fx - 0.5;
+            let av = crate::photo_util::bilinear(&map.a, map.w, map.h, 1, 0, sx, sy);
+            let bv = crate::photo_util::bilinear(&map.b, map.w, map.h, 1, 0, sx, sy);
+            let gain = (av * u.v[y * w + x] + bv).exp2();
             for c in 0..3 {
                 q[c] = enc.encode(enc.decode(q[c]) * gain);
             }
@@ -486,10 +520,10 @@ fn shrink(u: &Plane, f: usize) -> Plane {
     Plane { w: sw, h: sh, v }
 }
 
-/// The change `d` computed on `small` brought to the size of `full`, following its edges: a local
-/// linear model of the change against the log luminance (the guided filter of K. He, J. Sun,
-/// *Fast Guided Filter*, 2015), fitted on the small copy and evaluated on the full one.
-fn guided_upsample(small: &Plane, d: &[f32], full: &Plane) -> Vec<f32> {
+/// The change `d` computed on `small` as a local linear model of the change against the log
+/// luminance (the guided filter of K. He, J. Sun, *Fast Guided Filter*, 2015): its coefficients,
+/// fitted on the small copy, to be evaluated on the full one ([`apply_map`]).
+fn guided_coefficients(small: &Plane, d: &[f32]) -> (Vec<f32>, Vec<f32>) {
     let (sw, sh) = (small.w, small.h);
     let r = 2;
     let eps = 0.01;
@@ -499,19 +533,7 @@ fn guided_upsample(small: &Plane, d: &[f32], full: &Plane) -> Vec<f32> {
     let (mu, md, mud, muu) = (mean(&small.v), mean(d), mean(&ud), mean(&uu));
     let a: Vec<f32> = (0..sw * sh).map(|i| (mud[i] - mu[i] * md[i]) / (muu[i] - mu[i] * mu[i] + eps)).collect();
     let b: Vec<f32> = (0..sw * sh).map(|i| md[i] - a[i] * mu[i]).collect();
-    let (ma, mb) = (mean(&a), mean(&b));
-    let (fx, fy) = (sw as f32 / full.w as f32, sh as f32 / full.h as f32);
-    let mut out = vec![0.0f32; full.w * full.h];
-    par_rows(&mut out, full.w, 1, |y, row| {
-        let sy = (y as f32 + 0.5) * fy - 0.5;
-        for (x, o) in row.iter_mut().enumerate() {
-            let sx = (x as f32 + 0.5) * fx - 0.5;
-            let av = crate::photo_util::bilinear(&ma, sw, sh, 1, 0, sx, sy);
-            let bv = crate::photo_util::bilinear(&mb, sw, sh, 1, 0, sx, sy);
-            *o = av * full.v[y * full.w + x] + bv;
-        }
-    });
-    out
+    (mean(&a), mean(&b))
 }
 
 #[cfg(test)]

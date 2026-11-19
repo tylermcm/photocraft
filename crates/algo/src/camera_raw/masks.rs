@@ -127,7 +127,7 @@ impl LocalAdjust {
     }
 
     /// The global settings that do exactly this adjustment, at `base`'s scale and encoding.
-    fn on(&self, base: &CameraRaw) -> CameraRaw {
+    pub(crate) fn on(&self, base: &CameraRaw) -> CameraRaw {
         CameraRaw {
             temperature: self.temperature,
             tint: self.tint,
@@ -666,20 +666,31 @@ fn validate_shape(shape: &MaskShape, name: &str) -> Result<(), String> {
 }
 
 /// Applies every active mask's adjustments to `px` (`w x h`), after the global edits.
-pub(super) fn apply(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bool) {
+/// In a window (see [`super::Window`]) each mask covers its place in the whole photo, and its own development uses the
+/// statistics measured for it (`given`, the parent's; [`super::measure`] records them in `rec`).
+pub(super) fn apply(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bool, given: Option<&super::WholeStats>, mut rec: Option<&mut super::WholeStats>) {
     if w == 0 || h == 0 || px.len() != w * h {
         return;
     }
-    for mask in p.masks.iter().filter(|m| m.active()) {
-        let coverage = mask.coverage_fn(w, h);
+    let (ox, oy, fw, fh) = p.frame(w, h);
+    for (i, mask) in p.masks.iter().filter(|m| m.active()).enumerate() {
+        let coverage = mask.coverage_fn(fw, fh);
         let ranged = coverage.needs_pixels();
         let mut local = px.to_vec();
-        super::develop(&mut local, w, h, &mask.adjust.on(p), float);
+        let mut adjust = mask.adjust.on(p);
+        adjust.window = p.window.clone().map(|v| super::Window { stats: given.and_then(|s| s.masks.get(i)).cloned().map(std::sync::Arc::new), ..v });
+        let mine = rec.as_deref_mut().map(|r| {
+            r.masks.push(super::WholeStats::default());
+            let n = r.masks.len() - 1;
+            &mut r.masks[n]
+        });
+        super::develop_with(&mut local, w, h, &adjust, float, mine);
         let strength = mask.amount / 100.0;
         crate::photo_util::par_rows(px, w, 1, |y, row| {
             let source = &local[y * w..(y + 1) * w];
             for (x, (out, adjusted)) in row.iter_mut().zip(source).enumerate() {
-                let k = if ranged { coverage.at_px(x, y, [out[0], out[1], out[2]]) } else { coverage.at(x, y) } * strength;
+                let (fx, fy) = (x + ox, y + oy);
+                let k = if ranged { coverage.at_px(fx, fy, [out[0], out[1], out[2]]) } else { coverage.at(fx, fy) } * strength;
                 if k > 0.0 {
                     for c in 0..3 {
                         out[c] += (adjusted[c] - out[c]) * k;

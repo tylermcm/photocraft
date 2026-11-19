@@ -162,7 +162,7 @@ pub fn denoise_input(s: &Sensor) -> Result<DenoiseInput, String> {
         return Err(why.to_string());
     }
     let r = s.crop;
-    let cfa = s.cfa.as_ref().expect("checked: Bayer");
+    let Some(cfa) = s.cfa.as_ref() else { return Err("the photo is not a Bayer raw".into()) };
     let pattern: String = cfa.phase(r.x, r.y).iter().map(|c| ['R', 'G', 'B'][usize::from(*c).min(2)]).collect();
     let neutral = s.color.xy_to_neutral([0.3127, 0.3290]).or_else(|| s.camera_wb.map(|m| m.map(|v| 1.0 / v))).unwrap_or([1.0, 1.0, 1.0]);
     let g = neutral[1].max(1e-9);
@@ -328,8 +328,7 @@ pub fn expand(original: &[u8], t: &Trailer) -> Vec<u8> {
 }
 
 /// A companion of `t` for the raw at `original` (relative to the companion's folder), at `bits` (tests and other hosts).
-pub fn encode_companion(original: &str, t: &Trailer, bits: u32) -> Vec<u8> {
-    use std::io::Write;
+pub fn encode_companion(original: &str, t: &Trailer, bits: u32) -> std::io::Result<Vec<u8>> {
     let (w, h) = (t.region.width, t.region.height);
     let top = ((1u32 << bits) - 1) as f32;
     let code = |v: f32| (v.clamp(0.0, 1.0).sqrt() * top).round() as i32;
@@ -358,11 +357,6 @@ pub fn encode_companion(original: &str, t: &Trailer, bits: u32) -> Vec<u8> {
             }
         }
     }
-    let zip = |data: &[u8]| {
-        let mut e = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::new(6));
-        e.write_all(data).expect("writing to memory");
-        e.finish().expect("writing to memory")
-    };
     let mut out = Vec::new();
     out.extend_from_slice(COMPANION_MAGIC);
     out.extend_from_slice(&1u32.to_le_bytes());
@@ -373,11 +367,19 @@ pub fn encode_companion(original: &str, t: &Trailer, bits: u32) -> Vec<u8> {
     out.extend_from_slice(&bits.to_le_bytes());
     out.extend_from_slice(&(original.len() as u32).to_le_bytes());
     out.extend_from_slice(original.as_bytes());
-    for part in [zip(&residuals), zip(&escapes)] {
+    for part in [zlib(&residuals)?, zlib(&escapes)?] {
         out.extend_from_slice(&(part.len() as u64).to_le_bytes());
         out.extend_from_slice(&part);
     }
-    out
+    Ok(out)
+}
+
+/// `data` zlib-compressed (level 6), as the companions keep their samples.
+pub(crate) fn zlib(data: &[u8]) -> std::io::Result<Vec<u8>> {
+    use std::io::Write;
+    let mut e = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::new(6));
+    e.write_all(data)?;
+    e.finish()
 }
 
 /// IEEE 754 half to single precision.
@@ -550,7 +552,7 @@ mod tests {
     #[test]
     fn a_companion_round_trips_within_its_precision_and_finds_its_raw() {
         let t = smooth_trailer(65.0);
-        let bytes = encode_companion("../../IMG_1.NEF", &t, 10);
+        let bytes = encode_companion("../../IMG_1.NEF", &t, 10).unwrap();
         assert!(is_companion(&bytes) && bytes.len() < t.samples.len());
         let c = companion(&bytes).unwrap().unwrap();
         assert_eq!((c.original.as_str(), c.trailer.amount, c.trailer.region), ("../../IMG_1.NEF", 65.0, t.region));
@@ -567,7 +569,7 @@ mod tests {
     #[test]
     fn an_expanded_companion_decodes_like_the_appended_trailer() {
         let t = smooth_trailer(100.0);
-        let c = companion(&encode_companion("x.NEF", &t, 12)).unwrap().unwrap();
+        let c = companion(&encode_companion("x.NEF", &t, 12).unwrap()).unwrap().unwrap();
         let raw = b"original raw bytes".to_vec();
         let expanded = expand(&raw, &c.trailer);
         assert_eq!(original(&expanded), &raw[..]);
@@ -576,7 +578,7 @@ mod tests {
 
     #[test]
     fn a_damaged_companion_is_refused_and_other_files_are_not_companions() {
-        let bytes = encode_companion("x.NEF", &smooth_trailer(50.0), 10);
+        let bytes = encode_companion("x.NEF", &smooth_trailer(50.0), 10).unwrap();
         assert!(companion(b"II*\0 a tiff").unwrap().is_none());
         assert!(companion(&bytes[..bytes.len() - 10]).is_err());
         let mut newer = bytes.clone();
