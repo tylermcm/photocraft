@@ -207,6 +207,9 @@ pub struct CameraRaw {
     /// Red, Green and Blue Primary › Saturation: −100 (grey) … 100 (purer).
     #[serde(alias = "calibSat")]
     pub calibration_sat: [f32; 3],
+    /// Where this render sits in a larger photo (see [`Window`]); never written.
+    #[serde(skip)]
+    pub window: Option<Window>,
 }
 
 impl Default for CameraRaw {
@@ -273,8 +276,103 @@ impl Default for CameraRaw {
             shadow_tint: 0.0,
             calibration_hue: [0.0; 3],
             calibration_sat: [0.0; 3],
+            window: None,
         }
     }
+}
+
+/// Where a `w × h` render sits in a larger photo (a region developed at full resolution, as Super Resolution's zoomed view
+/// does): everything that depends on position (vignette, grain, masks, red eye) is placed in the whole photo, and everything
+/// measured over the whole photo (Dehaze's haze, Shadows and Highlights' tone map, Whites and Blacks' points) comes from
+/// `stats` ([`measure`]), so the region is a crop of the whole photo's development. Spatial filters (Clarity, Texture,
+/// Detail, Glow) see only the pixels given: render the region with [`window_margin`] pixels around it and crop. Retouch and
+/// Sky are skipped in a window.
+#[derive(Clone, Debug, PartialEq, Default)]
+pub struct Window {
+    /// The render's top-left corner in the whole photo.
+    pub x: usize,
+    pub y: usize,
+    /// The whole photo's size, at the render's resolution.
+    pub full_w: usize,
+    pub full_h: usize,
+    /// What [`measure`] found on the whole photo (any size of it); `None` measures on the window itself.
+    pub stats: Option<std::sync::Arc<WholeStats>>,
+}
+
+/// What the development measured over the whole photo (see [`measure`]).
+#[derive(Clone, Debug, PartialEq, Default)]
+pub struct WholeStats {
+    /// Whites and Blacks' black and white points.
+    pub points: Option<(f32, f32)>,
+    /// Dehaze's transmission and atmospheric light.
+    pub haze: Option<HazeMap>,
+    /// Shadows and Highlights' tone map.
+    pub tone: Option<local_tone::ToneMap>,
+    /// Each active mask's own development, in order.
+    pub masks: Vec<WholeStats>,
+}
+
+/// Dehaze's transmission on a copy of the photo (`size` cells, `factor` pixels of a `width`-wide frame each) and its
+/// atmospheric light.
+#[derive(Clone, Debug, PartialEq)]
+pub struct HazeMap {
+    pub t: Vec<f32>,
+    pub size: [usize; 2],
+    pub factor: usize,
+    pub width: usize,
+    pub air: [f32; 3],
+}
+
+impl CameraRaw {
+    /// `(x, y, full width, full height)` of a `w × h` render in the whole photo: its window, or the render itself.
+    pub(crate) fn frame(&self, w: usize, h: usize) -> (usize, usize, usize, usize) {
+        match &self.window {
+            Some(v) if v.full_w >= v.x + w && v.full_h >= v.y + h => (v.x, v.y, v.full_w, v.full_h),
+            _ => (0, 0, w, h),
+        }
+    }
+}
+
+/// How many pixels of the whole photo a window must have around it (at `full_w × full_h`) so that its spatial filters see
+/// all they reach.
+pub fn window_margin(p: &CameraRaw, full_w: usize, full_h: usize) -> usize {
+    let ps = p.pixel_scale.clamp(0.01, 1.0);
+    let side = full_w.max(full_h) as f32;
+    let mut m = 0.0f32;
+    if let Some(c) = Clarity::new(p, full_w, full_h) {
+        m += (2 * c.radius + 2 * c.subsample) as f32;
+    }
+    if p.texture != 0.0 {
+        m += 3.0 * (side * 0.002).max(1.5 * ps);
+    }
+    if p.noise_luminance > 0.0 || p.noise_color > 0.0 || p.sharpen_amount > 0.0 {
+        let n = p.noise_luminance.clamp(0.0, 100.0) / 100.0;
+        let lum = 2.0 * ((1.0 + 3.0 * n) * ps).round().max(1.0);
+        let colour = 3.0 * (p.noise_color.clamp(0.0, 100.0) / 100.0 * 6.0 * ps).max(0.3);
+        let sharpen = 3.0 * (p.sharpen_radius.clamp(0.5, 3.0) * ps).max(0.3) + 3.0 * ps.max(0.5) + 1.0;
+        m += lum + colour + sharpen;
+    }
+    if p.glow.amount != 0.0 {
+        m += 3.0 * (side * (0.001 + 0.0003 * p.glow.spread)).max(0.5);
+    }
+    for item in &p.red_eye {
+        let r = crate::redeye::search_radius(item.pupil_size).ceil() + crate::redeye::halo_radius() as f32;
+        m = m.max(r * ps + 2.0);
+    }
+    for mask in p.masks.iter().filter(|k| k.active()) {
+        m = m.max(window_margin(&mask.adjust.on(p), full_w, full_h) as f32);
+    }
+    m.ceil() as usize + 2
+}
+
+/// Develops `px` (the whole photo, any size of it) as [`develop`] does and returns what it measured over it, for windows
+/// of the same photo at any resolution ([`Window::stats`]).
+pub fn measure(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bool) -> WholeStats {
+    let mut stats = WholeStats::default();
+    let mut q = p.clone();
+    q.window = None;
+    develop_with(px, w, h, &q, float, Some(&mut stats));
+    stats
 }
 
 /// Hue band centres of the Color Mixer (degrees).
@@ -741,10 +839,18 @@ pub fn white_balance_gains(temperature: f32, tint: f32) -> [f32; 3] {
 /// Runs the Camera Raw pipeline on straight RGBA pixels (`w × h`, display-encoded RGB).
 /// `float` keeps values above 1 (32-bit documents).
 pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bool) {
+    develop_with(px, w, h, p, float, None);
+}
+
+/// [`develop`], recording in `rec` what it measures over the frame (see [`measure`]).
+pub(crate) fn develop_with(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bool, mut rec: Option<&mut WholeStats>) {
     if px.is_empty() || p.is_identity() {
         return;
     }
     let ps = p.pixel_scale.clamp(0.01, 1.0);
+    let (ox, oy, fw, fh) = p.frame(w, h);
+    let windowed = (ox, oy, fw, fh) != (0, 0, w, h);
+    let given = p.window.as_ref().and_then(|v| v.stats.as_deref());
     // 1. White balance + exposure in linear light.
     if let Some(g) = per_pixel::gains(p) {
         par_rows(px, w, 1, |_, row| {
@@ -772,18 +878,32 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bo
         });
     }
     // 2. Dehaze.
-    if let Some(d) = Dehaze::new(p, w, h) {
-        dehaze(px, w, h, &d);
+    if let Some(map) = given.and_then(|s| s.haze.as_ref()).filter(|_| p.dehaze != 0.0) {
+        apply_haze(px, w, map, (ox, oy, fw), p.dehaze / 100.0);
+    } else if let Some(d) = Dehaze::new(p, w, h) {
+        let map = haze_map(px, w, h, &d);
+        apply_haze(px, w, &map, (0, 0, w), d.amount);
+        if let Some(r) = rec.as_deref_mut() {
+            r.haze = Some(map);
+        }
     }
     // 3. Tone. Highlights and Shadows: a local Laplacian filter (see `local_tone`).
     if p.highlights != 0.0 || p.shadows != 0.0 {
-        local_tone::apply(px, w, h, p.shadows, p.highlights, Encoding::of(p.encoding_gamma));
+        let enc = Encoding::of(p.encoding_gamma);
+        if let Some(map) = given.and_then(|s| s.tone.as_ref()) {
+            local_tone::apply_map(px, w, map, (ox, oy, fw, fh), enc);
+        } else if let Some(map) = local_tone::apply(px, w, h, p.shadows, p.highlights, enc) {
+            if let Some(r) = rec.as_deref_mut() {
+                r.tone = Some(map);
+            }
+        }
     }
     if !p.local_tone_neutral() && [p.contrast, p.texture, p.clarity].iter().any(|v| *v != 0.0) {
         let l: Vec<f32> = px.iter().map(|q| luma([q[0], q[1], q[2]]).max(0.0)).collect();
         let lc: Vec<f32> = l.iter().map(|v| v.min(1.0)).collect();
-        let clarity = Clarity::new(p, w, h);
-        let texture = Texture::new(p, w, h);
+        // Their radii follow the whole photo's size.
+        let clarity = Clarity::new(p, fw, fh);
+        let texture = Texture::new(p, fw, fh);
         let clar = clarity.as_ref().map(|c| guided_fast(&lc, &lc, w, h, c.radius, spatial::CLARITY_EPS));
         let tex = texture.as_ref().map(|t| box_means(&lc, w, h, &t.radii));
         let k_con = p.contrast / 100.0 * 0.6;
@@ -806,7 +926,13 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bo
     // 3b. Whites and Blacks: global curves adapted to the image's black and white points.
     if p.whites != 0.0 || p.blacks != 0.0 {
         let enc = Encoding::of(p.encoding_gamma);
-        let (bp, wp) = luminance_points(px, w, h, enc, |q| q);
+        let (bp, wp) = match given.and_then(|s| s.points) {
+            Some(points) => points,
+            None => luminance_points(px, w, h, enc, |q| q),
+        };
+        if let Some(r) = rec.as_deref_mut() {
+            r.points = Some((bp, wp));
+        }
         let (xw, xb) = whites_blacks::amounts(p.whites.clamp(-100.0, 100.0), p.blacks.clamp(-100.0, 100.0), bp, wp);
         whites_blacks::apply(px, w, xw, xb, enc);
     }
@@ -893,7 +1019,7 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bo
     }
     // 9. Effects.
     if finishing::validate(p).is_ok() {
-        finishing::glow(px, w, h, p);
+        finishing::glow(px, w, h, fw.max(fh), p);
     }
     if p.vignette_amount != 0.0 {
         vignette(px, w, h, p);
@@ -903,7 +1029,7 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bo
         par_rows(px, w, 1, |y, row| {
             for (x, q) in row.iter_mut().enumerate() {
                 // Sample in full-resolution coordinates so previews match the result.
-                let (fx, fy) = (x as f32 * pscale / cell, y as f32 * pscale / cell);
+                let (fx, fy) = ((x + ox) as f32 * pscale / cell, (y + oy) as f32 * pscale / cell);
                 let n = value_noise(fx, fy, seed) * (1.0 - rough) + (value_noise(fx * 2.3, fy * 2.3, seed + 7) - 0.0) * rough;
                 let l = luma([q[0], q[1], q[2]]).clamp(0.0, 1.0);
                 let g = (n - 0.5) * 2.0 * amt * (0.4 + 2.4 * l * (1.0 - l));
@@ -916,18 +1042,19 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bo
     if finishing::validate(p).is_ok() {
         finishing::points(px, &p.point_colors, float);
     }
-    if !p.retouch.is_empty() {
+    // Retouch and Sky look at the whole frame: not in a window.
+    if !p.retouch.is_empty() && !windowed {
         retouch::apply(px, w, h, &p.retouch);
     }
     if !p.red_eye.is_empty() {
-        red_eye::apply(px, w, h, &p.red_eye, p.pixel_scale);
+        red_eye::apply_in(px, w, h, &p.red_eye, p.pixel_scale, (ox, oy, fw, fh));
     }
-    if p.sky.active() {
+    if p.sky.active() && !windowed {
         sky::apply(px, w, h, &p.sky);
     }
     // Local masks come last: they adjust the finished global result.
     if !p.masks.is_empty() && masks::validate(p).is_ok() {
-        masks::apply(px, w, h, p, float);
+        masks::apply(px, w, h, p, float, given, rec.as_deref_mut());
     }
     if !float {
         for q in px.iter_mut() {
@@ -1042,9 +1169,9 @@ fn haze_cells(px: &[[f32; 4]], w: usize, h: usize, d: &Dehaze, map: impl Fn([f32
     bands.into_iter().flatten().collect()
 }
 
-fn dehaze(px: &mut [[f32; 4]], w: usize, h: usize, d: &Dehaze) {
-    // Transmission on a ≤ DEHAZE_SIDE px proxy, upsampled.
-    let (k, [sw, sh], r, amount) = (d.factor, d.size, d.radius, d.amount);
+/// Dehaze's transmission and atmospheric light for `px` (`w × h`), on a ≤ DEHAZE_SIDE px proxy.
+fn haze_map(px: &[[f32; 4]], w: usize, h: usize, d: &Dehaze) -> HazeMap {
+    let (k, [sw, sh], r) = (d.factor, d.size, d.radius);
     let small = haze_cells(px, w, h, d, |q| q);
     // The minimum (or, with `f32::max`, maximum) over each (2r + 1)² window.
     let rank_filter = |v: &[f32], start: f32, pick: fn(f32, f32) -> f32| -> Vec<f32> {
@@ -1092,11 +1219,18 @@ fn dehaze(px: &mut [[f32; 4]], w: usize, h: usize, d: &Dehaze) {
     let t_raw: Vec<f32> = opened.iter().map(|d| 1.0 - weight * d).collect();
     let guide: Vec<f32> = small.iter().map(|c| luma(*c)).collect();
     let t = guided(&guide, &t_raw, sw, sh, d.guide_radius, spatial::DEHAZE_EPS);
-    let ks = k as f32;
+    HazeMap { t, size: [sw, sh], factor: k, width: w, air }
+}
+
+/// Dehaze of `amount` from `map` on `px` (`w` across), which sits at `(x, y)` in a photo `full_w` across.
+fn apply_haze(px: &mut [[f32; 4]], w: usize, map: &HazeMap, (ox, oy, full_w): (usize, usize, usize), amount: f32) {
+    let ([sw, sh], air, t) = (map.size, map.air, &map.t);
+    // The map's cells in this frame's pixels.
+    let ks = map.factor as f32 * (full_w as f32 / map.width as f32);
     par_rows(px, w, 1, |y, row| {
         for (x, q) in row.iter_mut().enumerate() {
-            let tv =
-                crate::photo_util::bilinear(&t, sw, sh, 1, 0, (x as f32 + 0.5) / ks - 0.5, (y as f32 + 0.5) / ks - 0.5).clamp(spatial::DEHAZE_T_FLOOR, 1.0);
+            let (fx, fy) = ((x + ox) as f32, (y + oy) as f32);
+            let tv = crate::photo_util::bilinear(t, sw, sh, 1, 0, (fx + 0.5) / ks - 0.5, (fy + 0.5) / ks - 0.5).clamp(spatial::DEHAZE_T_FLOOR, 1.0);
             for c in 0..3 {
                 let i = q[c];
                 let j = (i - air[c]) / tv + air[c];
@@ -1167,10 +1301,11 @@ fn detail(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, ps: f32) {
 }
 
 fn vignette(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw) {
-    let Vignette { amount: amt, highlights: hl, style, centre: [cx, cy], axes: [ax, ay], power: pw, edges: [edge0, edge1] } = Vignette::new(w, h, p);
+    let (ox, oy, fw, fh) = p.frame(w, h);
+    let Vignette { amount: amt, highlights: hl, style, centre: [cx, cy], axes: [ax, ay], power: pw, edges: [edge0, edge1] } = Vignette::new(fw, fh, p);
     par_rows(px, w, 1, |y, row| {
         for (x, q) in row.iter_mut().enumerate() {
-            let (dx, dy) = (((x as f32 + 0.5 - cx) / ax).abs(), ((y as f32 + 0.5 - cy) / ay).abs());
+            let (dx, dy) = ((((x + ox) as f32 + 0.5 - cx) / ax).abs(), (((y + oy) as f32 + 0.5 - cy) / ay).abs());
             let r = (dx.powf(pw) + dy.powf(pw)).powf(1.0 / pw);
             let m = smoothstep(edge0, edge1, r);
             if m <= 0.0 {
@@ -1229,7 +1364,8 @@ mod tests {
             })
             .collect();
         let d = Dehaze::new(&CameraRaw { dehaze: 100.0, ..Default::default() }, w, h).unwrap();
-        dehaze(&mut px, w, h, &d);
+        let map = haze_map(&px, w, h, &d);
+        apply_haze(&mut px, w, &map, (0, 0, w), d.amount);
         let sky = |xs: std::ops::Range<usize>| {
             let v: Vec<f32> =
                 (150..390).flat_map(|y| xs.clone().map(move |x| (x, y))).map(|(x, y)| luma([px[y * w + x][0], px[y * w + x][1], px[y * w + x][2]])).collect();
@@ -1559,5 +1695,119 @@ mod host_compatibility_tests {
         ] {
             assert!(per_pixel(&p, 2, 2, false, Some((0.0, 1.0))).is_none());
         }
+    }
+}
+
+#[cfg(test)]
+mod window_tests {
+    use super::*;
+    use std::sync::Arc;
+
+    /// A photo with gradients, edges and fine texture.
+    fn photo(w: usize, h: usize) -> Vec<[f32; 4]> {
+        (0..w * h)
+            .map(|i| {
+                let (x, y) = ((i % w) as f32 / w as f32, (i / w) as f32 / h as f32);
+                let n = crate::photo_util::hash01((i % w) as i64, (i / w) as i64, 3) * 0.06;
+                let edge = if (x - 0.55).abs() < 0.12 && y > 0.4 { -0.35 } else { 0.0 };
+                [0.15 + 0.6 * x + n + edge, 0.3 + 0.4 * y + n * 0.5 + edge, 0.7 - 0.5 * x * y + edge, 1.0].map(|v| v.clamp(0.0, 1.0))
+            })
+            .collect()
+    }
+
+    fn crop(px: &[[f32; 4]], w: usize, (x, y, cw, ch): (usize, usize, usize, usize)) -> Vec<[f32; 4]> {
+        (0..ch).flat_map(|r| px[(y + r) * w + x..(y + r) * w + x + cw].to_vec()).collect()
+    }
+
+    /// The largest difference between the window's development and the whole photo's over `inner` (in the window).
+    fn window_error(p: &CameraRaw, w: usize, h: usize, rect: (usize, usize, usize, usize), inner: (usize, usize, usize, usize), with_stats: bool) -> f32 {
+        let src = photo(w, h);
+        let mut whole = src.clone();
+        let stats = measure(&mut whole, w, h, p, false);
+        let mut part = crop(&src, w, rect);
+        let mut q = p.clone();
+        q.window = Some(Window { x: rect.0, y: rect.1, full_w: w, full_h: h, stats: with_stats.then(|| Arc::new(stats)) });
+        develop(&mut part, rect.2, rect.3, &q, false);
+        let want = crop(&whole, w, (rect.0 + inner.0, rect.1 + inner.1, inner.2, inner.3));
+        let got = crop(&part, rect.2, inner);
+        want.iter().zip(&got).flat_map(|(a, b)| (0..3).map(move |c| (a[c] - b[c]).abs())).fold(0.0, f32::max)
+    }
+
+    fn masked() -> Vec<masks::LocalMask> {
+        let mut radial = masks::LocalMask::default();
+        radial.shape = masks::MaskShape::Radial { cx: 0.4, cy: 0.45, rx: 0.3, ry: 0.25, angle: 20.0, feather: 60.0 };
+        radial.adjust.exposure = 0.6;
+        radial.adjust.whites = 30.0;
+        radial.adjust.dehaze = 25.0;
+        let mut linear = masks::LocalMask::default();
+        linear.shape = masks::MaskShape::Linear { x0: 0.5, y0: 0.0, x1: 0.5, y1: 0.6 };
+        linear.adjust.shadows = 40.0;
+        linear.adjust.saturation = -30.0;
+        vec![radial, linear]
+    }
+
+    #[test]
+    fn a_window_is_exactly_its_crop_of_the_whole_photo() {
+        let p = CameraRaw {
+            exposure: 0.3,
+            temperature: 8.0,
+            dehaze: 35.0,
+            shadows: 45.0,
+            highlights: -50.0,
+            contrast: 20.0,
+            whites: 25.0,
+            blacks: -20.0,
+            vibrance: 15.0,
+            vignette_amount: -40.0,
+            vignette_midpoint: 40.0,
+            grain_amount: 30.0,
+            seed: 7,
+            masks: masked(),
+            ..Default::default()
+        };
+        let (w, h) = (320, 220);
+        for rect in [(40, 30, 150, 100), (0, 0, 90, 220), (200, 120, 120, 100)] {
+            let err = window_error(&p, w, h, rect, (0, 0, rect.2, rect.3), true);
+            assert!(err <= 1e-6, "window {rect:?}: {err}");
+            // Measured on the window alone, the whole-photo statistics differ: the test sees them.
+            let alone = window_error(&p, w, h, rect, (0, 0, rect.2, rect.3), false);
+            assert!(alone > 1e-3, "window {rect:?} alone: {alone}");
+        }
+    }
+
+    #[test]
+    fn a_window_with_its_margin_matches_the_whole_photo_inside_it() {
+        let p = CameraRaw {
+            exposure: 0.2,
+            clarity: 40.0,
+            texture: 35.0,
+            sharpen_amount: 60.0,
+            sharpen_masking: 20.0,
+            noise_luminance: 30.0,
+            glow: Glow { amount: 40.0, ..Default::default() },
+            masks: masked(),
+            ..Default::default()
+        };
+        let (w, h) = (640, 420);
+        let m = window_margin(&p, w, h);
+        assert!(m > 10 && m < 120, "margin {m}");
+        let (x, y, cw, ch) = (200, 150, 180, 120);
+        let rect = (x - m, y - m, cw + 2 * m, ch + 2 * m);
+        let err = window_error(&p, w, h, rect, (m, m, cw, ch), true);
+        eprintln!("spatial filters in a window, margin {m}: largest difference {err}");
+        assert!(err < 2e-3, "{err}");
+    }
+
+    #[test]
+    fn a_window_of_the_whole_photo_changes_nothing() {
+        let (w, h) = (64, 48);
+        let src = photo(w, h);
+        let p = CameraRaw { exposure: 0.4, vignette_amount: -30.0, ..Default::default() };
+        let mut plain = src.clone();
+        develop(&mut plain, w, h, &p, false);
+        let mut same = src.clone();
+        let q = CameraRaw { window: Some(Window { x: 0, y: 0, full_w: w, full_h: h, stats: None }), ..p.clone() };
+        develop(&mut same, w, h, &q, false);
+        assert_eq!(plain, same);
     }
 }

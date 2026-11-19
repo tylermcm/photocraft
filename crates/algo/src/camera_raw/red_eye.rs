@@ -36,7 +36,9 @@ fn sample(px: &[[f32; 4]], w: usize, h: usize, x: f32, y: f32) -> [f32; 4] {
     std::array::from_fn(|i| (a[i] * (1.0 - fx) + b[i] * fx) * (1.0 - fy) + (c[i] * (1.0 - fx) + d[i] * fx) * fy)
 }
 
-pub fn apply(px: &mut [[f32; 4]], w: usize, h: usize, items: &[RedEyeCorrection], scale: f32) {
+/// Red eye corrections. `px` sits at `(x, y)` in a `full_w × full_h` photo (the whole of it outside a window): the corrections are placed in the
+/// whole photo, and one needs its reach around it in `px` to match the whole photo's exactly.
+pub fn apply_in(px: &mut [[f32; 4]], w: usize, h: usize, items: &[RedEyeCorrection], scale: f32, (ox, oy, full_w, full_h): (usize, usize, usize, usize)) {
     if w == 0 || h == 0 || w.checked_mul(h) != Some(px.len()) || validate(items).is_err() || !scale.is_finite() {
         return;
     }
@@ -45,12 +47,16 @@ pub fn apply(px: &mut [[f32; 4]], w: usize, h: usize, items: &[RedEyeCorrection]
         if item.darken == 0.0 {
             continue;
         }
-        let cx = (item.point[0] * w as f32).floor().min((w - 1) as f32);
-        let cy = (item.point[1] * h as f32).floor().min((h - 1) as f32);
+        let cx = (item.point[0] * full_w as f32).floor().min((full_w - 1) as f32) - ox as f32;
+        let cy = (item.point[1] * full_h as f32).floor().min((full_h - 1) as f32) - oy as f32;
         let radius = (crate::redeye::search_radius(item.pupil_size).ceil() as usize) + crate::redeye::halo_radius() as usize;
         let side = radius * 2 + 1;
         if side > crate::redeye::MAX_WINDOW as usize {
             continue;
+        }
+        let reach = radius as f32 * scale;
+        if cx + reach < 0.0 || cy + reach < 0.0 || cx - reach >= w as f32 || cy - reach >= h as f32 {
+            continue; // outside this part of the photo
         }
         // Bring only this bounded patch to full-resolution units. This keeps
         // search radius, erosion and the kernel's Gaussian consistent at proxy sizes.
@@ -69,7 +75,6 @@ pub fn apply(px: &mut [[f32; 4]], w: usize, h: usize, items: &[RedEyeCorrection]
                 p[c] -= before[c];
             }
         }
-        let reach = radius as f32 * scale;
         let (x0, y0) = ((cx - reach).floor().max(0.0) as usize, (cy - reach).floor().max(0.0) as usize);
         let (x1, y1) = (((cx + reach).ceil() as usize + 1).min(w), ((cy + reach).ceil() as usize + 1).min(h));
         for y in y0..y1 {

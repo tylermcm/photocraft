@@ -94,7 +94,8 @@ pub fn validate(p: &CameraRaw) -> Result<(), String> {
 }
 
 /// Highlights are diffused in linear light; transparent hidden RGB cannot emit light.
-pub(super) fn glow(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw) {
+/// `side` is the whole photo's longer side (the frame's, outside a window).
+pub(super) fn glow(px: &mut [[f32; 4]], w: usize, h: usize, side: usize, p: &CameraRaw) {
     if p.glow.amount == 0.0 || w.checked_mul(h) != Some(px.len()) || w == 0 || h == 0 {
         return;
     }
@@ -109,7 +110,7 @@ pub(super) fn glow(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw) {
             c.map(|v| v * k)
         })
         .collect();
-    let sigma = (w.max(h) as f32 * (0.001 + 0.0003 * p.glow.spread)).max(0.5);
+    let sigma = (side as f32 * (0.001 + 0.0003 * p.glow.spread)).max(0.5);
     let mut blurred = vec![[0.0; 3]; px.len()];
     for ch in 0..3 {
         let plane: Vec<f32> = emit.iter().map(|v| v[ch]).collect();
