@@ -329,7 +329,6 @@ pub fn expand(original: &[u8], t: &Trailer) -> Vec<u8> {
 
 /// A companion of `t` for the raw at `original` (relative to the companion's folder), at `bits` (tests and other hosts).
 pub fn encode_companion(original: &str, t: &Trailer, bits: u32) -> std::io::Result<Vec<u8>> {
-    use std::io::Write;
     let (w, h) = (t.region.width, t.region.height);
     let top = ((1u32 << bits) - 1) as f32;
     let code = |v: f32| (v.clamp(0.0, 1.0).sqrt() * top).round() as i32;
