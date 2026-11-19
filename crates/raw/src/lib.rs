@@ -71,6 +71,7 @@ mod sensor;
 mod sony;
 mod sony_metadata;
 mod sraw;
+pub mod superres;
 mod tiff;
 mod tiffep;
 mod tone;
@@ -252,6 +253,12 @@ pub fn is_raw(bytes: &[u8]) -> bool {
 /// A file carrying AI-denoised samples (see [`denoised`]) decodes as its original raw with the
 /// denoised region blended in.
 pub fn decode(bytes: &[u8], limits: &Limits) -> Result<Sensor, RawError> {
+    // Super Resolution's base (see [`superres`]): the original raw decoded for its metadata, then the base in its place.
+    if let Some((original, companion)) = superres::split(bytes) {
+        let mut sensor = decode(original, limits)?;
+        superres::apply(&mut sensor, companion).map_err(RawError::malformed)?;
+        return Ok(sensor);
+    }
     match denoised::trailer(bytes) {
         Some(t) => {
             let mut sensor = decode_original(denoised::original(bytes), limits)?;
