@@ -150,6 +150,15 @@ impl Upsampled {
         Upsampled { grid: Grid::new(sw, sh, w, h), ab: a.iter().zip(b).map(|(a, b)| [*a, *b]).collect(), floor }
     }
 
+    fn reduced(&self) -> Reduced {
+        Reduced { sw: self.grid.sw, sh: self.grid.sh, ab: self.ab.clone(), floor: self.floor }
+    }
+
+    /// The map of `r` (measured on a whole photo) at a `w × h` window placed by `frame`.
+    fn from_reduced(r: &Reduced, frame: Frame, w: usize, h: usize) -> Self {
+        Upsampled { grid: Grid::window(r.sw, r.sh, frame, w, h), ab: r.ab.clone(), floor: r.floor }
+    }
+
     /// The change at full-size pixel (`x`, `y`) whose linear luminance has the log₂ `log` (`None`: not above 0).
     fn change(&self, x: usize, y: usize, log: Option<f32>) -> f32 {
         let l = log.map_or(self.floor, |l| l.max(self.floor));
@@ -172,14 +181,23 @@ struct Tap {
 /// taps of every column and row worked out once instead of for every pixel.
 struct Grid {
     sw: usize,
+    sh: usize,
     cols: Vec<Tap>,
     rows: Vec<Tap>,
 }
 
+/// `(x, y, full width, full height)`: where a `w × h` image sits in a whole photo (`(0, 0, w, h)` for the whole photo).
+pub(crate) type Frame = (usize, usize, usize, usize);
+
 impl Grid {
     fn new(sw: usize, sh: usize, w: usize, h: usize) -> Self {
-        let axis = |s: usize, n: usize| -> Vec<Tap> {
-            (0..n)
+        Self::window(sw, sh, (0, 0, w, h), w, h)
+    }
+
+    /// The lookup at the pixels of a `w × h` window of a whole photo, placed by `frame`, whose reduced copy is `sw × sh`.
+    fn window(sw: usize, sh: usize, (ox, oy, full_w, full_h): Frame, w: usize, h: usize) -> Self {
+        let axis = |s: usize, n: usize, o: usize, len: usize| -> Vec<Tap> {
+            (o..o + len)
                 .map(|i| {
                     let p = ((i as f32 + 0.5) * s as f32 / n as f32 - 0.5).clamp(0.0, (s - 1) as f32);
                     let i0 = p as usize;
@@ -188,7 +206,7 @@ impl Grid {
                 })
                 .collect()
         };
-        Grid { sw, cols: axis(sw, w), rows: axis(sh, h) }
+        Grid { sw, sh, cols: axis(sw, full_w, ox, w), rows: axis(sh, full_h, oy, h) }
     }
 
     /// `v` (the reduced plane) at full-size pixel (`x`, `y`), bilinearly.
@@ -343,6 +361,15 @@ impl ToneMap {
         });
         let texture = texture_copy.map(|copy| texture(w, h, copy, tone.texture));
         Some(ToneMap { work, texture, black })
+    }
+
+    /// The map measured on a whole photo, at a `w × h` window of it placed by `frame`.
+    pub(crate) fn from_stats(stats: &ToneStats, frame: Frame, w: usize, h: usize) -> Option<Self> {
+        stats.map.then(|| ToneMap {
+            work: stats.work.as_ref().map(|r| Upsampled::from_reduced(r, frame, w, h)),
+            texture: stats.texture.as_ref().map(|r| Upsampled::from_reduced(r, frame, w, h)),
+            black: stats.black,
+        })
     }
 
     /// The gain at full-size pixel (`x`, `y`) of linear luminance `lum`.
@@ -509,6 +536,65 @@ fn min_filter(v: &[f32], w: usize, h: usize, r: usize) -> Vec<f32> {
     out
 }
 
+/// What the raw stage measured over a whole photo: Dehaze's haze, the luminance change of Shadows, Highlights, Clarity and
+/// Texture on their reduced copies, and the black point ([`crate::Developed::tone_stats`]). Handed back with a
+/// [`RawWindow`], a part of the photo develops as its crop of the whole photo's development, at any resolution of it.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct ToneStats {
+    haze: Option<HazeStats>,
+    /// Whether there was a tone map at all.
+    map: bool,
+    work: Option<Reduced>,
+    texture: Option<Reduced>,
+    black: f32,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+struct Reduced {
+    sw: usize,
+    sh: usize,
+    ab: Vec<[f32; 2]>,
+    floor: f32,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+struct HazeStats {
+    sw: usize,
+    sh: usize,
+    t: Vec<f32>,
+    air: [f32; 3],
+    veil: f32,
+}
+
+impl ToneStats {
+    pub(crate) fn of(haze: Option<&Haze>, map: Option<&ToneMap>) -> Self {
+        ToneStats {
+            haze: haze.map(|z| HazeStats { sw: z.grid.sw, sh: z.grid.sh, t: z.t.clone(), air: z.air, veil: z.veil }),
+            map: map.is_some(),
+            work: map.and_then(|m| m.work.as_ref().map(Upsampled::reduced)),
+            texture: map.and_then(|m| m.texture.as_ref().map(Upsampled::reduced)),
+            black: map.map_or(0.0, |m| m.black),
+        }
+    }
+
+    /// Dehaze from these statistics at a `w × h` window placed by `frame`.
+    pub(crate) fn haze(&self, frame: Frame, w: usize, h: usize) -> Option<Haze> {
+        self.haze.as_ref().map(|z| Haze::from_stats(z, frame, w, h))
+    }
+}
+
+/// A part of a larger photo to develop ([`crate::DevelopOptions::window`]): the developed crop sits at `(x, y)` (in the
+/// photo's crop, before orientation) of a `full_w × full_h` photo, and develops with the `stats` measured on the whole
+/// photo (any size of it) instead of its own.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RawWindow {
+    pub x: usize,
+    pub y: usize,
+    pub full_w: usize,
+    pub full_h: usize,
+    pub stats: std::sync::Arc<ToneStats>,
+}
+
 /// Camera Raw's Dehaze on linear ProPhoto RGB (see the module docs).
 pub(crate) struct Haze {
     grid: Grid,
@@ -557,6 +643,11 @@ impl Haze {
         let wgt = HAZE_UP * amount;
         let t = smooth.iter().map(|d| (1.0 - wgt * d).max(HAZE_T0)).collect();
         Some(Haze { grid: Grid::new(sw, sh, w, h), t, air, veil: 0.0 })
+    }
+
+    /// The haze measured on a whole photo, at a `w × h` window of it placed by `frame`.
+    fn from_stats(z: &HazeStats, frame: Frame, w: usize, h: usize) -> Self {
+        Haze { grid: Grid::window(z.sw, z.sh, frame, w, h), t: z.t.clone(), air: z.air, veil: z.veil }
     }
 
     /// Dehaze at full-size pixel (`x`, `y`) of linear ProPhoto `v`.

@@ -261,8 +261,7 @@ pub fn apply(s: &mut Sensor, companion: &[u8]) -> Result<(), String> {
 /// A base companion of `channels` (the base's linear camera RGB, `width * height * 3` interleaved, 0 … 1) for the raw at
 /// `original`, made from `crop` at `scale` (tests and other hosts; Image Triage writes its own from a stream).
 #[allow(clippy::too_many_arguments)]
-pub fn encode_base(original: &str, scale: usize, width: usize, height: usize, crop: crate::sensor::Rect, bits: u32, channels: &[f32]) -> Vec<u8> {
-    use std::io::Write;
+pub fn encode_base(original: &str, scale: usize, width: usize, height: usize, crop: crate::sensor::Rect, bits: u32, channels: &[f32]) -> std::io::Result<Vec<u8>> {
     let top = ((1u32 << bits) - 1) as f32;
     let mut out = Vec::new();
     out.extend_from_slice(BASE_MAGIC);
@@ -288,14 +287,12 @@ pub fn encode_base(original: &str, scale: usize, width: usize, height: usize, cr
             }
         }
         for part in [&residuals, &escapes] {
-            let mut e = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::new(6));
-            e.write_all(part).expect("writing to memory");
-            let z = e.finish().expect("writing to memory");
+            let z = crate::denoised::zlib(part)?;
             out.extend_from_slice(&(z.len() as u64).to_le_bytes());
             out.extend_from_slice(&z);
         }
     }
-    out
+    Ok(out)
 }
 
 #[cfg(test)]
@@ -332,7 +329,7 @@ mod tests {
         let crop = s.crop;
         let (w, h) = (64, 48);
         let channels: Vec<f32> = (0..w * h * 3).map(|i| [0.1, 0.5, 0.3][i % 3] + 0.001 * ((i / 3) % 7) as f32).collect();
-        let companion = encode_base("../../IMG.NEF", 2, w, h, crop, 12, &channels);
+        let companion = encode_base("../../IMG.NEF", 2, w, h, crop, 12, &channels).unwrap();
         let head = base(&companion).unwrap().unwrap();
         assert_eq!((head.original.as_str(), head.scale, head.width, head.height, head.bits), ("../../IMG.NEF", 2, 64, 48, 12));
         let joined = expand(b"raw bytes", &companion);
@@ -352,7 +349,7 @@ mod tests {
     fn a_base_of_another_crop_is_refused() {
         let mut s = flat_bayer(32, 24, [200, 400, 300]);
         let other = crate::sensor::Rect::new(2, 2, 30, 22);
-        let companion = encode_base("IMG.NEF", 2, 60, 44, other, 10, &vec![0.2; 60 * 44 * 3]);
+        let companion = encode_base("IMG.NEF", 2, 60, 44, other, 10, &vec![0.2; 60 * 44 * 3]).unwrap();
         assert!(apply(&mut s, &companion).unwrap_err().contains("different crop"));
     }
 }

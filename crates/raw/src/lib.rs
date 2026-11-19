@@ -88,7 +88,7 @@ pub use crate::opcodes::{GainMap, MapPolynomial};
 pub use crate::preview::{DecodedPreview, Preview, PreviewColorSpace, embedded_jxl_preview, embedded_preview, embedded_preview_color_space, embedded_previews};
 pub use crate::reduced::{ReducedDeveloped, develop_reduced};
 pub use crate::sensor::{BlackLevels, Cfa, Rect, Sensor};
-pub use crate::tone::{Tone, retone};
+pub use crate::tone::{RawWindow, Tone, ToneStats, retone};
 
 use crate::tiff::{Tiff, tag};
 

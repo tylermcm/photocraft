@@ -9,7 +9,7 @@ use crate::demosaic::{Demosaic, PAD, Padded, Pattern, demosaic, demosaic_cfa, de
 use crate::error::{RawError, Result};
 use crate::look::{CameraLook, ToneCurve};
 use crate::sensor::Sensor;
-use crate::tone::{Haze, Tone, ToneMap, black_level};
+use crate::tone::{Haze, RawWindow, Tone, ToneMap, ToneStats, black_level};
 use crate::{Limits, RawFormat, par};
 
 /// White balance choice.
@@ -40,6 +40,9 @@ pub struct DevelopOptions {
     /// A colour rendering fitted to the camera's own JPEG ([`crate::fit_look`]). When set it
     /// replaces the file's colour calibration (or the neutral fallback) and adds its tone curve.
     pub camera_look: Option<CameraLook>,
+    /// The crop is part of a larger photo: its raw-stage tone ([`Tone`]) follows the statistics measured on the whole
+    /// photo (see [`ToneStats`]).
+    pub window: Option<RawWindow>,
 }
 
 impl Default for DevelopOptions {
@@ -52,6 +55,7 @@ impl Default for DevelopOptions {
             tone: Tone::default(),
             limits: Limits::default(),
             camera_look: None,
+            window: None,
         }
     }
 }
@@ -85,6 +89,8 @@ pub struct Developed {
     pub info: RawInfo,
     /// Notes about anything approximated or not applied.
     pub warnings: Vec<String>,
+    /// What the raw stage measured over the frame (for windows of the same photo, [`RawWindow`]).
+    pub tone_stats: std::sync::Arc<ToneStats>,
 }
 
 /// Linearization + black/white scaling for one sample (pre white balance), 0..1.
@@ -484,21 +490,35 @@ fn develop(s: &Sensor, opts: &DevelopOptions, allow_fused: bool) -> Result<Devel
         }
     }
 
+    let mut tone_stats = ToneStats::default();
     let out = match fused_out {
         Some(out) => out,
         None => {
-            let haze = Haze::new(w, h, |i| pro(&rgb[i * 3..i * 3 + 3]), opts.tone.dehaze);
+            // A window of a larger photo takes the whole photo's statistics.
+            let window = opts.window.as_ref().filter(|v| v.full_w >= v.x + w && v.full_h >= v.y + h);
+            let frame = window.map(|v| (v.x, v.y, v.full_w, v.full_h));
+            let haze = match (window, frame) {
+                (Some(v), Some(frame)) => v.stats.haze(frame, w, h),
+                _ => Haze::new(w, h, |i| pro(&rgb[i * 3..i * 3 + 3]), opts.tone.dehaze),
+            };
             // Linear ProPhoto of pixel `i` after Dehaze.
             let linear = |i: usize, p: &[f32]| {
                 let v = pro(p);
                 haze.as_ref().map_or(v, |z| z.apply(i % w, i / w, v))
             };
-            let mut map = ToneMap::new(w, h, |i| lum(&linear(i, &rgb[i * 3..i * 3 + 3])), opts.tone, s.black_point);
-            if let (Some(m), Some(_)) = (&mut map, &haze) {
-                // The black point belongs to the default rendering: Dehaze does not move it (taken after
-                // Dehaze it fell to almost 0, and Dehaze darkened less than Photoshop's).
-                m.black = black_level(w, h, |i| lum(&pro(&rgb[i * 3..i * 3 + 3])), s.black_point);
-            }
+            let map = match (window, frame) {
+                (Some(v), Some(frame)) => ToneMap::from_stats(&v.stats, frame, w, h),
+                _ => {
+                    let mut map = ToneMap::new(w, h, |i| lum(&linear(i, &rgb[i * 3..i * 3 + 3])), opts.tone, s.black_point);
+                    if let (Some(m), Some(_)) = (&mut map, &haze) {
+                        // The black point belongs to the default rendering: Dehaze does not move it (taken after
+                        // Dehaze it fell to almost 0, and Dehaze darkened less than Photoshop's).
+                        m.black = black_level(w, h, |i| lum(&pro(&rgb[i * 3..i * 3 + 3])), s.black_point);
+                    }
+                    map
+                }
+            };
+            tone_stats = ToneStats::of(haze.as_ref(), map.as_ref());
             let mut out = vec![0u16; w * h * 3];
             let plain = map.is_none() && haze.is_none();
             par::chunks_mut(&mut out, band * w * 3, |b, chunk| {
@@ -533,6 +553,7 @@ fn develop(s: &Sensor, opts: &DevelopOptions, allow_fused: bool) -> Result<Devel
         width: ow as u32,
         height: oh as u32,
         rgb: out,
+        tone_stats: std::sync::Arc::new(tone_stats),
         info: RawInfo {
             format: s.format,
             make: s.make.clone(),
@@ -852,6 +873,28 @@ mod tests {
             black_point: 0.0,
             warnings: Vec::new(),
         }
+    }
+
+    #[test]
+    fn a_window_develops_as_its_crop_of_the_whole_photo() {
+        let mut s = test_sensor(300, 200, None, 3);
+        s.black_point = 0.5;
+        let tone = Tone { shadows: 60.0, highlights: -70.0, clarity: 40.0, texture: 30.0, dehaze: 35.0 };
+        // Fixed multipliers: the grey-world fallback is measured on the crop (hosts pass the camera's).
+        let opts = DevelopOptions { tone, orient: false, white_balance: WhiteBalance::Multipliers([1.8, 1.0, 1.4]), ..Default::default() };
+        let whole = develop_sensor(&s, &opts).unwrap();
+        let (x, y, w, h) = (60, 40, 120, 90);
+        let region = |stats: Option<std::sync::Arc<ToneStats>>| {
+            let mut part = s.clone();
+            part.crop = crate::Rect::new(x, y, w, h);
+            let window = stats.map(|stats| RawWindow { x, y, full_w: 300, full_h: 200, stats });
+            develop_sensor(&part, &DevelopOptions { window, ..opts.clone() }).unwrap().rgb
+        };
+        let want: Vec<u16> = (0..h).flat_map(|r| whole.rgb[((y + r) * 300 + x) * 3..((y + r) * 300 + x + w) * 3].to_vec()).collect();
+        let worst = |got: &[u16]| got.iter().zip(&want).map(|(a, b)| a.abs_diff(*b)).max().unwrap();
+        assert_eq!(worst(&region(Some(whole.tone_stats.clone()))), 0);
+        // Measured on the region alone, it differs: the test sees the statistics.
+        assert!(worst(&region(None)) > 64);
     }
 
     /// `f` on a pool of `n` threads (the browser builds have none).
