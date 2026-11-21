@@ -79,7 +79,7 @@ pub fn start(app: &mut PhotocraftApp, p: &Value) -> Result<Started, String> {
         .map_err(|e| e.to_string())
 }
 
-/// The original raw developed with `params` as "Open" develops it.
+/// The original raw developed with `params` as "Open" develops it; a picture that is not raw, edited with them as Camera Raw's filter.
 fn develop(
     read: &crate::BackgroundAutomationReadFn,
     source: &str,
@@ -99,7 +99,21 @@ fn develop(
         None => (name, bytes),
     };
     if !photocraft_io::raw::is_raw(&bytes) {
-        return Err(EngineError::Other(format!("{source}: a RAW Develop recipe applies to raw photos only")));
+        // A picture that is not raw (JPEG, TIFF, PNG ...): Camera Raw edits it as a filter on its pixels, the whole recipe in one step
+        // (there is no raw stage to develop exposure, white balance or tone in).
+        ctx.check()?;
+        let imported = photocraft_io::import(&name, &bytes).map_err(|e| EngineError::Other(e.to_string()))?;
+        ctx.check()?;
+        params.validate_retouch_size(imported.document.size.width as usize, imported.document.size.height as usize).map_err(EngineError::Other)?;
+        let mut session = photocraft_engine::Session::new();
+        session.add_document(imported.document, None);
+        let layer = session.active().and_then(|state| state.active_layer).ok_or_else(|| EngineError::Other("no layer to edit".into()))?;
+        if !params.is_identity() {
+            let mut step = crate::camera_raw_ui::non_defaults(params);
+            step["layer"] = json!(layer.0);
+            session.execute("filter.cameraRaw", step)?;
+        }
+        return session.active().map(|state| photocraft_doc::Document::clone(&state.doc)).ok_or_else(|| EngineError::Other("the edited document went away".into()));
     }
     ctx.check()?;
     let (mut imported, white_balanced) =
