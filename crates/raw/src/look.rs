@@ -548,6 +548,10 @@ fn fit_cells(cells: &[Cell], gw: usize, baseline_exposure: f64) -> Result<Camera
     // implausible (little colour in the scene, or a rendering a matrix can't follow).
     let test_refs: Vec<&Sample> = test.iter().collect();
     let held_fallback = mean_delta_e(&lab, &test_refs, &fallback, None);
+    // The cells left out of the fit (clipped, edges) are the matrix's extrapolation: it must not throw them far outside sRGB where
+    // the fallback does not (sunlit rock, clipped in the JPEG, came out a bare red: hue 1 degree against the camera's 26).
+    let all_refs_for_gamut: Vec<&Sample> = all.iter().collect();
+    let fallback_wild = wild_share(&all_refs_for_gamut, &fallback);
     let mut why = String::new();
     let mut found = None;
     for ridge in RIDGES {
@@ -555,6 +559,11 @@ fn fit_cells(cells: &[Cell], gw: usize, baseline_exposure: f64) -> Result<Camera
         let rel = color::scale(&m, 1.0 / gain);
         if !plausible(&rel) {
             why = format!("implausible matrix {rel:?}");
+            continue;
+        }
+        let wild = wild_share(&all_refs_for_gamut, &m);
+        if wild > (3.0 * fallback_wild).max(WILD_SHARE) {
+            why = format!("the matrix throws {:.1}% of the picture far outside sRGB (the fallback {:.1}%)", wild * 100.0, fallback_wild * 100.0);
             continue;
         }
         let held_fit = mean_delta_e(&lab, &test_refs, &m, Some(&tone));
@@ -576,6 +585,32 @@ fn fit_cells(cells: &[Cell], gw: usize, baseline_exposure: f64) -> Result<Camera
         return reject("the fitted matrix is not usable");
     }
     Ok(look)
+}
+
+/// The share of a matrix's colours that may lie far outside sRGB (see [`wild_share`]) before the matrix counts as extrapolating.
+const WILD_SHARE: f64 = 0.005;
+
+/// The share of the (not dark) cells that `m` puts far outside sRGB: a channel below -25% of the colour's luminance, where a
+/// screen can only cut it to a bare primary.
+fn wild_share(cells: &[&Sample], m: &Mat3) -> f64 {
+    let srgb_from_pro = color::mul(
+        &color::invert(&color::srgb_to_xyz_d50()).unwrap_or(color::srgb_to_xyz_d50()),
+        &color::invert(&color::xyz_d50_to_prophoto()).unwrap_or(color::xyz_d50_to_prophoto()),
+    );
+    let (mut wild, mut counted) = (0usize, 0usize);
+    for s in cells {
+        let v = color::apply(m, s.cam);
+        let lum = color::apply(&PRO_TO_XYZ_Y_ROW, v)[0];
+        if !(lum > 0.01) {
+            continue;
+        }
+        counted += 1;
+        let rgb = color::apply(&srgb_from_pro, v);
+        if rgb[0].min(rgb[1]).min(rgb[2]) < -0.25 * lum {
+            wild += 1;
+        }
+    }
+    if counted == 0 { 0.0 } else { wild as f64 / counted as f64 }
 }
 
 /// Ridge strengths tried in turn (see [`fit_matrix`]).
