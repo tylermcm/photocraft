@@ -34,6 +34,10 @@ pub(crate) struct LaunchArgs {
     /// Run as the editor hosted inside Image Triage (hidden start, no custom title bar)
     #[arg(long)]
     pub(crate) hosted: bool,
+    /// With --hosted: keep a window of its own, with the system's title bar, which the host shows and hides (Linux and
+    /// macOS, where the host cannot put the editor's window inside its own). Closing it asks the host to put the editor away
+    #[arg(long, requires = "hosted")]
+    pub(crate) hosted_window: bool,
     /// Open with the RAW workspace enabled: Camera Raw opens on each document by itself, drawn inside
     /// the main window
     #[arg(long)]
@@ -280,6 +284,14 @@ mod tests {
         let pair = ["--control-token", "abcd", "--control-token-file", "/tmp/token"];
         assert!(usage_error(&[&["--control", "1"][..], &pair[..]].concat()).contains("cannot be used with"));
         assert!(parse_args(&pair).is_ok());
+    }
+
+    #[test]
+    fn a_window_of_its_own_is_only_for_a_hosted_editor() {
+        let parsed = parse_args(&["--hosted", "--hosted-window"]).unwrap();
+        assert!(parsed.hosted && parsed.hosted_window);
+        assert!(!parse_args(&["--hosted"]).unwrap().hosted_window);
+        assert!(parse_args(&["--hosted-window"]).is_err(), "--hosted-window needs --hosted");
     }
 
     #[test]

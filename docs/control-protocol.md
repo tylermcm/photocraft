@@ -731,6 +731,16 @@ visibility reset when the dialog opens. HDR scopes are not implemented. See
 (`app.prefetch`) and `cameraRawSwitch: 1` (the dialog stays up between photos). A raw the decoder cannot develop
 from its sensor data opens as its embedded preview, with no Camera Raw dialog.
 
+`hostWindow: 1`: the editor can run in a window of its own (`--hosted-window`, for Linux and macOS, where Image Triage
+cannot put another program's window inside its own). The window has the system's title bar and starts hidden. Closing
+it hides it and leaves the process running: it only asks the host to put the editor away. `ui.hostWindow {visible?}`
+shows the window (raised and focused) with `visible: true` and hides it with `false`. Every call answers
+`{visible, closeRequested, canHide}`, where `closeRequested` says the user closed the window since the last call
+(answered once). An editor started without `--hosted-window` answers with an error. `app.quit` still closes it.
+On a Linux Wayland session the window opens through Xwayland when it can, since Wayland cannot hide a window. Where it
+cannot (no Xwayland), `canHide` is false: the window is never hidden, closing it still only sets `closeRequested`, and
+the host saves the photo and then ends the editor with `app.quit` instead of keeping it hidden.
+
 ### Editing and composing actions
 
 Newly recorded Select Layer steps store the layer name instead of a document-specific ID,

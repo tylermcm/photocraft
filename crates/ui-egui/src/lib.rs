@@ -61,6 +61,7 @@ pub mod preset_files_ui;
 pub mod proxy;
 pub mod raw_recipe;
 pub mod raw_workspace;
+pub mod host_window;
 pub mod render_manifest;
 pub mod render_path;
 pub mod screenshot;
@@ -774,6 +775,8 @@ pub struct PhotocraftApp {
     pub(crate) held_insert_menu: Option<actions::menu_item::Held>,
     /// Set once the user has agreed to quit, so the resulting close request goes through.
     pub(crate) allow_close: bool,
+    /// The window of an editor hosted by Image Triage in a window of its own (`--hosted-window`; see `host_window`).
+    pub host_window: host_window::HostWindow,
     /// Pen pressure/tilt from the platform (see `stylus`).
     pub stylus: stylus::Stylus,
     control_click: control_click::ControlClick,

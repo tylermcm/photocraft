@@ -227,6 +227,7 @@ impl PhotocraftApp {
             held_record_again: None,
             held_insert_menu: None,
             allow_close: false,
+            host_window: Default::default(),
             stylus: Default::default(),
             control_click: Default::default(),
             background_jobs: false,

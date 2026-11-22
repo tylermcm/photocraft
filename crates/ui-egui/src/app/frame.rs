@@ -88,7 +88,10 @@ impl PhotocraftApp {
         // A window bigger than its display (1440 × 900 on 1366 × 768) runs under the taskbar:
         // maximize it into the work area once (#315).
         work_area::fit_window(ctx);
-        discard_ui::guard_window_close(self, ctx);
+        // A window of its own for a host: closing it asks the host to put the editor away (see `host_window`).
+        if !crate::host_window::tick(self, ctx) {
+            discard_ui::guard_window_close(self, ctx);
+        }
         // A zoom field being typed in: plays its alert, and notes a click on the pasteboard.
         crate::zoom_field::tick(self, ctx);
         // A colour swatch's Color Picker OK hands its colour back to the swatch widget.

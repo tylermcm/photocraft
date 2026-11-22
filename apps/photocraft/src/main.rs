@@ -264,17 +264,24 @@ fn claim_single_instance(
 /// The display server to open the window on: Xwayland for a pen on Wayland, which gives this app
 /// no pen input (#639). Exits with the package to install when its libraries are missing.
 #[cfg(target_os = "linux")]
-fn linux_display_session() -> linux_libs::DisplaySession {
+fn linux_display_session(hosted_window: bool) -> linux_libs::DisplaySession {
     let session = tablet::display_session();
     // Preferences › Performance › Linux display server = X11: Xwayland on a Wayland session too,
     // where native file drops work (winit 0.30 has none on Wayland, #386). Only when Xwayland can
     // run the window ($DISPLAY set, X11 libraries installed); otherwise the session's own.
+    // A window of its own for a host (`--hosted-window`) always prefers Xwayland: winit cannot hide
+    // a window on Wayland, and the host hides it between photos (`host_window`).
     let session = if session == linux_libs::DisplaySession::Wayland
-        && gpu_startup::read_display_server(services::prefs_file().as_deref()) == photocraft_engine::prefs::LinuxDisplayServer::X11
+        && (hosted_window
+            || gpu_startup::read_display_server(services::prefs_file().as_deref()) == photocraft_engine::prefs::LinuxDisplayServer::X11)
         && std::env::var_os("DISPLAY").is_some_and(|d| !d.is_empty())
         && linux_libs::available(linux_libs::DisplaySession::X11)
     {
-        eprintln!("photocraft: opening the window through Xwayland (Preferences › Performance › Linux display server)");
+        if hosted_window {
+            eprintln!("photocraft: opening the window through Xwayland (a hosted window is hidden between photos, which Wayland cannot do)");
+        } else {
+            eprintln!("photocraft: opening the window through Xwayland (Preferences › Performance › Linux display server)");
+        }
         linux_libs::DisplaySession::X11
     } else {
         session
@@ -373,6 +380,7 @@ fn main() -> eframe::Result {
         files: _,
         safe_gpu,
         hosted,
+        hosted_window,
         raw_workspace,
         in_window_menus,
         new_instance,
@@ -411,7 +419,13 @@ fn main() -> eframe::Result {
     #[cfg(target_os = "linux")]
     let native_session = linux_libs::session_from_env(|name| std::env::var(name).ok());
     #[cfg(target_os = "linux")]
-    let session = linux_display_session();
+    let session = linux_display_session(hosted_window);
+    // Wayland itself (no Xwayland to fall back on) cannot hide a window: the host is told, and ends the editor when it is put away
+    // instead of keeping it hidden (`host_window`).
+    #[cfg(target_os = "linux")]
+    let hosted_window_can_hide = session != linux_libs::DisplaySession::Wayland;
+    #[cfg(not(target_os = "linux"))]
+    let hosted_window_can_hide = true;
 
     // Finder / Dock / Open With deliver files as Apple events, not arguments; catch the one that
     // launched us as well as later ones. Lives until the event loop returns.
@@ -455,7 +469,20 @@ fn main() -> eframe::Result {
     // Centre only the first window: eframe centres after restoring the saved position, so a
     // window closed on another monitor reopened in the middle of the main one (#4826).
     options.centered = !ui_state::has_saved_position(options.persistence_path.as_deref());
-    if hosted {
+    if hosted_window {
+        // A window of its own (Linux, macOS: the host cannot embed it), with the system's title bar, hidden until the host shows
+        // it with a photo (`host_window`). Opened where the window manager puts new windows; the host's own window is out of the
+        // way meanwhile.
+        options.viewport = options
+            .viewport
+            .with_decorations(true)
+            .with_visible(false)
+            .with_inner_size([1400.0, 900.0])
+            .with_title("PhotoCraft");
+        options.centered = true;
+        options.persist_window = false;
+        options.persistence_path = None;
+    } else if hosted {
         // The owner embeds and shows the native child only after it is ready.
         // Restoring standalone geometry/visibility must not flash a top-level window.
         // eframe unconditionally shows the first rendered frame. Keep that
@@ -714,6 +741,9 @@ fn main() -> eframe::Result {
             app.raw_workspace.enabled = raw_workspace;
             if hosted {
                 photocraft_ui_egui::camera_raw_filmstrip_ui::hosted(&cc.egui_ctx);
+            }
+            if hosted_window {
+                photocraft_ui_egui::host_window::enable(&mut app, hosted_window_can_hide);
             }
             app.services.pen_end = tablet::pen_end_service();
             app.services.pen_screen_px = tablet::pen_screen_service();

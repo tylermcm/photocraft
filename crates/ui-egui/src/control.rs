@@ -187,6 +187,7 @@ pub(super) const METHODS: &[&str] = &[
     "ui.cameraRaw",
     "ui.filmstrip",
     "ui.hostJob",
+    "ui.hostWindow",
     "app.prefetch",
     "ui.theme",
     "ui.viewport",
