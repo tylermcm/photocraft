@@ -34,6 +34,12 @@ pub fn enable(app: &mut PhotocraftApp, can_hide: bool) {
     app.host_window.can_hide = can_hide;
 }
 
+/// A hosted render helper off Windows (`--hosted` without `--hosted-window`): it is never shown, so its first frame, which eframe
+/// shows whatever the viewport said, is hidden at once. On Windows the host hides it itself.
+pub fn enable_background(app: &mut PhotocraftApp) {
+    enable(app, true);
+}
+
 /// Once per frame, before the ordinary close guard: keeps the window hidden until the host shows it, and turns the user's close into a
 /// request to the host. Returns whether it took the close request (the ordinary guard then has nothing to do).
 pub fn tick(app: &mut PhotocraftApp, ctx: &egui::Context) -> bool {
@@ -112,14 +118,16 @@ mod tests {
             input.viewports.insert(egui::ViewportId::ROOT, info);
         }
         let mut took = false;
-        let out = ctx.run_ui(input, |ui| took = tick(app, ui.ctx()));
+        let mut out = ctx.run_ui(input, |ui| took = tick(app, ui.ctx()));
+        out.textures_delta.clear(); // no renderer here: the font atlas upload is dropped on purpose
         (took, commands(&out))
     }
 
     fn call(app: &mut PhotocraftApp, p: Value) -> (Result<Value, String>, Vec<egui::ViewportCommand>) {
         let ctx = egui::Context::default();
         let mut result = Err(String::new());
-        let out = ctx.run_ui(egui::RawInput::default(), |ui| result = control(app, ui.ctx(), &p));
+        let mut out = ctx.run_ui(egui::RawInput::default(), |ui| result = control(app, ui.ctx(), &p));
+        out.textures_delta.clear();
         (result, commands(&out))
     }
 

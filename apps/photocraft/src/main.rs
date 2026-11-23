@@ -264,21 +264,21 @@ fn claim_single_instance(
 /// The display server to open the window on: Xwayland for a pen on Wayland, which gives this app
 /// no pen input (#639). Exits with the package to install when its libraries are missing.
 #[cfg(target_os = "linux")]
-fn linux_display_session(hosted_window: bool) -> linux_libs::DisplaySession {
+fn linux_display_session(hosted: bool) -> linux_libs::DisplaySession {
     let session = tablet::display_session();
     // Preferences › Performance › Linux display server = X11: Xwayland on a Wayland session too,
     // where native file drops work (winit 0.30 has none on Wayland, #386). Only when Xwayland can
     // run the window ($DISPLAY set, X11 libraries installed); otherwise the session's own.
-    // A window of its own for a host (`--hosted-window`) always prefers Xwayland: winit cannot hide
-    // a window on Wayland, and the host hides it between photos (`host_window`).
+    // A hosted editor always prefers Xwayland: winit cannot hide a window on Wayland, and the host
+    // keeps its window hidden (a render helper always, an editor between photos: `host_window`).
     let session = if session == linux_libs::DisplaySession::Wayland
-        && (hosted_window
+        && (hosted
             || gpu_startup::read_display_server(services::prefs_file().as_deref()) == photocraft_engine::prefs::LinuxDisplayServer::X11)
         && std::env::var_os("DISPLAY").is_some_and(|d| !d.is_empty())
         && linux_libs::available(linux_libs::DisplaySession::X11)
     {
-        if hosted_window {
-            eprintln!("photocraft: opening the window through Xwayland (a hosted window is hidden between photos, which Wayland cannot do)");
+        if hosted {
+            eprintln!("photocraft: opening the window through Xwayland (a hosted editor's window is kept hidden, which Wayland cannot do)");
         } else {
             eprintln!("photocraft: opening the window through Xwayland (Preferences › Performance › Linux display server)");
         }
@@ -419,7 +419,7 @@ fn main() -> eframe::Result {
     #[cfg(target_os = "linux")]
     let native_session = linux_libs::session_from_env(|name| std::env::var(name).ok());
     #[cfg(target_os = "linux")]
-    let session = linux_display_session(hosted_window);
+    let session = linux_display_session(hosted);
     // Wayland itself (no Xwayland to fall back on) cannot hide a window: the host is told, and ends the editor when it is put away
     // instead of keeping it hidden (`host_window`).
     #[cfg(target_os = "linux")]
@@ -462,6 +462,15 @@ fn main() -> eframe::Result {
         use winit::platform::x11::EventLoopBuilderExtX11 as _;
         options.event_loop_builder = Some(Box::new(|builder| {
             builder.with_x11();
+        }));
+    }
+    // Hosted without a window of its own off Windows: a render helper of the host's (its RAW editor, its exports), never shown. On
+    // macOS it runs as a faceless app: no Dock icon, and it never takes the focus from the host.
+    #[cfg(target_os = "macos")]
+    if hosted && !hosted_window {
+        use winit::platform::macos::{ActivationPolicy, EventLoopBuilderExtMacOS as _};
+        options.event_loop_builder = Some(Box::new(|builder| {
+            builder.with_activation_policy(ActivationPolicy::Prohibited).with_activate_ignoring_other_apps(false);
         }));
     }
     // eframe restores the saved window layout before our code runs; drop values that would crash it.
@@ -744,6 +753,9 @@ fn main() -> eframe::Result {
             }
             if hosted_window {
                 photocraft_ui_egui::host_window::enable(&mut app, hosted_window_can_hide);
+            } else if hosted && !cfg!(target_os = "windows") {
+                // Windows' host hides the hosted window itself; elsewhere nothing would, and eframe shows the first frame.
+                photocraft_ui_egui::host_window::enable_background(&mut app);
             }
             app.services.pen_end = tablet::pen_end_service();
             app.services.pen_screen_px = tablet::pen_screen_service();
