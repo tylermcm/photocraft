@@ -31,6 +31,13 @@ pub fn short_sha() -> Option<&'static str> {
     git_sha().map(|s| &s[..s.len().min(9)])
 }
 
+/// The editor's name as people see it: Image Triage ships this build of PhotoCraft as its own editor. ArtCraft's brand terms
+/// (`docs/brand/LICENSE-brand.txt`) ask a modified version to carry its own name and only say, in plain text, what it is based on.
+pub const PRODUCT_NAME: &str = "Image Triage Editor";
+
+/// The plain-text credit those terms allow.
+pub const BASED_ON: &str = "Based on PhotoCraft by the ArtCraft team.";
+
 /// `0.1.0 (3f2a9c1d0, 2026-10-01)`, or `0.1.0 (dev build)` without provenance.
 pub fn long_version() -> String {
     format_long(VERSION, short_sha(), build_date())

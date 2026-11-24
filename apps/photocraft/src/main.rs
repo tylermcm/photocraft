@@ -157,7 +157,7 @@ fn native_options(custom_titlebar: bool) -> eframe::NativeOptions {
     eframe::NativeOptions {
         viewport: viewport
             .with_app_id(APP_ID)
-            .with_title("PhotoCraft")
+            .with_title(photocraft_engine::build_info::PRODUCT_NAME)
             .with_inner_size([1440.0, 900.0])
             .with_min_inner_size(photocraft_ui_egui::MIN_WINDOW_SIZE)
             .with_drag_and_drop(true)
@@ -487,7 +487,7 @@ fn main() -> eframe::Result {
             .with_decorations(true)
             .with_visible(false)
             .with_inner_size([1400.0, 900.0])
-            .with_title("PhotoCraft");
+            .with_title(photocraft_engine::build_info::PRODUCT_NAME);
         options.centered = true;
         options.persist_window = false;
         options.persistence_path = None;

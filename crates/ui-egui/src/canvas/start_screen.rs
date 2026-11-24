@@ -164,7 +164,7 @@ fn render_start_rail(app: &mut PhotocraftApp, ui: &mut egui::Ui, rail_w: f32) {
     }
 
     // 5. Bottom pinned community links
-    let bottom_h = 100.0;
+    let bottom_h = 72.0;
     let avail_h = ui.available_height();
     let spacer = (avail_h - bottom_h - 20.0).max(24.0);
     ui.add_space(spacer);
@@ -175,7 +175,6 @@ fn render_start_rail(app: &mut PhotocraftApp, ui: &mut egui::Ui, rail_w: f32) {
     ui.add_space(8.0);
 
     render_rail_link(app, ui, rail_w, tl!("Website"), "link", crate::links::APP_PAGE);
-    render_rail_link(app, ui, rail_w, tl!("Discord"), "message-square", crate::links::DISCORD);
     render_rail_link(app, ui, rail_w, tl!("GitHub"), "link-2", crate::links::GITHUB);
 }
 
@@ -208,7 +207,7 @@ fn render_start_content(app: &mut PhotocraftApp, ui: &mut egui::Ui, recent: &[St
 
         ui.add_space(10.0);
 
-        let title_galley = ui.painter().layout_no_wrap(tl!("PhotoCraft").into(), crate::theme::semibold(20.0), t.text);
+        let title_galley = ui.painter().layout_no_wrap(photocraft_engine::build_info::PRODUCT_NAME.into(), crate::theme::semibold(20.0), t.text);
         let (title_r, _) = ui.allocate_exact_size(title_galley.size(), Sense::hover());
         ui.painter().galley(title_r.min, title_galley, t.text);
     });
