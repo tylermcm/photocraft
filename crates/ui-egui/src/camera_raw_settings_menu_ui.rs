@@ -266,6 +266,8 @@ fn validate_clipboard(p: &CameraRaw) -> Result<(), String> {
                 }
             }
             "seed" | "pixelScale" | "encodingGamma" | "glow" | "pointColors" | "superResolution" | "masks" | "retouch" | "redEye" => {}
+            // The structured sky settings are checked by CameraRaw::validate_changes.
+            "sky" => {}
             _ => number(key, v, -100.0, 100.0)?,
         }
     }
@@ -561,7 +563,13 @@ mod tests {
         let p = CameraRaw { exposure: 1.25, tint: 17.0, ..Default::default() };
         let text = serde_json::to_string(&crate::raw_recipe::to_json(&p)).unwrap();
         assert_eq!(paste(&original, &original, &text).unwrap(), p);
-        for bad in ["{", r#"{"version":900,"cameraRaw":{}}"#, r#"{"version":1,"cameraRaw":{"exposure":1000}}"#, "not settings"] {
+        for bad in [
+            "{",
+            r#"{"version":900,"cameraRaw":{}}"#,
+            r#"{"version":1,"cameraRaw":{"exposure":1000}}"#,
+            r#"{"version":1,"cameraRaw":{"sky":{"amount":101}}}"#,
+            "not settings",
+        ] {
             assert!(paste(&p, &original, bad).is_err(), "accepted {bad}");
         }
         assert!(paste(&p, &original, &"x".repeat(4 * 1024 * 1024 + 1)).is_err());
